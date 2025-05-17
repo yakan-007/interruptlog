@@ -87,7 +87,7 @@ export default function FloatingActionControls() {
           <p className="font-medium truncate max-w-[150px] sm:max-w-xs" title={activeEvent.label || 'Unnamed Task'}>
             {activeEvent.label || 'Unnamed Task'}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{elapsedTime}</p>
+          <p className="text-base font-semibold text-blue-600 dark:text-blue-400">{elapsedTime}</p>
         </div>
       </div>
 
@@ -101,7 +101,7 @@ export default function FloatingActionControls() {
             {/* Interrupt Modal Trigger */}
             <Dialog open={isInterruptModalOpen} onOpenChange={setIsInterruptModalOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:border-yellow-400 dark:text-yellow-400 dark:hover:bg-yellow-900/50">
                   <Zap className="mr-1.5 h-4 w-4" /> Interrupt
                 </Button>
               </DialogTrigger>
@@ -133,7 +133,7 @@ export default function FloatingActionControls() {
             {/* Break Modal Trigger */}
             <Dialog open={isBreakModalOpen} onOpenChange={setIsBreakModalOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/50">
                   <Coffee className="mr-1.5 h-4 w-4" /> Break
                 </Button>
               </DialogTrigger>

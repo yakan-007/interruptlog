@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import useEventsStore from '@/store/useEventsStore';
 
 interface TaskCardTimerProps {
   startTime: number;
+  myTaskId: string;
 }
 
-const formatTaskTime = (startTime: number): string => {
+const formatTaskTime = (startTime: number, accumulatedDuration: number): string => {
   const now = Date.now();
-  let totalSeconds = Math.floor((now - startTime) / 1000);
-  if (totalSeconds < 0) totalSeconds = 0;
+  let currentSegmentSeconds = Math.floor((now - startTime) / 1000);
+  if (currentSegmentSeconds < 0) currentSegmentSeconds = 0;
+
+  const totalSeconds = currentSegmentSeconds + Math.floor(accumulatedDuration / 1000);
 
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
@@ -17,18 +21,27 @@ const formatTaskTime = (startTime: number): string => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
-const TaskCardTimer: React.FC<TaskCardTimerProps> = ({ startTime }) => {
-  const [elapsedTime, setElapsedTime] = useState(() => formatTaskTime(startTime));
+const TaskCardTimer: React.FC<TaskCardTimerProps> = ({ startTime, myTaskId }) => {
+  const getTaskTotalDuration = useEventsStore((state) => state.actions.getTaskTotalDuration);
+  const [accumulatedDuration, setAccumulatedDuration] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState('');
 
   useEffect(() => {
-    setElapsedTime(formatTaskTime(startTime)); // startTimeが変わった時に即時更新
+    const pastDuration = getTaskTotalDuration(myTaskId);
+    setAccumulatedDuration(pastDuration);
+    setElapsedTime(formatTaskTime(startTime, pastDuration));
 
     const timerId = setInterval(() => {
-      setElapsedTime(formatTaskTime(startTime));
+      setElapsedTime(formatTaskTime(startTime, pastDuration));
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [startTime]);
+  }, [startTime, myTaskId, getTaskTotalDuration]);
+
+  if (!elapsedTime && startTime > 0) {
+    const pastDuration = getTaskTotalDuration(myTaskId);
+    return <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">({formatTaskTime(startTime, pastDuration)})</span>;
+  }
 
   return <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">({elapsedTime})</span>;
 };

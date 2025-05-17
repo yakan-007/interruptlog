@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { PlusCircle, Trash2, Play } from 'lucide-react';
+import { PlusCircle, Trash2, Play, GripVertical } from 'lucide-react';
 import TaskCardTimer from '@/components/TaskCardTimer';
 
 export default function LogPage() {
   const { events, currentEventId, myTasks, isHydrated, actions } = useEventsStore();
   const [newEventLabel, setNewEventLabel] = useState('');
   const [newTaskName, setNewTaskName] = useState('');
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
 
   const activeEvent = currentEventId ? events.find((e) => e.id === currentEventId) : undefined;
 
@@ -51,10 +53,23 @@ export default function LogPage() {
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
+    setDraggingTaskId(taskId);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, taskId: string) => {
     e.preventDefault();
+    if (taskId !== draggingTaskId) {
+      setDragOverTaskId(taskId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTaskId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTaskId(null);
+    setDragOverTaskId(null);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => {
@@ -63,6 +78,8 @@ export default function LogPage() {
       const targetIndex = sortedMyTasks.findIndex((t) => t.id === targetTaskId);
       actions.reorderMyTasks(draggedTaskId, targetIndex);
     }
+    setDraggingTaskId(null);
+    setDragOverTaskId(null);
   };
 
   return (
@@ -77,6 +94,11 @@ export default function LogPage() {
             type="text"
             value={newTaskName}
             onChange={(e) => setNewTaskName(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleAddNewTask();
+              }
+            }}
             placeholder="New task name"
             className="flex-grow"
           />
@@ -88,13 +110,27 @@ export default function LogPage() {
           {sortedMyTasks.map((task) => (
             <Card
               key={task.id}
-              className="flex items-center justify-between p-3"
-              draggable
-              onDragStart={(e) => handleDragStart(e, task.id)}
-              onDragOver={handleDragOver}
+              id={`task-card-${task.id}`}
+              className={`flex items-center justify-between p-3 transition-all ${
+                activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end ? 'bg-green-100 dark:bg-green-800 border-green-400 dark:border-green-600' : ''
+              } ${
+                draggingTaskId === task.id ? 'opacity-75 shadow-2xl scale-105 transform' : ''
+              } ${
+                dragOverTaskId === task.id && draggingTaskId !== task.id ? 'border-2 border-blue-500 dark:border-blue-300 ring-2 ring-blue-300' : ''
+              }`}
+              onDragOver={(e) => handleDragOver(e, task.id)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, task.id)}
+              onDragEnd={handleDragEnd}
             >
-              <div className="flex items-center">
+              <div className="flex items-center flex-grow mr-2">
+                <div
+                  className="cursor-grab p-1 mr-2"
+                  draggable="true"
+                  onDragStart={(e) => handleDragStart(e, task.id)}
+                >
+                  <GripVertical className="h-5 w-5 text-gray-400" />
+                </div>
                 <Checkbox
                   checked={task.isCompleted}
                   onChange={() => handleToggleTaskCompletion(task.id)}
@@ -103,34 +139,44 @@ export default function LogPage() {
                 />
                 <label
                   htmlFor={`task-${task.id}`}
-                  className={task.isCompleted ? 'line-through text-gray-500' : ''}
+                  className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow`}
                 >
                   {task.name}
                 </label>
-                {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && (
-                  <TaskCardTimer startTime={activeEvent.start} />
-                )}
               </div>
-              <div className="flex gap-2">
-                {!task.isCompleted && (
+              <div className="flex items-center">
+                {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && (
+                  <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />
+                )}
+                <div className="flex gap-2 ml-2">
+                  {!task.isCompleted && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStartEvent(task.name, task.id)}
+                      disabled={(
+                        activeEvent && 
+                        !activeEvent.end && 
+                        activeEvent.meta?.myTaskId === task.id
+                      ) || (
+                        activeEvent && 
+                        !activeEvent.end && 
+                        (activeEvent.type === 'interrupt' || activeEvent.type === 'break')
+                      )}
+                      title="Start this task"
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => handleStartEvent(task.name, task.id)}
-                    disabled={!!activeEvent}
-                    title="Start this task"
+                    variant="destructive"
+                    onClick={() => handleDeleteTask(task.id)}
+                    title="Delete this task"
                   >
-                    <Play className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDeleteTask(task.id)}
-                  title="Delete this task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                </div>
               </div>
             </Card>
           ))}

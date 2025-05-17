@@ -35,6 +35,7 @@ export interface EventsState {
     hydrate: () => Promise<void>;
     toggleMyTaskCompletion: (taskId: string) => void;
     reorderMyTasks: (taskId: string, newOrder: number) => void;
+    getTaskTotalDuration: (taskId: string) => number;
   };
 }
 
@@ -221,6 +222,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       remainingTasks.splice(newOrder, 0, taskToMove);
       
       set({ myTasks: reassignOrder(remainingTasks) });
+    },
+    getTaskTotalDuration: (taskId: string) => {
+      const { events } = get();
+      return events.reduce((total, event) => {
+        if (event.meta?.myTaskId === taskId && event.end) {
+          return total + (event.end - event.start);
+        }
+        return total;
+      }, 0);
     },
   },
 });
