@@ -1,0 +1,96 @@
+'use client';
+
+import React from 'react';
+import useEventsStore, { EventsState } from '@/store/useEventsStore';
+import { Event } from '@/types';
+import EventList from '@/components/EventList';
+import StatBar from '@/components/StatBar';
+
+const ReportPage = () => {
+  const { events, isHydrated } = useEventsStore((state: EventsState) => ({ 
+    events: state.events,
+    isHydrated: state.isHydrated 
+  }));
+
+  if (!isHydrated) {
+    return <div className="p-4 text-center">Loading report data...</div>;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const todaysEvents = events.filter(event => {
+    const eventDate = new Date(event.start);
+    return eventDate >= today && eventDate < tomorrow;
+  });
+
+  const calculateTotalTime = (type: 'task' | 'interrupt' | 'break') => {
+    return todaysEvents
+      .filter(event => event.type === type && event.end)
+      .reduce((total, event) => total + (event.end! - event.start), 0);
+  };
+
+  const totalFocusTime = calculateTotalTime('task');
+  const totalInterruptTime = calculateTotalTime('interrupt');
+  const totalBreakTime = calculateTotalTime('break');
+
+  const chartData = [
+    { name: 'Task', value: totalFocusTime, fill: '#34D399' }, // Green
+    { name: 'Interrupt', value: totalInterruptTime, fill: '#F87171' }, // Red
+    { name: 'Break', value: totalBreakTime, fill: '#9CA3AF' }, // Gray
+  ];
+
+  const last10Events = [...todaysEvents]
+    .sort((a, b) => b.start - a.start)
+    .slice(0, 10);
+
+  return (
+    <div className="p-4">
+      <h1 className="mb-6 text-center text-2xl font-semibold">Today&apos;s Report</h1>
+
+      <div className="mb-8 grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Focus</p>
+          <p className="text-xl font-bold">{formatDuration(totalFocusTime)}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Interrupts</p>
+          <p className="text-xl font-bold">{formatDuration(totalInterruptTime)}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Breaks</p>
+          <p className="text-xl font-bold">{formatDuration(totalBreakTime)}</p>
+        </div>
+      </div>
+
+      {todaysEvents.length > 0 ? (
+         <div className="mb-8 h-60 w-full">
+            <StatBar data={chartData} />
+        </div>
+      ) : (
+        <p className="text-center text-gray-500 dark:text-gray-400">No data for today to display chart.</p>
+      )}
+
+      <h2 className="mb-3 text-xl font-semibold">Last 10 Events Today</h2>
+      {last10Events.length > 0 ? (
+        <EventList events={last10Events} />
+      ) : (
+        <p className="text-center text-gray-500 dark:text-gray-400">No events logged today.</p>
+      )}
+    </div>
+  );
+};
+
+// Helper function to format duration (ms to hh:mm:ss)
+const formatDuration = (ms: number) => {
+  if (ms <= 0) return '00:00:00';
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
+
+export default ReportPage; 
