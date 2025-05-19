@@ -10,7 +10,7 @@ import FloatingActionControls from '@/components/FloatingActionControls';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'InterruptLog Slim',
+  title: 'InterruptLog',
   description: 'Minimal MVP for InterruptLog',
 };
 

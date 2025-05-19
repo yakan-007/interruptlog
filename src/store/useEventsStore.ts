@@ -17,13 +17,16 @@ const reassignOrder = (tasks: MyTask[]): MyTask[] => {
 export interface EventsState {
   events: Event[];
   currentEventId: string | null;
+  previousTaskIdBeforeInterrupt: string | null;
   myTasks: MyTask[];
   isHydrated: boolean;
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
     stopCurrentEvent: () => void;
-    startInterrupt: (label?: string) => void;
-    startBreak: (label?: string) => void;
+    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
+    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
+    stopInterruptAndResumePreviousTask: () => void;
+    startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
     addEvent: (event: Event) => void;
     updateEvent: (event: Event) => void;
     setEvents: (events: Event[]) => void;
@@ -36,45 +39,50 @@ export interface EventsState {
     toggleMyTaskCompletion: (taskId: string) => void;
     reorderMyTasks: (taskId: string, newOrder: number) => void;
     getTaskTotalDuration: (taskId: string) => number;
+    cancelCurrentInterruptAndResumeTask: () => void;
+    _persistEventsState: () => void;
+    _persistMyTasksState: () => void;
+    stopBreakAndResumePreviousTask: () => void;
   };
 }
 
 const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   events: [],
   currentEventId: null,
+  previousTaskIdBeforeInterrupt: null,
   myTasks: [],
   isHydrated: false,
   actions: {
     hydrate: async () => {
       if (get().isHydrated || (typeof window !== 'undefined' && (window as any).__eventStoreHydrating)) {
-        console.log('[useEventsStore] Hydration already in progress or completed. Skipping.');
         return;
       }
       if (typeof window !== 'undefined') {
         (window as any).__eventStoreHydrating = true;
       }
 
-      console.log('[useEventsStore] Hydration started.');
       if (typeof window === 'undefined') {
-        console.log('[useEventsStore] Hydrating on server, setting isHydrated to true.');
-        set({ isHydrated: true }); // Server-side hydration, set and return
+        set({ isHydrated: true });
         if (typeof window !== 'undefined') {
-          (window as any).__eventStoreHydrating = false; // Reset flag even on server path if window was defined for some reason
+          (window as any).__eventStoreHydrating = false; 
         }
         return;
       }
+
       try {
-        console.log('[useEventsStore] Attempting to load from IndexedDB...');
-        const storedEventsState = await dbGet<{ events: Event[]; currentEventId: string | null }>(EVENTS_STORE_KEY);
+        const storedEventsState = await dbGet<{ events: Event[]; currentEventId: string | null; previousTaskIdBeforeInterrupt?: string | null }>(EVENTS_STORE_KEY);
         if (storedEventsState) {
-          console.log('[useEventsStore] Loaded events state:', storedEventsState);
-          set({ events: storedEventsState.events, currentEventId: storedEventsState.currentEventId });
+          set({ 
+            events: storedEventsState.events || [],
+            currentEventId: storedEventsState.currentEventId,
+            previousTaskIdBeforeInterrupt: storedEventsState.previousTaskIdBeforeInterrupt || null,
+           });
         } else {
-          console.log('[useEventsStore] No stored events state found in IndexedDB.');
+          set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null });
         }
+
         const storedMyTasks = await dbGet<MyTask[]>(MY_TASKS_STORE_KEY);
         if (storedMyTasks) {
-          console.log('[useEventsStore] Loaded myTasks:', storedMyTasks);
           const hydratedTasks = storedMyTasks.map((task, index) => ({
             ...task,
             isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
@@ -82,13 +90,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           }));
           set({ myTasks: sortMyTasks(hydratedTasks) });
         } else {
-          console.log('[useEventsStore] No stored myTasks found in IndexedDB.');
+          set({ myTasks: [] });
         }
-        console.log('[useEventsStore] IndexedDB load successful (or no data).');
       } catch (error) {
         console.error('[useEventsStore] Failed to hydrate from IndexedDB:', error);
+        set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null, myTasks: [], isHydrated: false });
       }
-      console.log('[useEventsStore] Setting isHydrated to true.');
+
       set({ isHydrated: true });
       if (typeof window !== 'undefined') {
         (window as any).__eventStoreHydrating = false;
@@ -97,8 +105,9 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     startTask: (label?: string, myTaskId?: string) => {
       const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
       if (currentRunningEvent && !currentRunningEvent.end) {
-        get().actions.stopCurrentEvent(); 
+        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
       }
+      set({ previousTaskIdBeforeInterrupt: null });
       
       const newEvent: Event = {
         id: uuidv4(),
@@ -125,136 +134,282 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           get().actions.updateEvent({ ...eventToEnd, end: Date.now() });
         }
       }
-      set({ currentEventId: null });
+      set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
     },
-    startInterrupt: (label?: string) => {
-      const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
-      if (currentRunningEvent && currentRunningEvent.type === 'task' && !currentRunningEvent.end) {
-        get().actions.stopCurrentEvent();
+    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
+      const { events, currentEventId } = get();
+      let previousActiveEventId: string | null = null;
+
+      const currentRunningEvent = events.find(e => e.id === currentEventId);
+      if (currentRunningEvent && !currentRunningEvent.end) {
+        if (currentRunningEvent.type === 'task') {
+           previousActiveEventId = currentRunningEvent.id;
+        }
+        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
       }
+      
+      set({ previousTaskIdBeforeInterrupt: previousActiveEventId });
+
       const newEvent: Event = {
         id: uuidv4(),
         type: 'interrupt',
-        label,
+        label: data?.label || '割り込み中...', 
         start: Date.now(),
+        who: data?.who,
+        interruptType: data?.interruptType,
+        urgency: data?.urgency,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
     },
-    startBreak: (label?: string) => {
-      const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
-      if (currentRunningEvent && currentRunningEvent.type === 'task' && !currentRunningEvent.end) {
-        get().actions.stopCurrentEvent();
+    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
+      const { events, currentEventId } = get();
+      if (currentEventId) {
+        const interruptEvent = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
+        if (interruptEvent) {
+          const updatedEvent = {
+            ...interruptEvent,
+            label: data.label || interruptEvent.label, 
+            who: data.who !== undefined ? data.who : interruptEvent.who,
+            interruptType: data.interruptType !== undefined ? data.interruptType : interruptEvent.interruptType,
+            urgency: data.urgency !== undefined ? data.urgency : interruptEvent.urgency,
+          };
+          get().actions.updateEvent(updatedEvent);
+        } else {
+          console.warn('[useEventsStore] updateInterruptDetails: No active interrupt event found to update.');
+        }
       }
+    },
+    stopInterruptAndResumePreviousTask: () => {
+      const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
+      
+      if (currentEventId) {
+        const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
+        if (interruptToEnd && !interruptToEnd.end) {
+          get().actions.updateEvent({ ...interruptToEnd, end: Date.now() });
+        }
+      }
+
+      if (previousTaskIdBeforeInterrupt) {
+        const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
+        if (taskEventToResume) {
+          const myTaskDetails = get().myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
+          
+          const newResumedTaskEvent: Event = {
+            id: uuidv4(),
+            type: 'task',
+            label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
+            start: Date.now(),
+            meta: taskEventToResume.meta,
+          };
+          get().actions.addEvent(newResumedTaskEvent);
+          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
+        } else {
+           console.warn('[useEventsStore] stopInterruptAndResumePreviousTask: Previous task event not found.');
+           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        }
+      } else {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      }
+    },
+    startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => {
+      const { currentEventId, events } = get();
+      const currentRunningEvent = events.find(e => e.id === currentEventId);
+
+      if (currentRunningEvent && !currentRunningEvent.end) {
+        if (currentRunningEvent.type === 'task') {
+          set({ previousTaskIdBeforeInterrupt: currentEventId });
+        }
+        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
+      }
+
       const newEvent: Event = {
         id: uuidv4(),
         type: 'break',
-        label,
+        label: data.label || 'Break',
         start: Date.now(),
+        breakType: data.breakType,
+        breakDurationMinutes: data.breakDurationMinutes,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
     },
+    stopBreakAndResumePreviousTask: () => {
+      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
+      if (currentEventId) {
+        const breakEvt = events.find(e => e.id === currentEventId && e.type === 'break');
+        if (breakEvt && !breakEvt.end) {
+          get().actions.updateEvent({ ...breakEvt, end: Date.now() });
+        }
+      }
+      if (previousTaskIdBeforeInterrupt) {
+        const prevTaskEvt = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
+        if (prevTaskEvt) {
+          const myTaskDetails = myTasks.find(mt => mt.id === prevTaskEvt.meta?.myTaskId);
+          const resumedEvent: Event = {
+            id: uuidv4(),
+            type: 'task',
+            label: prevTaskEvt.label || myTaskDetails?.name || 'Resumed Task',
+            start: Date.now(),
+            meta: prevTaskEvt.meta,
+          };
+          get().actions.addEvent(resumedEvent);
+          set({ currentEventId: resumedEvent.id, previousTaskIdBeforeInterrupt: null });
+        } else {
+          set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        }
+      } else {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      }
+      get().actions._persistEventsState();
+    },
+    _persistEventsState: () => {
+      const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
+      dbSet(EVENTS_STORE_KEY, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
+        console.error('[useEventsStore] Error persisting events state to IndexedDB:', error);
+      });
+    },
+    _persistMyTasksState: () => {
+      const { myTasks } = get();
+      dbSet(MY_TASKS_STORE_KEY, myTasks).catch(error => {
+        console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
+      });
+    },
     addEvent: (event: Event) => {
       set((state: EventsState) => ({ events: [...state.events, event] }));
+      get().actions._persistEventsState();
     },
     updateEvent: (eventToUpdate: Event) => {
       set((state: EventsState) => ({
         events: state.events.map((e: Event) => (e.id === eventToUpdate.id ? eventToUpdate : e)),
       }));
+      get().actions._persistEventsState();
     },
-    setEvents: (events: Event[]) => set({ events }),
-    setCurrentEventId: (id: string | null) => set({ currentEventId: id }),
-    addMyTask: (name: string) => {
-      console.log('[useEventsStore] addMyTask called with name:', name);
-      if (!name.trim()) {
-        console.log('[useEventsStore] addMyTask: name is empty, returning.');
-        return;
+    setEvents: (events: Event[]) => {
+      set({ events });
+      get().actions._persistEventsState();
+    },
+    setCurrentEventId: (id: string | null) => {
+      set({ currentEventId: id });
+      if (id === null && !get().previousTaskIdBeforeInterrupt) {
+         set({ previousTaskIdBeforeInterrupt: null });
       }
+      get().actions._persistEventsState();
+    },
+    addMyTask: (name: string) => {
+      if (!name.trim()) return;
       const currentTasks = get().myTasks;
-      console.log('[useEventsStore] addMyTask: currentTasks:', currentTasks);
       const newTask: MyTask = {
         id: uuidv4(),
         name: name.trim(),
         isCompleted: false,
         order: currentTasks.length,
       };
-      console.log('[useEventsStore] addMyTask: newTask:', newTask);
-      set({ myTasks: sortMyTasks([...currentTasks, newTask]) });
-      console.log('[useEventsStore] addMyTask: state updated. New myTasks:', get().myTasks);
+      const updatedTasks = sortMyTasks([...currentTasks, newTask]);
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
     },
     removeMyTask: (id: string) => {
-      const remainingTasks = get().myTasks.filter(task => task.id !== id);
-      set({ myTasks: reassignOrder(sortMyTasks(remainingTasks)) });
+      const currentTasks = get().myTasks;
+      const remainingTasks = currentTasks.filter(task => task.id !== id);
+      const updatedTasks = reassignOrder(sortMyTasks(remainingTasks));
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
     },
     updateMyTask: (id: string, newName: string) => {
-      if (!newName.trim()) return;
-      set((state: EventsState) => ({
-        myTasks: sortMyTasks(state.myTasks.map(task =>
-          task.id === id ? { ...task, name: newName.trim() } : task
-        )),
-      }));
+      const currentTasks = get().myTasks;
+      const updatedTasks = currentTasks.map(task =>
+        task.id === id ? { ...task, name: newName } : task
+      );
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
     },
-    setMyTasks: (tasksToSet: MyTask[]) => {
-      const processedTasks = tasksToSet.map((task, index) => ({
+    setMyTasks: (tasks: MyTask[]) => {
+      const sortedTasks = sortMyTasks(tasks.map((task, index) => ({
         ...task,
         isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
         order: task.order === undefined ? index : task.order,
-      }));
-      set({ myTasks: sortMyTasks(processedTasks) });
+      })));
+      set({ myTasks: sortedTasks });
+      get().actions._persistMyTasksState();
     },
     toggleMyTaskCompletion: (taskId: string) => {
-      set((state: EventsState) => ({
-        myTasks: sortMyTasks(state.myTasks.map(task =>
+      const currentTasks = get().myTasks;
+      const updatedTasks = currentTasks.map(task =>
           task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
-        )),
-      }));
+      );
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
     },
-    reorderMyTasks: (taskId: string, newOrderInput: number) => {
-      let tasks = get().myTasks;
-      const taskToMove = tasks.find(t => t.id === taskId);
+    reorderMyTasks: (taskId: string, newOrder: number) => {
+      const currentTasks = get().myTasks;
+      const taskToMove = currentTasks.find(t => t.id === taskId);
       if (!taskToMove) return;
 
-      const remainingTasks = tasks.filter(t => t.id !== taskId);
-      
-      const newOrder = Math.max(0, Math.min(newOrderInput, remainingTasks.length));
-
+      const remainingTasks = currentTasks.filter(t => t.id !== taskId);
       remainingTasks.splice(newOrder, 0, taskToMove);
       
-      set({ myTasks: reassignOrder(remainingTasks) });
+      const updatedTasks = reassignOrder(remainingTasks);
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
     },
     getTaskTotalDuration: (taskId: string) => {
-      const { events } = get();
-      return events.reduce((total, event) => {
-        if (event.meta?.myTaskId === taskId && event.end) {
-          return total + (event.end - event.start);
+        const { events } = get();
+        return events
+          .filter(event => event.type === 'task' && event.meta?.myTaskId === taskId && event.end)
+          .reduce((total, event) => total + (event.end! - event.start), 0);
+    },
+    cancelCurrentInterruptAndResumeTask: () => {
+      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
+      if (currentEventId) {
+        const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
+        if (interruptToEnd && !interruptToEnd.end) {
+          get().actions.updateEvent({ ...interruptToEnd, end: Date.now() });
         }
-        return total;
-      }, 0);
+      }
+
+      if (previousTaskIdBeforeInterrupt) {
+        const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
+        if (taskEventToResume) {
+          const myTaskDetails = myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
+          const newResumedTaskEvent: Event = {
+            id: uuidv4(),
+            type: 'task',
+            label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
+            start: Date.now(),
+            meta: taskEventToResume.meta,
+          };
+          get().actions.addEvent(newResumedTaskEvent);
+          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
+        } else {
+           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        }
+      } else {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      }
+      get().actions._persistEventsState();
     },
   },
 });
 
-const useEventsStore: UseBoundStore<StoreApi<EventsState>> = create<EventsState>(storeCreator);
+const useEventsStore = create<EventsState>(storeCreator);
 
-useEventsStore.subscribe(
-  (state) => {
-    if (state.isHydrated && typeof window !== 'undefined') {
-      const tasksToSave = sortMyTasks(state.myTasks);
-      console.log('[useEventsStore subscribe] Saving events to IndexedDB:', { events: state.events, currentEventId: state.currentEventId });
-      dbSet(EVENTS_STORE_KEY, { events: state.events, currentEventId: state.currentEventId });
-      console.log('[useEventsStore subscribe] Saving myTasks to IndexedDB:', tasksToSave);
-      dbSet(MY_TASKS_STORE_KEY, tasksToSave)
-        .then(() => console.log('[useEventsStore subscribe] myTasks successfully saved to IndexedDB.'))
-        .catch(err => console.error('[useEventsStore subscribe] Error saving myTasks to IndexedDB:', err));
-    } else {
-      // console.log('[useEventsStore subscribe] Not saving to DB. isHydrated:', state.isHydrated, 'typeof window:', typeof window);
+if (typeof window !== 'undefined') {
+  (async () => {
+    try {
+      await useEventsStore.getState().actions.hydrate();
+      const store = useEventsStore.getState();
+      
+      if (store.currentEventId) {
+        const currentEvent = store.events.find(e => e.id === store.currentEventId);
+        if (currentEvent && !currentEvent.end) {
+          store.actions.stopCurrentEvent();
+        }
+      }
+    } catch (error) {
+      console.error("[useEventsStore] Error during initial hydration:", error);
     }
-  }
-);
-
-// if (typeof window !== 'undefined') {
-//   useEventsStore.getState().actions.hydrate();
-// }
+  })();
+}
 
 export default useEventsStore; 

@@ -26,10 +26,6 @@ export default function LogPage() {
     }
   }, [activeEvent, isHydrated]);
 
-  // if (!isHydrated) { // This check is handled by ClientProviders
-  //   return <p className="p-4">Loading store...</p>;
-  // }
-
   const handleStartEvent = (label: string, taskId?: string) => {
     actions.startTask(label, taskId);
   };
@@ -145,15 +141,15 @@ export default function LogPage() {
                 </label>
               </div>
               <div className="flex items-center">
-                {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && (
+                {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && activeEvent.start > 0 && (
                   <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />
                 )}
                 <div className="flex gap-2 ml-2">
-                  {!task.isCompleted && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStartEvent(task.name, task.id)}
+                {!task.isCompleted && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleStartEvent(task.name, task.id)}
                       disabled={(
                         activeEvent && 
                         !activeEvent.end && 
@@ -163,19 +159,19 @@ export default function LogPage() {
                         !activeEvent.end && 
                         (activeEvent.type === 'interrupt' || activeEvent.type === 'break')
                       )}
-                      title="Start this task"
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDeleteTask(task.id)}
-                    title="Delete this task"
+                    title="Start this task"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Play className="h-4 w-4" />
                   </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleDeleteTask(task.id)}
+                  title="Delete this task"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
                 </div>
               </div>
             </Card>

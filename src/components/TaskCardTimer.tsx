@@ -10,9 +10,7 @@ interface TaskCardTimerProps {
 
 const formatTaskTime = (startTime: number, accumulatedDuration: number): string => {
   const now = Date.now();
-  let currentSegmentSeconds = Math.floor((now - startTime) / 1000);
-  if (currentSegmentSeconds < 0) currentSegmentSeconds = 0;
-
+  const currentSegmentSeconds = Math.max(0, Math.floor((now - startTime) / 1000));
   const totalSeconds = currentSegmentSeconds + Math.floor(accumulatedDuration / 1000);
 
   const h = Math.floor(totalSeconds / 3600);
