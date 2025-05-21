@@ -15,7 +15,7 @@ const DEFAULT_FORM: BreakFormState = {
 };
 
 export default function useBreakModal() {
-  const { startBreak, updateEvent, stopBreakAndResumePreviousTask, stopCurrentEvent } = useEventsStore((s) => s.actions);
+  const { startBreak, updateEvent, stopBreakAndResumePreviousTask, stopCurrentEvent, discardCurrentEventAndResumePreviousTask } = useEventsStore((s) => s.actions);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<BreakFormState>(DEFAULT_FORM);
 
@@ -65,9 +65,9 @@ export default function useBreakModal() {
 
   // モーダルキャンセル時も休憩終了→前タスク再開
   const handleCancelBreak = useCallback(() => {
-    stopBreakAndResumePreviousTask();
+    discardCurrentEventAndResumePreviousTask();
     setOpen(false);
-  }, [stopBreakAndResumePreviousTask]);
+  }, [discardCurrentEventAndResumePreviousTask]);
 
   return {
     isBreakModalOpen: open,

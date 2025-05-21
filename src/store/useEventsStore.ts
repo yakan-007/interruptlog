@@ -43,6 +43,9 @@ export interface EventsState {
     _persistEventsState: () => void;
     _persistMyTasksState: () => void;
     stopBreakAndResumePreviousTask: () => void;
+    discardCurrentEventAndResumePreviousTask: () => void;
+    _endCurrentEvent: (eventId?: string | null) => void;
+    _resumePreviousTask: (previousTaskId: string | null) => void;
   };
 }
 
@@ -53,6 +56,37 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   myTasks: [],
   isHydrated: false,
   actions: {
+    _endCurrentEvent: (eventId?: string | null) => {
+      const targetEventId = eventId || get().currentEventId;
+      if (targetEventId) {
+        const eventToEnd = get().events.find(e => e.id === targetEventId);
+        if (eventToEnd && !eventToEnd.end) {
+          get().actions.updateEvent({ ...eventToEnd, end: Date.now() });
+        }
+      }
+    },
+    _resumePreviousTask: (previousTaskId: string | null) => {
+      if (previousTaskId) {
+        const taskEventToResume = get().events.find(e => e.id === previousTaskId && e.type === 'task');
+        if (taskEventToResume) {
+          const myTaskDetails = get().myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
+          const newResumedTaskEvent: Event = {
+            id: uuidv4(),
+            type: 'task',
+            label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
+            start: Date.now(),
+            meta: taskEventToResume.meta,
+          };
+          get().actions.addEvent(newResumedTaskEvent);
+          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
+        } else {
+          console.warn('[_resumePreviousTask] Previous task event not found:', previousTaskId);
+          set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        }
+      } else {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      }
+    },
     hydrate: async () => {
       if (get().isHydrated || (typeof window !== 'undefined' && (window as any).__eventStoreHydrating)) {
         return;
@@ -103,10 +137,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     startTask: (label?: string, myTaskId?: string) => {
-      const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
-      if (currentRunningEvent && !currentRunningEvent.end) {
-        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
-      }
+      get().actions._endCurrentEvent();
       set({ previousTaskIdBeforeInterrupt: null });
       
       const newEvent: Event = {
@@ -127,26 +158,18 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     stopCurrentEvent: () => {
-      const { events, currentEventId } = get();
-      if (currentEventId) {
-        const eventToEnd = events.find(e => e.id === currentEventId);
-        if (eventToEnd && !eventToEnd.end) {
-          get().actions.updateEvent({ ...eventToEnd, end: Date.now() });
-        }
-      }
+      get().actions._endCurrentEvent();
       set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
     },
     startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
       const { events, currentEventId } = get();
       let previousActiveEventId: string | null = null;
 
-      const currentRunningEvent = events.find(e => e.id === currentEventId);
-      if (currentRunningEvent && !currentRunningEvent.end) {
-        if (currentRunningEvent.type === 'task') {
-           previousActiveEventId = currentRunningEvent.id;
-        }
-        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
+      const currentEvent = events.find(e => e.id === currentEventId);
+      if (currentEvent && currentEvent.type === 'task' && !currentEvent.end) {
+        previousActiveEventId = currentEvent.id;
       }
+      get().actions._endCurrentEvent();
       
       set({ previousTaskIdBeforeInterrupt: previousActiveEventId });
 
@@ -181,47 +204,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     stopInterruptAndResumePreviousTask: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
-      
-      if (currentEventId) {
-        const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
-        if (interruptToEnd && !interruptToEnd.end) {
-          get().actions.updateEvent({ ...interruptToEnd, end: Date.now() });
-        }
-      }
-
-      if (previousTaskIdBeforeInterrupt) {
-        const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
-        if (taskEventToResume) {
-          const myTaskDetails = get().myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
-          
-          const newResumedTaskEvent: Event = {
-            id: uuidv4(),
-            type: 'task',
-            label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
-            start: Date.now(),
-            meta: taskEventToResume.meta,
-          };
-          get().actions.addEvent(newResumedTaskEvent);
-          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
-        } else {
-           console.warn('[useEventsStore] stopInterruptAndResumePreviousTask: Previous task event not found.');
-           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        }
-      } else {
-        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-      }
+      get().actions._endCurrentEvent();
+      get().actions._resumePreviousTask(get().previousTaskIdBeforeInterrupt);
     },
     startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => {
       const { currentEventId, events } = get();
-      const currentRunningEvent = events.find(e => e.id === currentEventId);
-
-      if (currentRunningEvent && !currentRunningEvent.end) {
-        if (currentRunningEvent.type === 'task') {
-          set({ previousTaskIdBeforeInterrupt: currentEventId });
-        }
-        get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
+      const currentEvent = events.find(e => e.id === currentEventId);
+      if (currentEvent && currentEvent.type === 'task' && !currentEvent.end) {
+        set({ previousTaskIdBeforeInterrupt: currentEvent.id });
       }
+      get().actions._endCurrentEvent();
 
       const newEvent: Event = {
         id: uuidv4(),
@@ -235,32 +227,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       set({ currentEventId: newEvent.id });
     },
     stopBreakAndResumePreviousTask: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
-      if (currentEventId) {
-        const breakEvt = events.find(e => e.id === currentEventId && e.type === 'break');
-        if (breakEvt && !breakEvt.end) {
-          get().actions.updateEvent({ ...breakEvt, end: Date.now() });
-        }
-      }
-      if (previousTaskIdBeforeInterrupt) {
-        const prevTaskEvt = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
-        if (prevTaskEvt) {
-          const myTaskDetails = myTasks.find(mt => mt.id === prevTaskEvt.meta?.myTaskId);
-          const resumedEvent: Event = {
-            id: uuidv4(),
-            type: 'task',
-            label: prevTaskEvt.label || myTaskDetails?.name || 'Resumed Task',
-            start: Date.now(),
-            meta: prevTaskEvt.meta,
-          };
-          get().actions.addEvent(resumedEvent);
-          set({ currentEventId: resumedEvent.id, previousTaskIdBeforeInterrupt: null });
-        } else {
-          set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        }
-      } else {
-        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-      }
+      get().actions._endCurrentEvent();
+      get().actions._resumePreviousTask(get().previousTaskIdBeforeInterrupt);
       get().actions._persistEventsState();
     },
     _persistEventsState: () => {
@@ -360,33 +328,18 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           .reduce((total, event) => total + (event.end! - event.start), 0);
     },
     cancelCurrentInterruptAndResumeTask: () => {
+      get().actions._endCurrentEvent();
+      get().actions._resumePreviousTask(get().previousTaskIdBeforeInterrupt);
+      get().actions._persistEventsState();
+    },
+    discardCurrentEventAndResumePreviousTask: () => {
       const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
       if (currentEventId) {
-        const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
-        if (interruptToEnd && !interruptToEnd.end) {
-          get().actions.updateEvent({ ...interruptToEnd, end: Date.now() });
-        }
+        const updatedEvents = events.filter(e => e.id !== currentEventId);
+        set({ events: updatedEvents });
       }
 
-      if (previousTaskIdBeforeInterrupt) {
-        const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
-        if (taskEventToResume) {
-          const myTaskDetails = myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
-          const newResumedTaskEvent: Event = {
-            id: uuidv4(),
-            type: 'task',
-            label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
-            start: Date.now(),
-            meta: taskEventToResume.meta,
-          };
-          get().actions.addEvent(newResumedTaskEvent);
-          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
-        } else {
-           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        }
-      } else {
-        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-      }
+      get().actions._resumePreviousTask(previousTaskIdBeforeInterrupt);
       get().actions._persistEventsState();
     },
   },

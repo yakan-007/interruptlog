@@ -67,46 +67,34 @@ export default function FloatingActionControls() {
     handleCancelInterrupt,
     handleSaveInterrupt,
   } = useInterruptModal();
-  console.log('[FAC] isModalOpen from hook:', isModalOpen);
-
-  // 初回ハイドレーション後のタイマー制御用
-  const didRunInitialEffectAfterHydrationRef = useRef(false);
 
   // --- タイマー管理 ---
   useEffect(() => {
-    if (!isHydrated) {
-      didRunInitialEffectAfterHydrationRef.current = false;
-      return;
-    }
+    if (!isHydrated) return;
 
     const current = events.find(e => e.id === currentEventId);
     setActiveEvent(current);
 
-    let timerId: NodeJS.Timeout | undefined;
-
-    if (current && !current.end) {
-      setElapsedTime(formatElapsedTime(current.start));
-
-      if (!didRunInitialEffectAfterHydrationRef.current) {
-        didRunInitialEffectAfterHydrationRef.current = true;
-      } else {
-        timerId = setInterval(() => {
-          // ストアから最新のイベント情報を取得して経過時間を更新
-          const storeState = useEventsStore.getState();
-          const latestCurrentEvent = storeState.events.find(e => e.id === storeState.currentEventId);
-          if (latestCurrentEvent && !latestCurrentEvent.end) {
-            setElapsedTime(formatElapsedTime(latestCurrentEvent.start));
-          } else {
-            setElapsedTime('00:00:00');
-            if(timerId) clearInterval(timerId);
-          }
-        }, 1000);
-      }
-    } else {
+    if (!current || current.end) {
       setElapsedTime('00:00:00');
+      return;
     }
 
-    return () => { if (timerId) clearInterval(timerId); };
+    // 初回セット
+    setElapsedTime(formatElapsedTime(current.start));
+
+    const timerId = setInterval(() => {
+      const { events: latestEvents, currentEventId: latestId } = useEventsStore.getState();
+      const latest = latestEvents.find(e => e.id === latestId);
+      if (latest && !latest.end) {
+        setElapsedTime(formatElapsedTime(latest.start));
+      } else {
+        setElapsedTime('00:00:00');
+        clearInterval(timerId);
+      }
+    }, 1000);
+
+    return () => clearInterval(timerId);
   }, [currentEventId, events, isHydrated]);
 
   // --- イベント操作 ---
@@ -163,11 +151,17 @@ export default function FloatingActionControls() {
                 placeholder="例: コーヒーブレイク, アイデア出し"
                 value={breakFormState.label}
                 onChange={(e) => setBreakFormState({ ...breakFormState, label: e.target.value })}
-                onKeyPress={(e) => { if (e.key === 'Enter') handleSubmitBreak(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitBreak(); }}
                 className="mt-1"
               />
             </div>
           </div>
+          {/* Cancel 時にタスクへ加算される時間プレビュー */}
+          {isBreakEvent(activeEvent) && (
+            <p className="text-xs text-muted-foreground">
+              Cancel を押すと <strong>{elapsedTime}</strong> が元タスクに加算されます
+            </p>
+          )}
           <DialogFooter>
             <Button type="button" onClick={handleSubmitBreak} variant="destructive">
               保存して再開 / Save & Resume

@@ -25,7 +25,7 @@ const DEFAULT_FORM: InterruptFormState = {
  * を呼び出すだけで割り込みワークフローを実現できる。
  */
 export default function useInterruptModal() {
-  const { startInterrupt, updateInterruptDetails, stopInterruptAndResumePreviousTask, cancelCurrentInterruptAndResumeTask, stopCurrentEvent } = useEventsStore((s) => s.actions);
+  const { startInterrupt, updateInterruptDetails, stopInterruptAndResumePreviousTask, cancelCurrentInterruptAndResumeTask, stopCurrentEvent, discardCurrentEventAndResumePreviousTask } = useEventsStore((s) => s.actions);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<InterruptFormState>(DEFAULT_FORM);
 
@@ -66,9 +66,9 @@ export default function useInterruptModal() {
   }, [updateInterruptDetails, form, stopCurrentEvent]);
 
   const handleCancelInterrupt = useCallback(() => {
-    cancelCurrentInterruptAndResumeTask();
+    discardCurrentEventAndResumePreviousTask();
     setOpen(false);
-  }, [cancelCurrentInterruptAndResumeTask]);
+  }, [discardCurrentEventAndResumePreviousTask]);
 
   return {
     isModalOpen: open,
