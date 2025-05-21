@@ -23,8 +23,8 @@ export interface EventsState {
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
     stopCurrentEvent: () => void;
-    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
-    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
+    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High'; notes?: string }) => void;
+    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High'; notes?: string }) => void;
     stopInterruptAndResumePreviousTask: () => void;
     startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
     addEvent: (event: Event) => void;
@@ -161,7 +161,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       get().actions._endCurrentEvent();
       set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
     },
-    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
+    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High'; notes?: string }) => {
       const { events, currentEventId } = get();
       let previousActiveEventId: string | null = null;
 
@@ -181,21 +181,23 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         who: data?.who,
         interruptType: data?.interruptType,
         urgency: data?.urgency,
+        notes: data?.notes,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
     },
-    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
+    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High'; notes?: string }) => {
       const { events, currentEventId } = get();
       if (currentEventId) {
         const interruptEvent = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
         if (interruptEvent) {
-          const updatedEvent = {
+          const updatedEvent: Event = {
             ...interruptEvent,
             label: data.label || interruptEvent.label, 
             who: data.who !== undefined ? data.who : interruptEvent.who,
             interruptType: data.interruptType !== undefined ? data.interruptType : interruptEvent.interruptType,
             urgency: data.urgency !== undefined ? data.urgency : interruptEvent.urgency,
+            notes: data.notes !== undefined ? data.notes : interruptEvent.notes,
           };
           get().actions.updateEvent(updatedEvent);
         } else {

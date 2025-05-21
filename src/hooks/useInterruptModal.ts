@@ -7,6 +7,7 @@ export interface InterruptFormState {
   who: string;
   interruptType: Event['interruptType']; 
   urgency: Event['urgency'];
+  notes?: string;
 }
 
 const DEFAULT_FORM: InterruptFormState = {
@@ -14,6 +15,7 @@ const DEFAULT_FORM: InterruptFormState = {
   who: '',
   interruptType: 'Other',
   urgency: 'Medium',
+  notes: '',
 };
 
 /**
@@ -48,6 +50,7 @@ export default function useInterruptModal() {
       who: form.who.trim(),
       interruptType: form.interruptType,
       urgency: form.urgency,
+      notes: form.notes?.trim(),
     });
     stopInterruptAndResumePreviousTask();
     setOpen(false);
@@ -60,6 +63,7 @@ export default function useInterruptModal() {
       who: form.who.trim(),
       interruptType: form.interruptType,
       urgency: form.urgency,
+      notes: form.notes?.trim(),
     });
     stopCurrentEvent();
     setOpen(false);

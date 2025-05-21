@@ -4,6 +4,7 @@ export interface Event {
   label?: string; // optional free text
   start: number; // epoch ms
   end?: number; // epoch ms (undefined while running)
+  notes?: string; // 詳細なメモ (追加)
   meta?: {
     myTaskId?: string;
     // 他のメタ情報があればここに追加
