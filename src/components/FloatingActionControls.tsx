@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -12,38 +12,18 @@ import { Label } from "@/components/ui/label";
 import useInterruptModal from '@/hooks/useInterruptModal';
 import useBreakModal from '@/hooks/useBreakModal';
 import InterruptModal from '@/components/InterruptModal';
-
-// --- ユーティリティ ---
-// 経過時間をhh:mm:ssで返す
-const formatElapsedTime = (startTime: number): string => {
-  const now = Date.now();
-  const totalSeconds = Math.floor((now - startTime) / 1000);
-  if (totalSeconds < 0) return '00:00:00';
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
-
-// 休憩オプション定義
-const breakOptions = [
-  { value: 'short', label: '短い休憩', defaultMinutes: 5 },
-  { value: 'coffee', label: 'コーヒーブレイク', defaultMinutes: 15 },
-  { value: 'lunch', label: '昼休憩', defaultMinutes: 60 },
-  { value: 'custom', label: 'カスタム' },
-  { value: 'indefinite', label: '時間未定' },
-];
-
-// 型ガード: Eventが特定のtypeかどうか
-const isTaskEvent = (e?: Event): e is Event & { type: 'task' } => e?.type === 'task';
-const isInterruptEvent = (e?: Event): e is Event & { type: 'interrupt' } => e?.type === 'interrupt';
-const isBreakEvent = (e?: Event): e is Event & { type: 'break' } => e?.type === 'break';
+import BreakModal from '@/components/BreakModal';
+import { formatElapsedTime, isTaskEvent, isInterruptEvent, isBreakEvent } from '@/lib/utils';
+import { breakOptions } from '@/config/breakOptions';
+import useActiveTimer from '@/hooks/useActiveTimer';
+import { useI18n } from '@/locales/client';
+import { floatingControls, iconSizes, typography, colors } from '@/styles/tailwind-classes';
 
 export default function FloatingActionControls() {
+  const t = useI18n() as any;
   // --- ストア・状態管理 ---
-  const { currentEventId, events, actions, isHydrated } = useEventsStore();
-  const [activeEvent, setActiveEvent] = useState<Event | undefined>(undefined);
-  const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
+  const { actions } = useEventsStore();
+  const { activeEvent, elapsedTime } = useActiveTimer();
 
   // 休憩モーダル用カスタムフック
   const {
@@ -67,35 +47,6 @@ export default function FloatingActionControls() {
     handleCancelInterrupt,
     handleSaveInterrupt,
   } = useInterruptModal();
-
-  // --- タイマー管理 ---
-  useEffect(() => {
-    if (!isHydrated) return;
-
-    const current = events.find(e => e.id === currentEventId);
-    setActiveEvent(current);
-
-    if (!current || current.end) {
-      setElapsedTime('00:00:00');
-      return;
-    }
-
-    // 初回セット
-    setElapsedTime(formatElapsedTime(current.start));
-
-    const timerId = setInterval(() => {
-      const { events: latestEvents, currentEventId: latestId } = useEventsStore.getState();
-      const latest = latestEvents.find(e => e.id === latestId);
-      if (latest && !latest.end) {
-        setElapsedTime(formatElapsedTime(latest.start));
-      } else {
-        setElapsedTime('00:00:00');
-        clearInterval(timerId);
-      }
-    }, 1000);
-
-    return () => clearInterval(timerId);
-  }, [currentEventId, events, isHydrated]);
 
   // --- イベント操作 ---
   const handleStop = () => {
@@ -132,80 +83,48 @@ export default function FloatingActionControls() {
         startTime={isInterruptEvent(activeEvent) ? activeEvent.start : undefined}
       />
       {/* 休憩モーダル */}
-      <Dialog open={isBreakModalOpen} onOpenChange={(open) => { if (!open) handleCancelBreak(); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>休息中 / On Break</DialogTitle>
-            {/* 経過時間タイマー表示 */}
-            {isBreakEvent(activeEvent) && (
-              <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">
-                {elapsedTime}
-              </p>
-            )}
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div>
-              <Label htmlFor="break-label" className="text-base font-medium">休憩ラベル (任意)</Label>
-              <Input
-                id="break-label"
-                placeholder="例: コーヒーブレイク, アイデア出し"
-                value={breakFormState.label}
-                onChange={(e) => setBreakFormState({ ...breakFormState, label: e.target.value })}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitBreak(); }}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          {/* Cancel 時にタスクへ加算される時間プレビュー */}
-          {isBreakEvent(activeEvent) && (
-            <p className="text-xs text-muted-foreground">
-              Cancel を押すと <strong>{elapsedTime}</strong> が元タスクに加算されます
-            </p>
-          )}
-          <DialogFooter>
-            <Button type="button" onClick={handleSubmitBreak} variant="destructive">
-              保存して再開 / Save & Resume
-            </Button>
-            <Button type="button" variant="ghost" size="sm" className="mx-2" onClick={handleCancelBreak}>
-              キャンセル / Cancel
-            </Button>
-            <Button type="button" variant="outline" size="sm" className="ml-2" onClick={handleSaveBreak}>
-              保存 / Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BreakModal
+        isOpen={isBreakModalOpen}
+        onOpenChange={(open) => { if (!open) handleCancelBreak(); }}
+        formState={breakFormState}
+        setFormState={setBreakFormState}
+        onSubmit={handleSubmitBreak}
+        onSave={handleSaveBreak}
+        onCancel={handleCancelBreak}
+        elapsedTime={elapsedTime}
+        activeEvent={activeEvent}
+      />
 
       {(!isModalOpen && activeEvent && !activeEvent.end) && (
-        <div className="fixed bottom-16 left-0 right-0 z-20 flex flex-col items-center justify-between gap-2 border-t border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:gap-4">
-          <div className="flex items-center gap-3">
-            {isTaskEvent(activeEvent) && <Play className="h-5 w-5 text-green-500" />}
-            {isInterruptEvent(activeEvent) && <Zap className="h-5 w-5 text-yellow-500" />}
-            {isBreakEvent(activeEvent) && <Coffee className="h-5 w-5 text-blue-500" />}
-            <div className="text-sm">
-              <p className="font-medium truncate max-w-[150px] sm:max-w-xs" title={activeEvent?.label || 'No active event'}>
-                {activeEvent?.label || 'イベントなし'}
+        <div className={floatingControls.container}>
+          <div className={floatingControls.info}>
+            {isTaskEvent(activeEvent) && <Play className={`${iconSizes.md} ${colors.activeText}`} />}
+            {isInterruptEvent(activeEvent) && <Zap className={`${iconSizes.md} text-yellow-500`} />}
+            {isBreakEvent(activeEvent) && <Coffee className={`${iconSizes.md} text-blue-500`} />}
+            <div className={typography.textSm}>
+              <p className={`${typography.fontMedium} ${floatingControls.label}`} title={activeEvent?.label || t('controls.noActiveEvent')}>
+                {activeEvent?.label || t('controls.noActiveEvent')}
               </p>
-              <p className="text-base font-semibold text-blue-600 dark:text-blue-400">
+              <p className={`${typography.textBase} ${colors.timerText}`}>
                 {formatElapsedTime(activeEvent.start)}
               </p>
             </div>
           </div>
 
-          <div className="flex w-full gap-2 sm:w-auto">
+          <div className={floatingControls.controls}>
             {isTaskEvent(activeEvent) && (
-              <Button onClick={openInterruptModal} variant="outline" size="sm" className="flex-1 sm:flex-none border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:border-yellow-400 dark:text-yellow-400 dark:hover:bg-yellow-900/50">
-                <Zap className="mr-1.5 h-4 w-4" /> Interrupt
+              <Button onClick={openInterruptModal} variant="outline" size="sm" className={`${floatingControls.button} ${colors.interrupt}`}>
+                <Zap className={`mr-1.5 ${iconSizes.sm}`} /> {t('controls.interrupt')}
               </Button>
             )}
             {(activeEvent || isModalOpen) && (
-              <Button onClick={handleStop} variant="destructive" size="sm" className="flex-1 sm:flex-none">
-                <Square className="mr-1.5 h-4 w-4" /> Stop
+              <Button onClick={handleStop} variant="destructive" size="sm" className={floatingControls.button}>
+                <Square className={`mr-1.5 ${iconSizes.sm}`} /> {t('controls.stop')}
               </Button>
             )}
             {isTaskEvent(activeEvent) && (
-              <Button onClick={openBreakModal} variant="outline" size="sm" className="flex-1 sm:flex-none border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/50">
-                <Coffee className="mr-1.5 h-4 w-4" /> Break
+              <Button onClick={openBreakModal} variant="outline" size="sm" className={`${floatingControls.button} ${colors.break}`}>
+                <Coffee className={`mr-1.5 ${iconSizes.sm}`} /> {t('controls.break')}
               </Button>
             )}
           </div>

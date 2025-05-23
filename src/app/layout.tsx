@@ -6,7 +6,9 @@ import IconTabs from '@/components/IconTabs'; // Re-enable IconTabs
 import React from 'react';
 import { GeistSans } from 'geist/font/sans';
 import FloatingActionControls from '@/components/FloatingActionControls';
-import { I18nProviderClient } from '@/locales/client';
+import dynamic from 'next/dynamic';
+// クライアントサイドでのみ読み込む I18n プロバイダー
+import I18nClientSideProvider from './i18n-provider';
 import { getCurrentLocale } from '@/locales/server';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,19 +23,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const defaultUrl = process.env.VERCEL_URL;
   const locale = await getCurrentLocale();
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${GeistSans.className} bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
-        <I18nProviderClient locale={locale}>
+        <I18nClientSideProvider locale={locale}>
           <ClientProviders>
             <main className="pb-16">{children}</main>
             <FloatingActionControls />
             <IconTabs /> {/* Re-enable IconTabs */}
           </ClientProviders>
-        </I18nProviderClient>
+        </I18nClientSideProvider>
       </body>
     </html>
   );

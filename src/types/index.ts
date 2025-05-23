@@ -11,6 +11,7 @@ export interface Event {
   };
   // Interruptモーダル用の新しいフィールド
   who?: string; 
+  organization?: string;
   interruptType?: string;
   urgency?: 'Low' | 'Medium' | 'High';
   originalTaskId?: string; 

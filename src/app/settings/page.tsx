@@ -5,12 +5,21 @@ import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';
 import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3 } from 'lucide-react';
+import useMasterStore from '@/store/useMasterStore';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { events, myTasks, actions, isHydrated } = useEventsStore((state: EventsState) => state);
+  const masterStore = useMasterStore();
+  const { persons, organizations, actions: masterActions } = masterStore;
   const [mounted, setMounted] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
+  const [newPersonName, setNewPersonName] = useState('');
+  const [editPersonId, setEditPersonId] = useState<string | null>(null);
+  const [editPersonName, setEditPersonName] = useState('');
+  const [newOrgName, setNewOrgName] = useState('');
+  const [editOrgId, setEditOrgId] = useState<string | null>(null);
+  const [editOrgName, setEditOrgName] = useState('');
 
   useEffect(() => setMounted(true), []);
 
@@ -197,6 +206,100 @@ const SettingsPage = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* 指示者マスタ */}
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <h2 className="mb-3 text-lg font-medium">指示者マスタ</h2>
+          <form onSubmit={e => { e.preventDefault(); if (newPersonName.trim()) { masterActions.addPerson(newPersonName.trim()); setNewPersonName(''); } }} className="mb-4 flex gap-2">
+            <input
+              type="text"
+              value={newPersonName}
+              onChange={e => setNewPersonName(e.target.value)}
+              placeholder="新しい指示者名"
+              className="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-500"
+            />
+            <button type="submit" className="inline-flex items-center justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600">
+              <PlusCircle className="mr-1 h-5 w-5" /> 追加
+            </button>
+          </form>
+          {persons.length > 0 ? (
+            <ul className="space-y-2">
+              {persons.map((p) => (
+                <li key={p.id} className="flex items-center justify-between rounded-md bg-gray-50 p-2 dark:bg-gray-700/50">
+                  {editPersonId === p.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editPersonName}
+                        onChange={e => setEditPersonName(e.target.value)}
+                        className="flex-grow rounded-md border-gray-300 mr-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <button onClick={() => { masterActions.editPerson(p.id, editPersonName); setEditPersonId(null); }} className="p-1 text-green-600 hover:text-green-800">保存</button>
+                      <button onClick={() => setEditPersonId(null)} className="p-1 text-gray-500 hover:text-gray-700">キャンセル</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">{p.name}</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditPersonId(p.id); setEditPersonName(p.name); }} className="p-1 text-blue-600 hover:text-blue-800" aria-label="Edit"><Edit3 className="h-4 w-4" /></button>
+                        <button onClick={() => masterActions.removePerson(p.id)} className="p-1 text-red-600 hover:text-red-800" aria-label="Remove"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">指示者が登録されていません。</p>
+          )}
+        </div>
+
+        {/* 組織名マスタ */}
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <h2 className="mb-3 text-lg font-medium">組織名マスタ</h2>
+          <form onSubmit={e => { e.preventDefault(); if (newOrgName.trim()) { masterActions.addOrganization(newOrgName.trim()); setNewOrgName(''); } }} className="mb-4 flex gap-2">
+            <input
+              type="text"
+              value={newOrgName}
+              onChange={e => setNewOrgName(e.target.value)}
+              placeholder="新しい組織名"
+              className="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-500"
+            />
+            <button type="submit" className="inline-flex items-center justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600">
+              <PlusCircle className="mr-1 h-5 w-5" /> 追加
+            </button>
+          </form>
+          {organizations.length > 0 ? (
+            <ul className="space-y-2">
+              {organizations.map((o) => (
+                <li key={o.id} className="flex items-center justify-between rounded-md bg-gray-50 p-2 dark:bg-gray-700/50">
+                  {editOrgId === o.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editOrgName}
+                        onChange={e => setEditOrgName(e.target.value)}
+                        className="flex-grow rounded-md border-gray-300 mr-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      />
+                      <button onClick={() => { masterActions.editOrganization(o.id, editOrgName); setEditOrgId(null); }} className="p-1 text-green-600 hover:text-green-800">保存</button>
+                      <button onClick={() => setEditOrgId(null)} className="p-1 text-gray-500 hover:text-gray-700">キャンセル</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">{o.name}</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditOrgId(o.id); setEditOrgName(o.name); }} className="p-1 text-blue-600 hover:text-blue-800" aria-label="Edit"><Edit3 className="h-4 w-4" /></button>
+                        <button onClick={() => masterActions.removeOrganization(o.id)} className="p-1 text-red-600 hover:text-red-800" aria-label="Remove"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">組織名が登録されていません。</p>
+          )}
         </div>
       </div>
     </div>

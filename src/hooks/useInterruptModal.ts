@@ -5,6 +5,7 @@ import { Event } from '@/types';
 export interface InterruptFormState {
   label: string;
   who: string;
+  organization?: string;
   interruptType: Event['interruptType']; 
   urgency: Event['urgency'];
   notes?: string;
@@ -13,6 +14,7 @@ export interface InterruptFormState {
 const DEFAULT_FORM: InterruptFormState = {
   label: '',
   who: '',
+  organization: '',
   interruptType: 'Other',
   urgency: 'Medium',
   notes: '',
@@ -48,6 +50,7 @@ export default function useInterruptModal() {
     updateInterruptDetails({
       label: form.label.trim() || 'Interrupt',
       who: form.who.trim(),
+      organization: form.organization?.trim(),
       interruptType: form.interruptType,
       urgency: form.urgency,
       notes: form.notes?.trim(),
@@ -61,6 +64,7 @@ export default function useInterruptModal() {
     updateInterruptDetails({
       label: form.label.trim() || 'Interrupt',
       who: form.who.trim(),
+      organization: form.organization?.trim(),
       interruptType: form.interruptType,
       urgency: form.urgency,
       notes: form.notes?.trim(),

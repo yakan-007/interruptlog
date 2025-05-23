@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,6 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { InterruptFormState } from '@/hooks/useInterruptModal';
 import useSettingsStore from '@/store/useSettingsStore';
 import { useI18n } from '@/locales/client';
+import useMasterStore from '@/store/useMasterStore';
+import { formatElapsedTime, toI18nKey } from '@/lib/utils';
+import MasterDataInput from './MasterDataInput';
+import InterruptTypeSelector from './InterruptTypeSelector';
 
 export type InterruptModalProps = {
   open: boolean;
@@ -20,16 +26,6 @@ export type InterruptModalProps = {
   startTime?: number;
 };
 
-const formatModalElapsedTime = (startTime: number): string => {
-  const now = Date.now();
-  const totalSeconds = Math.floor((now - startTime) / 1000);
-  if (totalSeconds < 0) return '00:00:00';
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
-
 export default function InterruptModal({
   open,
   onOpenChange,
@@ -40,15 +36,16 @@ export default function InterruptModal({
   onSave,
   startTime,
 }: InterruptModalProps) {
-  const t = useI18n();
+  const t = useI18n() as any;
   const { interruptTypes } = useSettingsStore((s) => s);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
+  const { persons, organizations } = useMasterStore();
 
   useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
     if (open && startTime) {
       const updateTimer = () => {
-        setElapsedTime(formatModalElapsedTime(startTime));
+        setElapsedTime(formatElapsedTime(startTime));
       };
       updateTimer();
       timerId = setInterval(updateTimer, 1000);
@@ -59,8 +56,6 @@ export default function InterruptModal({
       if (timerId) clearInterval(timerId);
     };
   }, [open, startTime]);
-
-  const currentSelectedTypeLabel = form.interruptType || 'Other';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,24 +86,30 @@ export default function InterruptModal({
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             rows={3}
           />
-          <Input
-            id="interrupt-who"
-            placeholder={t('InterruptModal.whoPlaceholder')}
-            value={form.who}
-            onChange={(e) => setForm({ ...form, who: e.target.value })}
+          <MasterDataInput
+            label={t('InterruptModal.whoPlaceholder')}
+            idPrefix="interrupt-who"
+            items={persons}
+            selectedValue={form.who}
+            onValueChange={(value) => setForm({ ...form, who: value })}
+            selectPlaceholder={t('InterruptModal.selectPlaceholder')}
+            inputPlaceholder={t('InterruptModal.directInputPlaceholder')}
           />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {interruptTypes.map((typeItem) => (
-              <Button
-                key={typeItem.id}
-                variant={currentSelectedTypeLabel === typeItem.label ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setForm({ ...form, interruptType: typeItem.label })}
-              >
-                {typeItem.label}
-              </Button>
-            ))}
-          </div>
+          <MasterDataInput
+            label={t('InterruptModal.organizationPlaceholder')}
+            idPrefix="interrupt-organization"
+            items={organizations}
+            selectedValue={form.organization}
+            onValueChange={(value) => setForm({ ...form, organization: value })}
+            selectPlaceholder={t('InterruptModal.selectPlaceholder')}
+            inputPlaceholder={t('InterruptModal.directInputPlaceholder')}
+          />
+          <InterruptTypeSelector
+            interruptTypes={interruptTypes}
+            selectedType={form.interruptType}
+            onTypeSelect={(typeLabel) => setForm({ ...form, interruptType: typeLabel })}
+            t={t}
+          />
           <div>
             <Label htmlFor="urgency-select" className="text-sm font-medium">
               {t('InterruptModal.urgencyLabel')}

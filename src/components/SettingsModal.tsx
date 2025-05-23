@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -66,7 +68,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
                     {type.isDefault && <span className="text-xs">(Default)</span>}
                   </span>
                   {!type.isDefault && (
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleRemoveType(type.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveType(type.id)}>
                       <XIcon className="h-4 w-4 text-red-500" />
                     </Button>
                   )}
