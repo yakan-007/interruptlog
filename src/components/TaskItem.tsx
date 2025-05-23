@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Play, Trash2, GripVertical } from 'lucide-react';
 import { Event, MyTask } from '@/types';
 import TaskCardTimer from '@/components/TaskCardTimer';
-import { useI18n } from '@/locales/client';
+import { useTypedI18n } from '@/hooks/useTypedI18n';
 import { taskStyles, colors, iconSizes } from '@/styles/tailwind-classes';
 
 interface TaskItemProps {
@@ -39,7 +39,7 @@ const TaskItem: React.FC<TaskItemProps> = React.memo(({
   onDrop,
   onDragEnd,
 }) => {
-  const t = useI18n() as any;
+  const t = useTypedI18n();
 
   const { isActive, isCurrentTaskRunning, isOtherEventRunning, isStartDisabled } = useMemo(() => {
     const isActive = activeEvent && 

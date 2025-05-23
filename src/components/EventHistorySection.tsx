@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Event } from '@/types';
-import { useI18n } from '@/locales/client';
+import { useTypedI18n } from '@/hooks/useTypedI18n';
 import { layout, typography, eventHistory, colors } from '@/styles/tailwind-classes';
 
 interface EventHistorySectionProps {
@@ -10,7 +10,7 @@ interface EventHistorySectionProps {
 }
 
 const EventHistorySection: React.FC<EventHistorySectionProps> = React.memo(({ events }) => {
-  const t = useI18n() as any;
+  const t = useTypedI18n();
 
   const reversedEvents = useMemo(() => {
     return events.slice().reverse();

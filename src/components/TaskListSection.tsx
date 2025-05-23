@@ -4,7 +4,7 @@ import React from 'react';
 import { Event, MyTask } from '@/types';
 import TaskInput from './TaskInput';
 import TaskItem from './TaskItem';
-import { useI18n } from '@/locales/client';
+import { useTypedI18n } from '@/hooks/useTypedI18n';
 import { layout, typography } from '@/styles/tailwind-classes';
 
 interface TaskListSectionProps {
@@ -42,7 +42,7 @@ const TaskListSection: React.FC<TaskListSectionProps> = ({
   onDrop,
   onDragEnd,
 }) => {
-  const t = useI18n() as any;
+  const t = useTypedI18n();
 
   return (
     <div className={layout.section}>

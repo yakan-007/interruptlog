@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
-import { useI18n } from '@/locales/client';
+import { useTypedI18n } from '@/hooks/useTypedI18n';
 import { layout, iconSizes } from '@/styles/tailwind-classes';
 
 interface TaskInputProps {
@@ -18,7 +18,7 @@ const TaskInput: React.FC<TaskInputProps> = React.memo(({
   setNewTaskName,
   onAddTask,
 }) => {
-  const t = useI18n() as any;
+  const t = useTypedI18n();
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
