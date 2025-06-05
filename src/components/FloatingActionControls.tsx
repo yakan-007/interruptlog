@@ -134,7 +134,7 @@ export default function FloatingActionControls() {
       <InterruptModal
         open={isModalOpen}
         onOpenChange={(openState) => {
-          if (!openState) closeInterruptModal();
+          if (!openState) handleCancelInterrupt();
         }}
         form={interruptFormState}
         setForm={setInterruptFormState}
