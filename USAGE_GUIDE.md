@@ -11,6 +11,7 @@ InterruptLog is a task management application that tracks work sessions, interru
 - **Break Logging**: Record different types of breaks (short, coffee, lunch, custom)
 - **Real-time Timing**: Live elapsed time display for all active events
 - **Event History**: Complete log of all activities with timestamps
+- **Daily Reports**: Visual analytics showing today's productivity breakdown with charts and summaries
 
 ### User Interface
 - **Clean 3-Button Modal Design**: Each modal (Interrupt/Break) has consistent layout:
@@ -58,6 +59,20 @@ InterruptLog is a task management application that tracks work sessions, interru
 1. Click "Stop" in the floating bar
 2. Task ends and timer stops
 3. Event is saved to history
+
+### Viewing Reports
+1. Click the "Reports" tab in the bottom navigation
+2. View today's productivity summary with:
+   - **Time Summary Cards**: Total focus time, interrupt time, and break time for today
+   - **Visual Bar Chart**: Horizontal bar chart showing time distribution by category
+   - **Recent Events List**: Last 10 events from today with timestamps and durations
+
+#### Report Features
+- **Real-time Updates**: Report data updates automatically as you log events
+- **Today Focus**: Shows only current day's activity for relevant insights
+- **Color Coding**: Green for tasks, red for interrupts, gray for breaks
+- **Duration Display**: Shows precise timing in hours:minutes:seconds format
+- **Empty State Handling**: Shows helpful messages when no data is available
 
 ## Data Structure & Export
 
