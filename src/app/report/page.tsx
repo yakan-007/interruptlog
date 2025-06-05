@@ -5,10 +5,12 @@ import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event } from '@/types';
 import EventList from '@/components/EventList';
 import StatBar from '@/components/StatBar';
+import CompletedTasksList from '@/components/CompletedTasksList';
 
 const ReportPage = () => {
-  const { events, isHydrated } = useEventsStore((state: EventsState) => ({ 
+  const { events, myTasks, isHydrated } = useEventsStore((state: EventsState) => ({ 
     events: state.events,
+    myTasks: state.myTasks,
     isHydrated: state.isHydrated 
   }));
 
@@ -46,6 +48,16 @@ const ReportPage = () => {
     .sort((a, b) => b.start - a.start)
     .slice(0, 10);
 
+  // Get completed tasks that had activity today
+  const completedTasksWithTodayActivity = myTasks.filter(task => {
+    if (!task.isCompleted) return false;
+    
+    // Check if this task had any events today
+    return todaysEvents.some(event => 
+      event.type === 'task' && event.meta?.myTaskId === task.id
+    );
+  });
+
   return (
     <div className="p-4">
       <h1 className="mb-6 text-center text-2xl font-semibold">Today&apos;s Report</h1>
@@ -73,12 +85,31 @@ const ReportPage = () => {
         <p className="text-center text-gray-500 dark:text-gray-400">No data for today to display chart.</p>
       )}
 
-      <h2 className="mb-3 text-xl font-semibold">Last 10 Events Today</h2>
-      {last10Events.length > 0 ? (
-        <EventList events={last10Events} />
-      ) : (
-        <p className="text-center text-gray-500 dark:text-gray-400">No events logged today.</p>
-      )}
+      {/* Completed Tasks Section */}
+      <div className="mb-8">
+        <h2 className="mb-3 text-xl font-semibold">
+          Completed Tasks Today
+          {completedTasksWithTodayActivity.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
+              ({completedTasksWithTodayActivity.length})
+            </span>
+          )}
+        </h2>
+        <CompletedTasksList 
+          completedTasks={completedTasksWithTodayActivity} 
+          events={todaysEvents} 
+        />
+      </div>
+
+      {/* Recent Events Section */}
+      <div>
+        <h2 className="mb-3 text-xl font-semibold">Last 10 Events Today</h2>
+        {last10Events.length > 0 ? (
+          <EventList events={last10Events} />
+        ) : (
+          <p className="text-center text-gray-500 dark:text-gray-400">No events logged today.</p>
+        )}
+      </div>
     </div>
   );
 };
