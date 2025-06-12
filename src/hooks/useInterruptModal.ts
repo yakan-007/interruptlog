@@ -29,10 +29,10 @@ export default function useInterruptModal() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<InterruptFormState>(DEFAULT_FORM);
 
-  // モーダルを開く。プレースホルダー割り込みを開始
+  // モーダルを開く。割り込み開始（プレースホルダーラベルで）
   const openInterruptModal = useCallback(() => {
     setForm(DEFAULT_FORM);
-    startInterrupt();
+    startInterrupt(); // デフォルトの「Interrupt」ラベルで開始
     setOpen(true);
   }, [startInterrupt]);
 

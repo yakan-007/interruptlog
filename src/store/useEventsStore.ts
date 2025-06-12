@@ -153,7 +153,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       const newEvent: Event = {
         id: uuidv4(),
         type: 'interrupt',
-        label: data?.label || '割り込み中...', 
+        label: data?.label || 'Interrupt', 
         start: Date.now(),
         who: data?.who,
         interruptType: data?.interruptType,

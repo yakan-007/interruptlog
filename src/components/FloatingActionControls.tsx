@@ -126,9 +126,7 @@ export default function FloatingActionControls() {
     <>
       <InterruptModal
         open={isModalOpen}
-        onOpenChange={(openState) => {
-          if (!openState) handleCancelInterrupt();
-        }}
+        onOpenChange={() => {}} // 外側クリックを無効化
         form={interruptFormState}
         setForm={setInterruptFormState}
         onSubmit={handleSubmitInterrupt}
@@ -137,8 +135,8 @@ export default function FloatingActionControls() {
         startTime={isInterruptEvent(activeEvent) ? activeEvent.start : undefined}
       />
       {/* 休憩モーダル */}
-      <Dialog open={isBreakModalOpen} onOpenChange={(open) => { if (!open) handleCancelBreak(); }}>
-        <DialogContent>
+      <Dialog open={isBreakModalOpen} onOpenChange={() => {}}>
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="[&>button]:hidden">
           <DialogHeader>
             <DialogTitle>On Break</DialogTitle>
             {/* 経過時間タイマー表示 */}

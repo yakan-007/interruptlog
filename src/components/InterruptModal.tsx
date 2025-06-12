@@ -53,7 +53,7 @@ export default function InterruptModal({ open, onOpenChange, form, setForm, onSu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="[&>button]:hidden">
         <DialogHeader>
           <DialogTitle>On Interrupt</DialogTitle>
           <DialogDescription>

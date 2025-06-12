@@ -80,7 +80,7 @@ export default function LogPage() {
 
   return (
     <div className="container mx-auto p-4 pb-16">
-      <h1 className="text-2xl font-bold mb-4">Log</h1>
+      <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
 
       {/* My Tasks Section */}
       <div className="mb-8">
