@@ -61,7 +61,7 @@ export default function useBreakModal() {
     // イベントのみ終了
     stopCurrentEvent();
     setOpen(false);
-  }, [form, updateEvent]);
+  }, [form, updateEvent, stopCurrentEvent]);
 
   // モーダルキャンセル時も休憩終了→前タスク再開
   const handleCancelBreak = useCallback(() => {

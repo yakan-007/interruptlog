@@ -74,7 +74,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">Today's Interrupt Timeline ⏰</h3>
+        <h3 className="text-lg font-semibold mb-2">Today&apos;s Interrupt Timeline ⏰</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           24-hour view of your interruptions. Click on any hour for details.
         </p>
@@ -156,7 +156,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
 
       {/* Quick insights */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 Today's Summary</h4>
+        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 Today&apos;s Summary</h4>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <div>Total interrupts: {todayInterrupts.length}</div>
           <div>Peak hour: {
