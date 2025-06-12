@@ -6,6 +6,7 @@ import { Event } from '@/types';
 import EventList from '@/components/EventList';
 import StatBar from '@/components/StatBar';
 import CompletedTasksList from '@/components/CompletedTasksList';
+import InterruptTimeline from '@/components/InterruptTimeline';
 
 const ReportPage = () => {
   const { events, myTasks, isHydrated } = useEventsStore((state: EventsState) => ({ 
@@ -84,6 +85,14 @@ const ReportPage = () => {
       ) : (
         <p className="text-center text-gray-500 dark:text-gray-400">No data for today to display chart.</p>
       )}
+
+      {/* Interrupt Timeline Section */}
+      <div className="mb-8">
+        <h2 className="mb-3 text-xl font-semibold">Interrupt Analysis</h2>
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <InterruptTimeline events={events} />
+        </div>
+      </div>
 
       {/* Completed Tasks Section */}
       <div className="mb-8">

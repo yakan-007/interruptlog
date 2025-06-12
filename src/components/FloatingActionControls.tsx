@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -69,13 +69,9 @@ export default function FloatingActionControls() {
   } = useInterruptModal();
   console.log('[FAC] isModalOpen from hook:', isModalOpen);
 
-  // 初回ハイドレーション後のタイマー制御用
-  const didRunInitialEffectAfterHydrationRef = useRef(false);
-
   // --- タイマー管理 ---
   useEffect(() => {
     if (!isHydrated) {
-      didRunInitialEffectAfterHydrationRef.current = false;
       return;
     }
 
@@ -87,21 +83,18 @@ export default function FloatingActionControls() {
     if (current && !current.end) {
       setElapsedTime(formatElapsedTime(current.start));
 
-      if (!didRunInitialEffectAfterHydrationRef.current) {
-        didRunInitialEffectAfterHydrationRef.current = true;
-      } else {
-        timerId = setInterval(() => {
-          // ストアから最新のイベント情報を取得して経過時間を更新
-          const storeState = useEventsStore.getState();
-          const latestCurrentEvent = storeState.events.find(e => e.id === storeState.currentEventId);
-          if (latestCurrentEvent && !latestCurrentEvent.end) {
-            setElapsedTime(formatElapsedTime(latestCurrentEvent.start));
-          } else {
-            setElapsedTime('00:00:00');
-            if(timerId) clearInterval(timerId);
-          }
-        }, 1000);
-      }
+      // Always start timer for active events
+      timerId = setInterval(() => {
+        // ストアから最新のイベント情報を取得して経過時間を更新
+        const storeState = useEventsStore.getState();
+        const latestCurrentEvent = storeState.events.find(e => e.id === storeState.currentEventId);
+        if (latestCurrentEvent && !latestCurrentEvent.end) {
+          setElapsedTime(formatElapsedTime(latestCurrentEvent.start));
+        } else {
+          setElapsedTime('00:00:00');
+          if(timerId) clearInterval(timerId);
+        }
+      }, 1000);
     } else {
       setElapsedTime('00:00:00');
     }
@@ -195,7 +188,7 @@ export default function FloatingActionControls() {
                 {activeEvent?.label || 'No active event'}
               </p>
               <p className="text-base font-semibold text-blue-600 dark:text-blue-400">
-                {formatElapsedTime(activeEvent.start)}
+                {elapsedTime}
               </p>
             </div>
           </div>
