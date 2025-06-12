@@ -65,7 +65,7 @@ const ReportPage = () => {
 
       <div className="mb-8 grid grid-cols-3 gap-4 text-center">
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Focus</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Task Time</p>
           <p className="text-xl font-bold">{formatDuration(totalFocusTime)}</p>
         </div>
         <div>
