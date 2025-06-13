@@ -15,8 +15,27 @@ export default function LogPage() {
   const [newTaskName, setNewTaskName] = useState('');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const activeEvent = currentEventId ? events.find((e) => e.id === currentEventId) : undefined;
+
+  // Helper function to format event time with date if not today
+  const formatEventTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    
+    if (isToday) {
+      return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('ja-JP', { 
+        month: 'numeric', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  };
 
   useEffect(() => {
     if (isHydrated && activeEvent) {
@@ -77,6 +96,37 @@ export default function LogPage() {
     setDraggingTaskId(null);
     setDragOverTaskId(null);
   };
+
+  // Filter events for display: today's events + last 5 from yesterday
+  const getFilteredEvents = () => {
+    if (showAllHistory) {
+      return events;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const todayEvents = events.filter(event => {
+      const eventDate = new Date(event.start);
+      return eventDate >= today;
+    });
+    
+    const yesterdayEvents = events.filter(event => {
+      const eventDate = new Date(event.start);
+      return eventDate >= yesterday && eventDate < today;
+    });
+    
+    // Get last 5 events from yesterday
+    const last5YesterdayEvents = yesterdayEvents.slice(-5);
+    
+    // Combine and sort by start time
+    return [...last5YesterdayEvents, ...todayEvents].sort((a, b) => a.start - b.start);
+  };
+
+  const filteredEvents = getFilteredEvents();
 
   return (
     <div className="container mx-auto p-4 pb-16">
@@ -183,9 +233,9 @@ export default function LogPage() {
       {/* Event History Section */}
       <div>
         <h2 className="text-xl font-semibold mb-2">Event History</h2>
-        {events.length > 0 ? (
+        {filteredEvents.length > 0 ? (
           <ul className="space-y-2">
-            {events
+            {filteredEvents
               .slice()
               .reverse()
               .map((event) => (
@@ -194,14 +244,39 @@ export default function LogPage() {
                     {event.label ?? 'Unnamed'}
                   </span>
                   <span className="text-gray-600 dark:text-gray-300 ml-2">
-                    ({new Date(event.start).toLocaleTimeString()}
-                    {event.end ? ` - ${new Date(event.end).toLocaleTimeString()}` : ' - Active'})
+                    ({formatEventTime(event.start)}
+                    {event.end ? ` - ${formatEventTime(event.end)}` : ' - Active'})
                   </span>
                 </li>
               ))}
           </ul>
         ) : (
           <p className="text-gray-500">No events logged yet.</p>
+        )}
+        
+        {/* Show more button */}
+        {!showAllHistory && events.length > filteredEvents.length && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowAllHistory(true)}
+              className="text-sm"
+            >
+              Show all history ({events.length - filteredEvents.length} more events)
+            </Button>
+          </div>
+        )}
+        
+        {showAllHistory && events.length > 0 && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              onClick={() => setShowAllHistory(false)}
+              className="text-sm"
+            >
+              Show less
+            </Button>
+          </div>
         )}
       </div>
     </div>
