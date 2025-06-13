@@ -16,6 +16,8 @@ export interface Event {
   // Breakモーダル用の新しいフィールド
   breakType?: 'short' | 'coffee' | 'lunch' | 'custom' | 'indefinite';
   breakDurationMinutes?: number | null;
+  // メモ機能用のフィールド（後から追記可能）
+  memo?: string;
 }
 
 export type MyTask = {

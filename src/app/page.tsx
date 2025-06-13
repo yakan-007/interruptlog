@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { PlusCircle, Trash2, Play, GripVertical } from 'lucide-react';
+import { PlusCircle, Trash2, Play, GripVertical, StickyNote, Check, X } from 'lucide-react';
 import TaskCardTimer from '@/components/TaskCardTimer';
 
 export default function LogPage() {
@@ -16,6 +16,10 @@ export default function LogPage() {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [editingMemoEventId, setEditingMemoEventId] = useState<string | null>(null);
+  const [memoText, setMemoText] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskName, setEditingTaskName] = useState('');
 
   const activeEvent = currentEventId ? events.find((e) => e.id === currentEventId) : undefined;
 
@@ -128,6 +132,52 @@ export default function LogPage() {
 
   const filteredEvents = getFilteredEvents();
 
+  // Handle memo editing
+  const handleStartEditMemo = (eventId: string, currentMemo?: string) => {
+    setEditingMemoEventId(eventId);
+    setMemoText(currentMemo || '');
+  };
+
+  const handleSaveMemo = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      actions.updateEvent({
+        ...event,
+        memo: memoText.trim() || undefined
+      });
+    }
+    setEditingMemoEventId(null);
+    setMemoText('');
+  };
+
+  const handleCancelEditMemo = () => {
+    setEditingMemoEventId(null);
+    setMemoText('');
+  };
+
+  // Handle task name editing
+  const handleStartEditTask = (taskId: string, currentName: string) => {
+    setEditingTaskId(taskId);
+    setEditingTaskName(currentName);
+  };
+
+  const handleSaveTaskName = (taskId: string) => {
+    const trimmedName = editingTaskName.trim();
+    if (trimmedName && trimmedName !== '') {
+      const task = myTasks.find(t => t.id === taskId);
+      if (task) {
+        actions.updateMyTask(taskId, trimmedName);
+      }
+    }
+    setEditingTaskId(null);
+    setEditingTaskName('');
+  };
+
+  const handleCancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditingTaskName('');
+  };
+
   return (
     <div className="container mx-auto p-4 pb-16">
       <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
@@ -183,12 +233,33 @@ export default function LogPage() {
                   className="mr-3"
                   id={`task-${task.id}`}
                 />
-                <label
-                  htmlFor={`task-${task.id}`}
-                  className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow`}
-                >
-                  {task.name}
-                </label>
+                {editingTaskId === task.id ? (
+                  <div className="flex-grow flex gap-2">
+                    <Input
+                      type="text"
+                      value={editingTaskName}
+                      onChange={(e) => setEditingTaskName(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveTaskName(task.id);
+                        } else if (e.key === 'Escape') {
+                          handleCancelEditTask();
+                        }
+                      }}
+                      onBlur={() => handleSaveTaskName(task.id)}
+                      className="flex-1 h-8"
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <span
+                    className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow cursor-pointer select-none`}
+                    onDoubleClick={() => !task.isCompleted && handleStartEditTask(task.id, task.name)}
+                    title={!task.isCompleted ? "Double-click to edit" : ""}
+                  >
+                    {task.name}
+                  </span>
+                )}
               </div>
               <div className="flex items-center">
                 {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && activeEvent.start > 0 && (
@@ -240,13 +311,71 @@ export default function LogPage() {
               .reverse()
               .map((event) => (
                 <li key={event.id} className="p-3 border rounded-md text-sm">
-                  <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>
-                    {event.label ?? 'Unnamed'}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-300 ml-2">
-                    ({formatEventTime(event.start)}
-                    {event.end ? ` - ${formatEventTime(event.end)}` : ' - Active'})
-                  </span>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>
+                          {event.label ?? 'Unnamed'}
+                        </span>
+                        <span className="text-gray-600 dark:text-gray-300 ml-2">
+                          ({formatEventTime(event.start)}
+                          {event.end ? ` - ${formatEventTime(event.end)}` : ' - Active'})
+                        </span>
+                      </div>
+                      
+                      {/* Memo display or edit */}
+                      {editingMemoEventId === event.id ? (
+                        <div className="mt-2 flex gap-2">
+                          <Input
+                            type="text"
+                            value={memoText}
+                            onChange={(e) => setMemoText(e.target.value)}
+                            placeholder="Add memo..."
+                            className="flex-1 text-sm"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleSaveMemo(event.id);
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSaveMemo(event.id)}
+                            title="Save memo"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleCancelEditMemo}
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : event.memo ? (
+                        <div className="mt-1 text-gray-600 dark:text-gray-400 text-sm">
+                          📝 {event.memo.length > 80 ? `${event.memo.substring(0, 80)}...` : event.memo}
+                        </div>
+                      ) : null}
+                    </div>
+                    
+                    {/* Memo button */}
+                    {event.end && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleStartEditMemo(event.id, event.memo)}
+                        title={event.memo ? "Edit memo" : "Add memo"}
+                        className="ml-2"
+                      >
+                        <StickyNote className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
           </ul>

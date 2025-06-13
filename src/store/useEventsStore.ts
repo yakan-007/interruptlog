@@ -323,6 +323,17 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       );
       set({ myTasks: updatedTasks });
       get().actions._persistMyTasksState();
+      
+      // Also update the labels of related events in history
+      const currentEvents = get().events;
+      const updatedEvents = currentEvents.map(event => {
+        if (event.type === 'task' && event.meta?.myTaskId === id) {
+          return { ...event, label: newName };
+        }
+        return event;
+      });
+      set({ events: updatedEvents });
+      get().actions._persistEventsState();
     },
     setMyTasks: (tasks: MyTask[]) => {
       const sortedTasks = sortMyTasks(tasks.map((task, index) => ({
