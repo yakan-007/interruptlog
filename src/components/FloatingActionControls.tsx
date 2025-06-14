@@ -67,7 +67,6 @@ export default function FloatingActionControls() {
     handleCancelInterrupt,
     handleSaveInterrupt,
   } = useInterruptModal();
-  console.log('[FAC] isModalOpen from hook:', isModalOpen);
 
   // --- タイマー管理 ---
   useEffect(() => {

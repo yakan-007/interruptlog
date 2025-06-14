@@ -17,7 +17,6 @@ const ClientProviders = ({ children }: ClientProvidersProps) => {
     // Ensure hydrate action is called on client mount if not already hydrating
     // This is a safeguard, as it should also be called in useEventsStore.ts
     if (!useEventsStore.getState().isHydrated && typeof window !== 'undefined') {
-        console.log('[ClientProviders] Ensuring hydration call.');
         useEventsStore.getState().actions.hydrate();
     }
   }, []);
@@ -29,7 +28,6 @@ const ClientProviders = ({ children }: ClientProvidersProps) => {
 
   if (!storeIsHydrated) {
     // Client mounted, but store not hydrated yet -> show spinner.
-    console.log('[ClientProviders] Store not hydrated, showing spinner.'); // Added log
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-blue-500 border-t-transparent"></div>
@@ -38,7 +36,6 @@ const ClientProviders = ({ children }: ClientProvidersProps) => {
   }
   
   // Client mounted AND store is hydrated.
-  console.log('[ClientProviders] Store hydrated, rendering ThemeProvider and children.'); // Added log
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       {children}

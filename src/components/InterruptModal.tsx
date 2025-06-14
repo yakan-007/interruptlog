@@ -31,9 +31,7 @@ const formatModalElapsedTime = (startTime: number): string => {
 };
 
 export default function InterruptModal({ open, onOpenChange, form, setForm, onSubmit, onCancel, onSave, startTime }: InterruptModalProps) {
-  console.log('[InterruptModal] Component function called');
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
-  console.log('[InterruptModal] Rendering with open props:', open, 'and startTime props:', startTime);
 
   useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;

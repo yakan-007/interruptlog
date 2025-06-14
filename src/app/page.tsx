@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { PlusCircle, Trash2, Play, GripVertical, StickyNote, Check, X } from 'lucide-react';
-import TaskCardTimer from '@/components/TaskCardTimer';
+import { PlusCircle } from 'lucide-react';
+import TaskCard from '@/components/TaskCard';
+import EventHistoryItem from '@/components/EventHistoryItem';
 
 export default function LogPage() {
   const { events, currentEventId, myTasks, isHydrated, actions } = useEventsStore();
@@ -204,98 +203,27 @@ export default function LogPage() {
         </div>
         <div className="space-y-2">
           {sortedMyTasks.map((task) => (
-            <Card
+            <TaskCard
               key={task.id}
-              id={`task-card-${task.id}`}
-              className={`flex items-center justify-between p-3 transition-all ${
-                activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end ? 'bg-green-100 dark:bg-green-800 border-green-400 dark:border-green-600' : ''
-              } ${
-                draggingTaskId === task.id ? 'opacity-75 shadow-2xl scale-105 transform' : ''
-              } ${
-                dragOverTaskId === task.id && draggingTaskId !== task.id ? 'border-2 border-blue-500 dark:border-blue-300 ring-2 ring-blue-300' : ''
-              }`}
-              onDragOver={(e) => handleDragOver(e, task.id)}
+              task={task}
+              activeEvent={activeEvent}
+              editingTaskId={editingTaskId}
+              editingTaskName={editingTaskName}
+              draggingTaskId={draggingTaskId}
+              dragOverTaskId={dragOverTaskId}
+              onStartEditTask={handleStartEditTask}
+              onSaveTaskName={handleSaveTaskName}
+              onCancelEditTask={handleCancelEditTask}
+              onSetEditingTaskName={setEditingTaskName}
+              onToggleCompletion={handleToggleTaskCompletion}
+              onStartEvent={handleStartEvent}
+              onDeleteTask={handleDeleteTask}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, task.id)}
+              onDrop={handleDrop}
               onDragEnd={handleDragEnd}
-            >
-              <div className="flex items-center flex-grow mr-2">
-                <div
-                  className="cursor-grab p-1 mr-2"
-                  draggable="true"
-                  onDragStart={(e) => handleDragStart(e, task.id)}
-                >
-                  <GripVertical className="h-5 w-5 text-gray-400" />
-                </div>
-                <Checkbox
-                  checked={task.isCompleted}
-                  onChange={() => handleToggleTaskCompletion(task.id)}
-                  className="mr-3"
-                  id={`task-${task.id}`}
-                />
-                {editingTaskId === task.id ? (
-                  <div className="flex-grow flex gap-2">
-                    <Input
-                      type="text"
-                      value={editingTaskName}
-                      onChange={(e) => setEditingTaskName(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveTaskName(task.id);
-                        } else if (e.key === 'Escape') {
-                          handleCancelEditTask();
-                        }
-                      }}
-                      onBlur={() => handleSaveTaskName(task.id)}
-                      className="flex-1 h-8"
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <span
-                    className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow cursor-pointer select-none`}
-                    onDoubleClick={() => !task.isCompleted && handleStartEditTask(task.id, task.name)}
-                    title={!task.isCompleted ? "Double-click to edit" : ""}
-                  >
-                    {task.name}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center">
-                {activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end && activeEvent.start > 0 && (
-                  <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />
-                )}
-                <div className="flex gap-2 ml-2">
-                {!task.isCompleted && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStartEvent(task.name, task.id)}
-                      disabled={(
-                        activeEvent && 
-                        !activeEvent.end && 
-                        activeEvent.meta?.myTaskId === task.id
-                      ) || (
-                        activeEvent && 
-                        !activeEvent.end && 
-                        (activeEvent.type === 'interrupt' || activeEvent.type === 'break')
-                      )}
-                    title="Start this task"
-                  >
-                    <Play className="h-4 w-4" />
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDeleteTask(task.id)}
-                  title="Delete this task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                </div>
-              </div>
-            </Card>
+            />
           ))}
           {myTasks.length === 0 && <p className="text-gray-500">No tasks yet. Add some!</p>}
         </div>
@@ -310,73 +238,17 @@ export default function LogPage() {
               .slice()
               .reverse()
               .map((event) => (
-                <li key={event.id} className="p-3 border rounded-md text-sm">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>
-                          {event.label ?? 'Unnamed'}
-                        </span>
-                        <span className="text-gray-600 dark:text-gray-300 ml-2">
-                          ({formatEventTime(event.start)}
-                          {event.end ? ` - ${formatEventTime(event.end)}` : ' - Active'})
-                        </span>
-                      </div>
-                      
-                      {/* Memo display or edit */}
-                      {editingMemoEventId === event.id ? (
-                        <div className="mt-2 flex gap-2">
-                          <Input
-                            type="text"
-                            value={memoText}
-                            onChange={(e) => setMemoText(e.target.value)}
-                            placeholder="Add memo..."
-                            className="flex-1 text-sm"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleSaveMemo(event.id);
-                              }
-                            }}
-                            autoFocus
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSaveMemo(event.id)}
-                            title="Save memo"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleCancelEditMemo}
-                            title="Cancel"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : event.memo ? (
-                        <div className="mt-1 text-gray-600 dark:text-gray-400 text-sm">
-                          📝 {event.memo.length > 80 ? `${event.memo.substring(0, 80)}...` : event.memo}
-                        </div>
-                      ) : null}
-                    </div>
-                    
-                    {/* Memo button */}
-                    {event.end && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleStartEditMemo(event.id, event.memo)}
-                        title={event.memo ? "Edit memo" : "Add memo"}
-                        className="ml-2"
-                      >
-                        <StickyNote className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </li>
+                <EventHistoryItem
+                  key={event.id}
+                  event={event}
+                  editingMemoEventId={editingMemoEventId}
+                  memoText={memoText}
+                  onStartEditMemo={handleStartEditMemo}
+                  onSaveMemo={handleSaveMemo}
+                  onCancelEditMemo={handleCancelEditMemo}
+                  onSetMemoText={setMemoText}
+                  formatEventTime={formatEventTime}
+                />
               ))}
           </ul>
         ) : (
