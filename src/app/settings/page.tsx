@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
@@ -12,27 +12,8 @@ import { Label } from "@/components/ui/label";
 import useInterruptModal from '@/hooks/useInterruptModal';
 import useBreakModal from '@/hooks/useBreakModal';
 import InterruptModal from '@/components/InterruptModal';
-
-// --- ユーティリティ ---
-// 経過時間をhh:mm:ssで返す
-const formatElapsedTime = (startTime: number): string => {
-  const now = Date.now();
-  const totalSeconds = Math.floor((now - startTime) / 1000);
-  if (totalSeconds < 0) return '00:00:00';
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
-
-// 休憩オプション定義
-const breakOptions = [
-  { value: 'short', label: '短い休憩', defaultMinutes: 5 },
-  { value: 'coffee', label: 'コーヒーブレイク', defaultMinutes: 15 },
-  { value: 'lunch', label: '昼休憩', defaultMinutes: 60 },
-  { value: 'custom', label: 'カスタム' },
-  { value: 'indefinite', label: '時間未定' },
-];
+import { formatElapsedTime } from '@/lib/timeUtils';
+import { TIMER_UPDATE_INTERVAL_MS } from '@/lib/constants';
 
 // 型ガード: Eventが特定のtypeかどうか
 const isTaskEvent = (e?: Event): e is Event & { type: 'task' } => e?.type === 'task';
@@ -93,7 +74,7 @@ export default function FloatingActionControls() {
           setElapsedTime('00:00:00');
           if(timerId) clearInterval(timerId);
         }
-      }, 1000);
+      }, TIMER_UPDATE_INTERVAL_MS);
     } else {
       setElapsedTime('00:00:00');
     }

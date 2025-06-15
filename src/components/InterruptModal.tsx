@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,17 +18,9 @@ export type InterruptModalProps = {
   startTime?: number;
 };
 
-const interruptTypes = ['ミーティング', '電話', '質問', '訪問', 'チャット', 'その他'];
+import { formatElapsedTime } from '@/lib/timeUtils';
+import { TIMER_UPDATE_INTERVAL_MS, INTERRUPT_TYPES } from '@/lib/constants';
 
-const formatModalElapsedTime = (startTime: number): string => {
-  const now = Date.now();
-  const totalSeconds = Math.floor((now - startTime) / 1000);
-  if (totalSeconds < 0) return '00:00:00';
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
 
 export default function InterruptModal({ open, onOpenChange, form, setForm, onSubmit, onCancel, onSave, startTime }: InterruptModalProps) {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
@@ -37,10 +29,10 @@ export default function InterruptModal({ open, onOpenChange, form, setForm, onSu
     let timerId: NodeJS.Timeout | undefined;
     if (open && startTime) {
       const updateTimer = () => {
-        setElapsedTime(formatModalElapsedTime(startTime));
+        setElapsedTime(formatElapsedTime(startTime));
       };
       updateTimer();
-      timerId = setInterval(updateTimer, 1000);
+      timerId = setInterval(updateTimer, TIMER_UPDATE_INTERVAL_MS);
     } else {
       setElapsedTime('00:00:00');
     }
@@ -78,7 +70,7 @@ export default function InterruptModal({ open, onOpenChange, form, setForm, onSu
             onChange={(e) => setForm({ ...form, who: e.target.value })}
           />
           <div className="grid grid-cols-3 gap-2">
-            {interruptTypes.map((type) => (
+            {INTERRUPT_TYPES.map((type) => (
               <Button
                 key={type}
                 variant={form.interruptType === type ? 'default' : 'outline'}

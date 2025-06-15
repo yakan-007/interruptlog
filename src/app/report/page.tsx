@@ -1,12 +1,11 @@
 'use client';
 
-import React from 'react';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
-import { Event } from '@/types';
 import EventList from '@/components/EventList';
 import StatBar from '@/components/StatBar';
 import CompletedTasksList from '@/components/CompletedTasksList';
 import InterruptTimeline from '@/components/InterruptTimeline';
+import { RECENT_EVENTS_LIMIT } from '@/lib/constants';
 
 const ReportPage = () => {
   const { events, myTasks, isHydrated } = useEventsStore((state: EventsState) => ({ 
@@ -40,14 +39,14 @@ const ReportPage = () => {
   const totalBreakTime = calculateTotalTime('break');
 
   const chartData = [
-    { name: 'Task', value: totalFocusTime, fill: '#34D399' }, // Green
-    { name: 'Interrupt', value: totalInterruptTime, fill: '#F87171' }, // Red
-    { name: 'Break', value: totalBreakTime, fill: '#9CA3AF' }, // Gray
+    { name: 'タスク', value: totalFocusTime, fill: '#34D399' }, // Green
+    { name: '割り込み', value: totalInterruptTime, fill: '#F87171' }, // Red
+    { name: '休憩', value: totalBreakTime, fill: '#9CA3AF' }, // Gray
   ];
 
   const last10Events = [...todaysEvents]
     .sort((a, b) => b.start - a.start)
-    .slice(0, 10);
+    .slice(0, RECENT_EVENTS_LIMIT);
 
   // Get completed tasks that had activity today
   const completedTasksWithTodayActivity = myTasks.filter(task => {

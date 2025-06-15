@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import EventHistoryItem from '@/components/EventHistoryItem';
+import { formatEventTime } from '@/lib/timeUtils';
+import { YESTERDAY_EVENTS_LIMIT } from '@/lib/constants';
 
 export default function LogPage() {
   const { events, currentEventId, myTasks, isHydrated, actions } = useEventsStore();
-  const [newEventLabel, setNewEventLabel] = useState('');
   const [newTaskName, setNewTaskName] = useState('');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
@@ -21,24 +22,6 @@ export default function LogPage() {
   const [editingTaskName, setEditingTaskName] = useState('');
 
   const activeEvent = currentEventId ? events.find((e) => e.id === currentEventId) : undefined;
-
-  // Helper function to format event time with date if not today
-  const formatEventTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    
-    if (isToday) {
-      return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString('ja-JP', { 
-        month: 'numeric', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-  };
 
   useEffect(() => {
     if (isHydrated && activeEvent) {
@@ -122,8 +105,8 @@ export default function LogPage() {
       return eventDate >= yesterday && eventDate < today;
     });
     
-    // Get last 5 events from yesterday
-    const last5YesterdayEvents = yesterdayEvents.slice(-5);
+    // Get last events from yesterday
+    const last5YesterdayEvents = yesterdayEvents.slice(-YESTERDAY_EVENTS_LIMIT);
     
     // Combine and sort by start time
     return [...last5YesterdayEvents, ...todayEvents].sort((a, b) => a.start - b.start);

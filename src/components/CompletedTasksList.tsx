@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { } from 'react';
 import { MyTask, Event } from '@/types';
 
 interface CompletedTasksListProps {
@@ -24,7 +24,7 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({ completedTasks,
   if (completedTasks.length === 0) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400">
-        No tasks completed today.
+        本日完了したタスクはありません。
       </div>
     );
   }
@@ -67,7 +67,7 @@ const CompletedTasksList: React.FC<CompletedTasksListProps> = ({ completedTasks,
               </span>
               {task.sessionsCount > 1 && (
                 <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                  ({task.sessionsCount} sessions)
+                  ({task.sessionsCount}セッション)
                 </span>
               )}
             </div>
