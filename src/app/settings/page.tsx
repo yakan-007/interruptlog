@@ -4,13 +4,15 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';
-import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3 } from 'lucide-react';
+import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle } from 'lucide-react';
+import { dbClear } from '@/lib/db';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { events, myTasks, actions, isHydrated } = useEventsStore((state: EventsState) => state);
   const [mounted, setMounted] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -101,6 +103,30 @@ const SettingsPage = () => {
       setNewTaskName('');
     }
   };
+
+  const handleClearAllData = async () => {
+    try {
+      // Clear all data from IndexedDB
+      await dbClear();
+      
+      // Clear state
+      actions.setEvents([]);
+      actions.setMyTasks([]);
+      actions.setCurrentEventId(null);
+      
+      // Close confirmation dialog
+      setShowDeleteConfirmation(false);
+      
+      // Show success message
+      alert('すべてのデータが削除されました。');
+      
+      // Reload the page to ensure clean state
+      window.location.reload();
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      alert('データの削除中にエラーが発生しました。');
+    }
+  };
   
   if (!mounted || !isHydrated) {
     return (
@@ -112,11 +138,11 @@ const SettingsPage = () => {
 
   return (
     <div className="p-4 pb-20">
-      <h1 className="mb-6 text-center text-2xl font-semibold">Settings</h1>
+      <h1 className="mb-6 text-center text-2xl font-semibold">設定</h1>
 
       <div className="mx-auto max-w-md space-y-6">
         <div className="flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <span className="text-lg font-medium">Theme</span>
+          <span className="text-lg font-medium">テーマ</span>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -131,20 +157,20 @@ const SettingsPage = () => {
         </div>
 
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="mb-3 text-lg font-medium">My Tasks</h2>
+          <h2 className="mb-3 text-lg font-medium">マイタスク</h2>
           <form onSubmit={handleAddMyTask} className="mb-4 flex gap-2">
             <input 
               type="text"
               value={newTaskName}
               onChange={(e) => setNewTaskName(e.target.value)}
-              placeholder="New task name"
+              placeholder="新しいタスク名"
               className="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-indigo-500"
             />
             <button 
               type="submit"
               className="inline-flex items-center justify-center rounded-md bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
-              <PlusCircle className="mr-1 h-5 w-5" /> Add
+              <PlusCircle className="mr-1 h-5 w-5" /> 追加
             </button>
           </form>
           {myTasks.length > 0 ? (
@@ -165,12 +191,12 @@ const SettingsPage = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">No custom tasks added yet.</p>
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">カスタムタスクがまだ追加されていません。</p>
           )}
         </div>
 
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="mb-4 text-lg font-medium">Data Management</h2>
+          <h2 className="mb-4 text-lg font-medium">データ管理</h2>
           <div className="space-y-3">
             <button
               onClick={handleExport}
@@ -178,7 +204,7 @@ const SettingsPage = () => {
               className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-500 px-4 py-2.5 text-base font-medium text-white shadow-sm transition-colors hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-800"
             >
               <Download className="h-5 w-5" />
-              Export Data (JSON)
+              データをエクスポート (JSON)
             </button>
             <div>
               <label
@@ -186,7 +212,7 @@ const SettingsPage = () => {
                 className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-green-500 px-4 py-2.5 text-base font-medium text-white shadow-sm transition-colors hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 <Upload className="h-5 w-5" />
-                Import Data (JSON)
+                データをインポート (JSON)
               </label>
               <input
                 type="file"
@@ -196,9 +222,50 @@ const SettingsPage = () => {
                 className="sr-only"
               />
             </div>
+            <div className="mt-6 border-t pt-6 dark:border-gray-600">
+              <button
+                onClick={() => setShowDeleteConfirmation(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-red-500 px-4 py-2.5 text-base font-medium text-white shadow-sm transition-colors hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              >
+                <AlertTriangle className="h-5 w-5" />
+                すべてのデータを削除
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 削除確認ダイアログ */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
+            <div className="mb-4 flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <h3 className="text-xl font-semibold">データの削除確認</h3>
+            </div>
+            <p className="mb-6 text-gray-600 dark:text-gray-300">
+              すべてのタスク、イベント履歴、設定がリセットされます。この操作は取り消せません。
+            </p>
+            <p className="mb-6 font-medium text-red-600 dark:text-red-400">
+              本当にすべてのデータを削除しますか？
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirmation(false)}
+                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleClearAllData}
+                className="flex-1 rounded-md bg-red-500 px-4 py-2 text-base font-medium text-white shadow-sm transition-colors hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
