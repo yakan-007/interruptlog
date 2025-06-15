@@ -5,7 +5,6 @@ import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';
 import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle } from 'lucide-react';
-import { dbClear } from '@/lib/db';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
@@ -104,28 +103,17 @@ const SettingsPage = () => {
     }
   };
 
-  const handleClearAllData = async () => {
-    try {
-      // Clear all data from IndexedDB
-      await dbClear();
-      
-      // Clear state
-      actions.setEvents([]);
-      actions.setMyTasks([]);
-      actions.setCurrentEventId(null);
-      
-      // Close confirmation dialog
-      setShowDeleteConfirmation(false);
-      
-      // Show success message
-      alert('すべてのデータが削除されました。');
-      
-      // Reload the page to ensure clean state
-      window.location.reload();
-    } catch (error) {
-      console.error('Error clearing data:', error);
-      alert('データの削除中にエラーが発生しました。');
-    }
+  const handleClearAllData = () => {
+    // Simply clear the state
+    actions.setEvents([]);
+    actions.setMyTasks([]);
+    actions.setCurrentEventId(null);
+    
+    // Close dialog
+    setShowDeleteConfirmation(false);
+    
+    // Done!
+    alert('すべてのデータが削除されました。');
   };
   
   if (!mounted || !isHydrated) {
