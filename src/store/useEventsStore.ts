@@ -406,6 +406,17 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
 const useEventsStore = create<EventsState>(storeCreator);
 
 if (typeof window !== 'undefined') {
+  // Handle browser/tab close to properly stop running timers
+  window.addEventListener('beforeunload', () => {
+    const state = useEventsStore.getState();
+    if (state.currentEventId) {
+      const currentEvent = state.events.find(e => e.id === state.currentEventId);
+      if (currentEvent && !currentEvent.end) {
+        state.actions.stopCurrentEvent();
+      }
+    }
+  });
+
   (async () => {
     try {
       await useEventsStore.getState().actions.hydrate();
