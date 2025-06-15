@@ -137,7 +137,7 @@ export default function FloatingActionControls() {
       <Dialog open={isBreakModalOpen} onOpenChange={() => {}}>
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="[&>button]:hidden">
           <DialogHeader>
-            <DialogTitle>On Break</DialogTitle>
+            <DialogTitle>休憩中</DialogTitle>
             {/* 経過時間タイマー表示 */}
             {isBreakEvent(activeEvent) && (
               <p className="text-lg font-semibold text-blue-600 dark:text-blue-400 mt-2">
@@ -147,10 +147,10 @@ export default function FloatingActionControls() {
           </DialogHeader>
           <div className="grid gap-6 py-4">
             <div>
-              <Label htmlFor="break-label" className="text-base font-medium">Break Label (optional)</Label>
+              <Label htmlFor="break-label" className="text-base font-medium">休憩ラベル（任意）</Label>
               <Input
                 id="break-label"
-                placeholder="e.g., Coffee break, Brainstorming"
+                placeholder="例：コーヒーブレイク、ブレスト"
                 value={breakFormState.label}
                 onChange={(e) => setBreakFormState({ ...breakFormState, label: e.target.value })}
                 onKeyPress={(e) => { if (e.key === 'Enter') handleSubmitBreak(); }}
@@ -161,14 +161,14 @@ export default function FloatingActionControls() {
           <DialogFooter className="flex flex-col gap-2 sm:flex-row">
             <Button type="button" onClick={handleSubmitBreak} variant="destructive" className="flex-1">
               <Play className="mr-1.5 h-4 w-4" />
-              Save & Resume
+              保存して再開
             </Button>
             <Button type="button" onClick={handleSaveBreak} variant="outline" className="flex-1">
               <Coffee className="mr-1.5 h-4 w-4" />
-              Save & End
+              保存して終了
             </Button>
             <Button type="button" variant="ghost" onClick={handleCancelBreak}>
-              Cancel
+              キャンセル
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -181,8 +181,8 @@ export default function FloatingActionControls() {
             {isInterruptEvent(activeEvent) && <Zap className="h-5 w-5 text-yellow-500" />}
             {isBreakEvent(activeEvent) && <Coffee className="h-5 w-5 text-blue-500" />}
             <div className="text-sm">
-              <p className="font-medium truncate max-w-[150px] sm:max-w-xs" title={activeEvent?.label || 'No active event'}>
-                {activeEvent?.label || 'No active event'}
+              <p className="font-medium truncate max-w-[150px] sm:max-w-xs" title={activeEvent?.label || 'アクティブなイベントなし'}>
+                {activeEvent?.label || 'アクティブなイベントなし'}
               </p>
               <p className="text-base font-semibold text-blue-600 dark:text-blue-400">
                 {elapsedTime}
@@ -193,17 +193,17 @@ export default function FloatingActionControls() {
           <div className="flex w-full gap-2 sm:w-auto">
             {isTaskEvent(activeEvent) && (
               <Button onClick={openInterruptModal} variant="outline" size="sm" className="flex-1 sm:flex-none border-yellow-500 text-yellow-600 hover:bg-yellow-50 dark:border-yellow-400 dark:text-yellow-400 dark:hover:bg-yellow-900/50">
-                <Zap className="mr-1.5 h-4 w-4" /> Interrupt
+                <Zap className="mr-1.5 h-4 w-4" /> 割り込み
               </Button>
             )}
             {(activeEvent || isModalOpen) && (
               <Button onClick={handleStop} variant="destructive" size="sm" className="flex-1 sm:flex-none">
-                <Square className="mr-1.5 h-4 w-4" /> Stop
+                <Square className="mr-1.5 h-4 w-4" /> 停止
               </Button>
             )}
             {isTaskEvent(activeEvent) && (
               <Button onClick={openBreakModal} variant="outline" size="sm" className="flex-1 sm:flex-none border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/50">
-                <Coffee className="mr-1.5 h-4 w-4" /> Break
+                <Coffee className="mr-1.5 h-4 w-4" /> 休憩
               </Button>
             )}
           </div>

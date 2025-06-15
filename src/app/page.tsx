@@ -42,7 +42,7 @@ export default function LogPage() {
 
   useEffect(() => {
     if (isHydrated && activeEvent) {
-      document.title = `InterruptLog Slim - ${activeEvent.label ?? 'Task'}`;
+      document.title = `InterruptLog Slim - ${activeEvent.label ?? 'タスク'}`;
     } else {
       document.title = 'InterruptLog Slim';
     }
@@ -183,7 +183,7 @@ export default function LogPage() {
 
       {/* My Tasks Section */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">My Tasks</h2>
+        <h2 className="text-xl font-semibold mb-2">マイタスク</h2>
         <div className="flex gap-2 mb-4">
           <Input
             type="text"
@@ -194,11 +194,11 @@ export default function LogPage() {
                 handleAddNewTask();
               }
             }}
-            placeholder="New task name"
+            placeholder="新しいタスク名"
             className="flex-grow"
           />
           <Button onClick={handleAddNewTask} variant="outline">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+            <PlusCircle className="mr-2 h-4 w-4" /> タスクを追加
           </Button>
         </div>
         <div className="space-y-2">
@@ -225,13 +225,13 @@ export default function LogPage() {
               onDragEnd={handleDragEnd}
             />
           ))}
-          {myTasks.length === 0 && <p className="text-gray-500">No tasks yet. Add some!</p>}
+          {myTasks.length === 0 && <p className="text-gray-500">タスクがまだありません。追加してください！</p>}
         </div>
       </div>
 
       {/* Event History Section */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">Event History</h2>
+        <h2 className="text-xl font-semibold mb-2">イベント履歴</h2>
         {filteredEvents.length > 0 ? (
           <ul className="space-y-2">
             {filteredEvents
@@ -252,7 +252,7 @@ export default function LogPage() {
               ))}
           </ul>
         ) : (
-          <p className="text-gray-500">No events logged yet.</p>
+          <p className="text-gray-500">まだイベントが記録されていません。</p>
         )}
         
         {/* Show more button */}
@@ -263,7 +263,7 @@ export default function LogPage() {
               onClick={() => setShowAllHistory(true)}
               className="text-sm"
             >
-              Show all history ({events.length - filteredEvents.length} more events)
+              すべての履歴を表示（残り{events.length - filteredEvents.length}件）
             </Button>
           </div>
         )}
@@ -275,7 +275,7 @@ export default function LogPage() {
               onClick={() => setShowAllHistory(false)}
               className="text-sm"
             >
-              Show less
+              表示を減らす
             </Button>
           </div>
         )}

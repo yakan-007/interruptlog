@@ -6,9 +6,9 @@ import { Home, BarChart2, Settings as SettingsIcon } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems = [
-  { href: '/', icon: Home, label: 'Log' },
-  { href: '/report', icon: BarChart2, label: 'Report' },
-  { href: '/settings', icon: SettingsIcon, label: 'Settings' },
+  { href: '/', icon: Home, label: 'ログ' },
+  { href: '/report', icon: BarChart2, label: 'レポート' },
+  { href: '/settings', icon: SettingsIcon, label: '設定' },
 ];
 
 const IconTabs = () => {

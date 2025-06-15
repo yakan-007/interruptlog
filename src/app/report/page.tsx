@@ -16,7 +16,7 @@ const ReportPage = () => {
   }));
 
   if (!isHydrated) {
-    return <div className="p-4 text-center">Loading report data...</div>;
+    return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
 
   const today = new Date();
@@ -61,19 +61,19 @@ const ReportPage = () => {
 
   return (
     <div className="p-4">
-      <h1 className="mb-6 text-center text-2xl font-semibold">Today&apos;s Report</h1>
+      <h1 className="mb-6 text-center text-2xl font-semibold">本日のレポート</h1>
 
       <div className="mb-8 grid grid-cols-3 gap-4 text-center">
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Task Time</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">タスク時間</p>
           <p className="text-xl font-bold">{formatDuration(totalFocusTime)}</p>
         </div>
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Interrupts</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">割り込み</p>
           <p className="text-xl font-bold">{formatDuration(totalInterruptTime)}</p>
         </div>
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Breaks</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">休憩</p>
           <p className="text-xl font-bold">{formatDuration(totalBreakTime)}</p>
         </div>
       </div>
@@ -83,12 +83,12 @@ const ReportPage = () => {
             <StatBar data={chartData} />
         </div>
       ) : (
-        <p className="text-center text-gray-500 dark:text-gray-400">No data for today to display chart.</p>
+        <p className="text-center text-gray-500 dark:text-gray-400">本日のデータがないため、グラフを表示できません。</p>
       )}
 
       {/* Interrupt Timeline Section */}
       <div className="mb-8">
-        <h2 className="mb-3 text-xl font-semibold">Interrupt Analysis</h2>
+        <h2 className="mb-3 text-xl font-semibold">割り込み分析</h2>
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <InterruptTimeline events={events} />
         </div>
@@ -97,7 +97,7 @@ const ReportPage = () => {
       {/* Completed Tasks Section */}
       <div className="mb-8">
         <h2 className="mb-3 text-xl font-semibold">
-          Completed Tasks Today
+          本日完了したタスク
           {completedTasksWithTodayActivity.length > 0 && (
             <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
               ({completedTasksWithTodayActivity.length})
@@ -112,11 +112,11 @@ const ReportPage = () => {
 
       {/* Recent Events Section */}
       <div>
-        <h2 className="mb-3 text-xl font-semibold">Last 10 Events Today</h2>
+        <h2 className="mb-3 text-xl font-semibold">本日の最新10イベント</h2>
         {last10Events.length > 0 ? (
           <EventList events={last10Events} />
         ) : (
-          <p className="text-center text-gray-500 dark:text-gray-400">No events logged today.</p>
+          <p className="text-center text-gray-500 dark:text-gray-400">本日のイベントが記録されていません。</p>
         )}
       </div>
     </div>
