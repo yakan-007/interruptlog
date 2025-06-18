@@ -1,10 +1,12 @@
 import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Event, MyTask } from '@/types';
+import { Event, MyTask, Category } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 
 const EVENTS_STORE_KEY = 'events-store';
 const MY_TASKS_STORE_KEY = 'mytasks-store';
+const CATEGORIES_STORE_KEY = 'categories-store';
+const CATEGORY_ENABLED_KEY = 'category-enabled';
 
 // Helper to sort tasks by order
 const sortMyTasks = (tasks: MyTask[]): MyTask[] => tasks.slice().sort((a, b) => a.order - b.order);
@@ -19,6 +21,8 @@ export interface EventsState {
   currentEventId: string | null;
   previousTaskIdBeforeInterrupt: string | null;
   myTasks: MyTask[];
+  categories: Category[];
+  isCategoryEnabled: boolean;
   isHydrated: boolean;
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
@@ -31,9 +35,10 @@ export interface EventsState {
     updateEvent: (event: Event) => void;
     setEvents: (events: Event[]) => void;
     setCurrentEventId: (id: string | null) => void;
-    addMyTask: (name: string) => void;
+    addMyTask: (name: string, categoryId?: string) => void;
     removeMyTask: (id: string) => void;
     updateMyTask: (id: string, newName: string) => void;
+    updateMyTaskCategory: (id: string, categoryId: string | undefined) => void;
     setMyTasks: (tasks: MyTask[]) => void;
     hydrate: () => Promise<void>;
     toggleMyTaskCompletion: (taskId: string) => void;
@@ -42,7 +47,13 @@ export interface EventsState {
     cancelCurrentInterruptAndResumeTask: () => void;
     _persistEventsState: () => void;
     _persistMyTasksState: () => void;
+    _persistCategoriesState: () => void;
     stopBreakAndResumePreviousTask: () => void;
+    addCategory: (name: string, color: string) => void;
+    updateCategory: (id: string, name: string, color: string) => void;
+    removeCategory: (id: string) => void;
+    setCategories: (categories: Category[]) => void;
+    toggleCategoryEnabled: () => void;
   };
 }
 
@@ -51,6 +62,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   currentEventId: null,
   previousTaskIdBeforeInterrupt: null,
   myTasks: [],
+  categories: [],
+  isCategoryEnabled: false,
   isHydrated: false,
   actions: {
     hydrate: async () => {
@@ -92,6 +105,25 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         } else {
           set({ myTasks: [] });
         }
+
+        const storedCategories = await dbGet<Category[]>(CATEGORIES_STORE_KEY);
+        if (storedCategories) {
+          set({ categories: storedCategories });
+        } else {
+          // デフォルトカテゴリを作成
+          const defaultCategories: Category[] = [
+            { id: uuidv4(), name: '開発', color: '#3B82F6', order: 0 },
+            { id: uuidv4(), name: '会議', color: '#8B5CF6', order: 1 },
+            { id: uuidv4(), name: 'レビュー', color: '#10B981', order: 2 },
+            { id: uuidv4(), name: 'ドキュメント', color: '#F59E0B', order: 3 },
+            { id: uuidv4(), name: 'その他', color: '#6B7280', order: 4 },
+          ];
+          set({ categories: defaultCategories });
+          await dbSet(CATEGORIES_STORE_KEY, defaultCategories);
+        }
+
+        const categoryEnabled = await dbGet<boolean>(CATEGORY_ENABLED_KEY);
+        set({ isCategoryEnabled: categoryEnabled ?? false });
       } catch (error) {
         console.error('[useEventsStore] Failed to hydrate from IndexedDB:', error);
         set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null, myTasks: [], isHydrated: false });
@@ -296,7 +328,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       get().actions._persistEventsState();
     },
-    addMyTask: (name: string) => {
+    addMyTask: (name: string, categoryId?: string) => {
       if (!name.trim()) return;
       const currentTasks = get().myTasks;
       const newTask: MyTask = {
@@ -304,6 +336,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         name: name.trim(),
         isCompleted: false,
         order: currentTasks.length,
+        categoryId: categoryId,
       };
       const updatedTasks = sortMyTasks([...currentTasks, newTask]);
       set({ myTasks: updatedTasks });
@@ -399,6 +432,65 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
       }
       get().actions._persistEventsState();
+    },
+    updateMyTaskCategory: (id: string, categoryId: string | undefined) => {
+      const currentTasks = get().myTasks;
+      const updatedTasks = currentTasks.map(task =>
+        task.id === id ? { ...task, categoryId } : task
+      );
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
+    },
+    _persistCategoriesState: () => {
+      const { categories, isCategoryEnabled } = get();
+      dbSet(CATEGORIES_STORE_KEY, categories).catch(error => {
+        console.error('[useEventsStore] Error persisting categories to IndexedDB:', error);
+      });
+      dbSet(CATEGORY_ENABLED_KEY, isCategoryEnabled).catch(error => {
+        console.error('[useEventsStore] Error persisting category enabled state to IndexedDB:', error);
+      });
+    },
+    addCategory: (name: string, color: string) => {
+      const currentCategories = get().categories;
+      const newCategory: Category = {
+        id: uuidv4(),
+        name: name.trim(),
+        color,
+        order: currentCategories.length,
+      };
+      set({ categories: [...currentCategories, newCategory] });
+      get().actions._persistCategoriesState();
+    },
+    updateCategory: (id: string, name: string, color: string) => {
+      const currentCategories = get().categories;
+      const updatedCategories = currentCategories.map(cat =>
+        cat.id === id ? { ...cat, name: name.trim(), color } : cat
+      );
+      set({ categories: updatedCategories });
+      get().actions._persistCategoriesState();
+    },
+    removeCategory: (id: string) => {
+      const currentCategories = get().categories;
+      const remainingCategories = currentCategories.filter(cat => cat.id !== id);
+      const updatedCategories = remainingCategories.map((cat, index) => ({ ...cat, order: index }));
+      set({ categories: updatedCategories });
+      get().actions._persistCategoriesState();
+      
+      // カテゴリが削除されたら、そのカテゴリを使用しているタスクのcategoryIdをクリア
+      const currentTasks = get().myTasks;
+      const updatedTasks = currentTasks.map(task =>
+        task.categoryId === id ? { ...task, categoryId: undefined } : task
+      );
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
+    },
+    setCategories: (categories: Category[]) => {
+      set({ categories });
+      get().actions._persistCategoriesState();
+    },
+    toggleCategoryEnabled: () => {
+      set({ isCategoryEnabled: !get().isCategoryEnabled });
+      get().actions._persistCategoriesState();
     },
   },
 });

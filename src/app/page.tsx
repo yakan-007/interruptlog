@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import EventHistoryItem from '@/components/EventHistoryItem';
@@ -11,8 +12,9 @@ import { formatEventTime } from '@/lib/timeUtils';
 import { YESTERDAY_EVENTS_LIMIT } from '@/lib/constants';
 
 export default function LogPage() {
-  const { events, currentEventId, myTasks, isHydrated, actions } = useEventsStore();
+  const { events, currentEventId, myTasks, categories, isCategoryEnabled, isHydrated, actions } = useEventsStore();
   const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskCategoryId, setNewTaskCategoryId] = useState<string>('');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -37,8 +39,10 @@ export default function LogPage() {
 
   const handleAddNewTask = () => {
     if (newTaskName.trim() !== '') {
-      actions.addMyTask(newTaskName.trim());
+      const categoryId = newTaskCategoryId && newTaskCategoryId !== 'none' ? newTaskCategoryId : undefined;
+      actions.addMyTask(newTaskName.trim(), categoryId);
       setNewTaskName('');
+      setNewTaskCategoryId('');
     }
   };
 
@@ -180,6 +184,27 @@ export default function LogPage() {
             placeholder="新しいタスク名"
             className="flex-grow"
           />
+          {isCategoryEnabled && (
+            <Select value={newTaskCategoryId} onValueChange={setNewTaskCategoryId}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="カテゴリ" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">カテゴリなし</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button onClick={handleAddNewTask} variant="outline">
             <PlusCircle className="mr-2 h-4 w-4" /> タスクを追加
           </Button>

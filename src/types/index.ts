@@ -25,4 +25,12 @@ export type MyTask = {
   name: string;
   isCompleted: boolean;
   order: number; // for sorting
+  categoryId?: string; // カテゴリID（オプション）
+};
+
+export type Category = {
+  id: string; // uuid
+  name: string;
+  color: string; // HEXカラーコード（例: #34D399）
+  order: number; // 表示順
 }; 

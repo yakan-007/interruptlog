@@ -8,9 +8,11 @@ import InterruptTimeline from '@/components/InterruptTimeline';
 import { RECENT_EVENTS_LIMIT } from '@/lib/constants';
 
 const ReportPage = () => {
-  const { events, myTasks, isHydrated } = useEventsStore((state: EventsState) => ({ 
+  const { events, myTasks, categories, isCategoryEnabled, isHydrated } = useEventsStore((state: EventsState) => ({ 
     events: state.events,
     myTasks: state.myTasks,
+    categories: state.categories,
+    isCategoryEnabled: state.isCategoryEnabled,
     isHydrated: state.isHydrated 
   }));
 
@@ -58,6 +60,34 @@ const ReportPage = () => {
     );
   });
 
+  // Calculate category time data
+  const categoryTimeData = isCategoryEnabled ? categories.map(category => {
+    const categoryTasks = myTasks.filter(task => task.categoryId === category.id);
+    const categoryTime = todaysEvents
+      .filter(event => 
+        event.type === 'task' && 
+        event.end && 
+        categoryTasks.some(task => task.id === event.meta?.myTaskId)
+      )
+      .reduce((total, event) => total + (event.end! - event.start), 0);
+    
+    return {
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      time: categoryTime,
+    };
+  }).filter(item => item.time > 0) : [];
+
+  // Add uncategorized tasks time
+  const uncategorizedTime = isCategoryEnabled ? todaysEvents
+    .filter(event => {
+      if (event.type !== 'task' || !event.end) return false;
+      const task = myTasks.find(t => t.id === event.meta?.myTaskId);
+      return task && !task.categoryId;
+    })
+    .reduce((total, event) => total + (event.end! - event.start), 0) : 0;
+
   return (
     <div className="p-4">
       <h1 className="mb-6 text-center text-2xl font-semibold">本日のレポート</h1>
@@ -83,6 +113,54 @@ const ReportPage = () => {
         </div>
       ) : (
         <p className="text-center text-gray-500 dark:text-gray-400">本日のデータがないため、グラフを表示できません。</p>
+      )}
+
+      {/* Category Time Analysis */}
+      {isCategoryEnabled && (categoryTimeData.length > 0 || uncategorizedTime > 0) && (
+        <div className="mb-8">
+          <h2 className="mb-3 text-xl font-semibold">カテゴリ別時間配分</h2>
+          <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="mb-4">
+              <StatBar 
+                data={[
+                  ...categoryTimeData.map(item => ({
+                    name: item.name,
+                    value: item.time,
+                    fill: item.color
+                  })),
+                  ...(uncategorizedTime > 0 ? [{
+                    name: '未分類',
+                    value: uncategorizedTime,
+                    fill: '#9CA3AF'
+                  }] : [])
+                ]}
+              />
+            </div>
+            <div className="space-y-2">
+              {categoryTimeData.map(item => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm">{item.name}</span>
+                  </div>
+                  <span className="text-sm font-mono">{formatDuration(item.time)}</span>
+                </div>
+              ))}
+              {uncategorizedTime > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded-full bg-gray-400" />
+                    <span className="text-sm">未分類</span>
+                  </div>
+                  <span className="text-sm font-mono">{formatDuration(uncategorizedTime)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Interrupt Timeline Section */}

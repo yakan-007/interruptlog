@@ -6,8 +6,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Trash2, Play, GripVertical, Check, X } from 'lucide-react';
-import { MyTask, Event } from '@/types';
+import { MyTask, Event, Category } from '@/types';
 import TaskCardTimer from './TaskCardTimer';
+import useEventsStore from '@/store/useEventsStore';
 
 interface TaskCardProps {
   task: MyTask;
@@ -50,6 +51,13 @@ export default function TaskCard({
   onDrop,
   onDragEnd,
 }: TaskCardProps) {
+  const { categories, isCategoryEnabled } = useEventsStore((state) => ({
+    categories: state.categories,
+    isCategoryEnabled: state.isCategoryEnabled,
+  }));
+
+  const taskCategory = task.categoryId ? categories.find(cat => cat.id === task.categoryId) : null;
+
   const isActiveTask = activeEvent && 
     activeEvent.type === 'task' && 
     activeEvent.meta?.myTaskId === task.id && 
@@ -110,13 +118,22 @@ export default function TaskCard({
             />
           </div>
         ) : (
-          <span
-            className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow cursor-pointer select-none`}
-            onDoubleClick={() => !task.isCompleted && onStartEditTask(task.id, task.name)}
-            title={!task.isCompleted ? "Double-click to edit" : ""}
-          >
-            {task.name}
-          </span>
+          <div className="flex items-center gap-2 flex-grow">
+            {isCategoryEnabled && taskCategory && (
+              <div 
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: taskCategory.color }}
+                title={taskCategory.name}
+              />
+            )}
+            <span
+              className={`${task.isCompleted ? 'line-through text-gray-500' : ''} flex-grow cursor-pointer select-none`}
+              onDoubleClick={() => !task.isCompleted && onStartEditTask(task.id, task.name)}
+              title={!task.isCompleted ? "Double-click to edit" : ""}
+            >
+              {task.name}
+            </span>
+          </div>
         )}
       </div>
       <div className="flex items-center">
