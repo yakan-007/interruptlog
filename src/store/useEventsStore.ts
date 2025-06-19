@@ -317,6 +317,50 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }));
       get().actions._persistEventsState();
     },
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string) => {
+      const { events } = get();
+      const eventIndex = events.findIndex(e => e.id === eventId);
+      const event = events[eventIndex];
+      
+      if (!event || !event.end) {
+        console.error('[useEventsStore] Cannot edit event: event not found or still running');
+        return;
+      }
+      
+      if (newEndTime <= event.start || newEndTime > Date.now()) {
+        console.error('[useEventsStore] Invalid end time');
+        return;
+      }
+      
+      // If reducing end time, create an "unknown activity" event to fill the gap
+      if (newEndTime < event.end) {
+        const unknownActivityEvent: Event = {
+          id: uuidv4(),
+          type: 'task',
+          label: gapActivityName || '不明なアクティビティ',
+          start: newEndTime,
+          end: event.end,
+          meta: {
+            isUnknownActivity: true
+          }
+        };
+        
+        // Update the original event
+        const updatedEvent: Event = { ...event, end: newEndTime };
+        
+        // Insert the unknown activity right after the edited event
+        const newEvents = [...events];
+        newEvents[eventIndex] = updatedEvent;
+        newEvents.splice(eventIndex + 1, 0, unknownActivityEvent);
+        
+        set({ events: newEvents });
+      } else {
+        // Simply update the end time
+        get().actions.updateEvent({ ...event, end: newEndTime });
+      }
+      
+      get().actions._persistEventsState();
+    },
     setEvents: (events: Event[]) => {
       set({ events });
       get().actions._persistEventsState();

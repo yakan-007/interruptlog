@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import useEventsStore from '@/store/useEventsStore';
+import { Event } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import EventHistoryItem from '@/components/EventHistoryItem';
+import EventEditModal from '@/components/EventEditModal';
 import { formatEventTime } from '@/lib/timeUtils';
 import { YESTERDAY_EVENTS_LIMIT } from '@/lib/constants';
 
@@ -22,8 +24,15 @@ export default function LogPage() {
   const [memoText, setMemoText] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskName, setEditingTaskName] = useState('');
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const activeEvent = currentEventId ? events.find((e) => e.id === currentEventId) : undefined;
+  
+  // Find the last completed event
+  const lastCompletedEvent = [...events]
+    .reverse()
+    .find(event => event.end !== undefined);
 
   useEffect(() => {
     if (isHydrated && activeEvent) {
@@ -164,6 +173,23 @@ export default function LogPage() {
     setEditingTaskName('');
   };
 
+  // Handle event time editing
+  const handleEditEventTime = (event: Event) => {
+    setEditingEvent(event);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEventTime = (eventId: string, newEndTime: number, gapActivityName?: string) => {
+    actions.updateEventEndTime(eventId, newEndTime, gapActivityName);
+    setIsEditModalOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingEvent(null);
+  };
+
   return (
     <div className="container mx-auto p-4 pb-16">
       <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
@@ -256,6 +282,8 @@ export default function LogPage() {
                   onCancelEditMemo={handleCancelEditMemo}
                   onSetMemoText={setMemoText}
                   formatEventTime={formatEventTime}
+                  onEditEventTime={handleEditEventTime}
+                  canEditTime={event.id === lastCompletedEvent?.id}
                 />
               ))}
           </ul>
@@ -288,6 +316,15 @@ export default function LogPage() {
           </div>
         )}
       </div>
+
+      {/* Event Edit Modal */}
+      <EventEditModal
+        event={editingEvent}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveEventTime}
+        nextEvent={editingEvent ? events[events.findIndex(e => e.id === editingEvent.id) + 1] : undefined}
+      />
     </div>
   );
 } 

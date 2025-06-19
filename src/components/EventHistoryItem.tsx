@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StickyNote, Check, X } from 'lucide-react';
+import { StickyNote, Check, X, Clock } from 'lucide-react';
 import { Event } from '@/types';
 
 interface EventHistoryItemProps {
@@ -15,6 +15,8 @@ interface EventHistoryItemProps {
   onCancelEditMemo: () => void;
   onSetMemoText: (text: string) => void;
   formatEventTime: (timestamp: number) => string;
+  onEditEventTime?: (event: Event) => void;
+  canEditTime?: boolean;
 }
 
 export default function EventHistoryItem({
@@ -26,6 +28,8 @@ export default function EventHistoryItem({
   onCancelEditMemo,
   onSetMemoText,
   formatEventTime,
+  onEditEventTime,
+  canEditTime = false,
 }: EventHistoryItemProps) {
   return (
     <li className="p-3 border rounded-md text-sm">
@@ -81,17 +85,28 @@ export default function EventHistoryItem({
           ) : null}
         </div>
         
-        {/* Memo button */}
+        {/* Action buttons */}
         {event.end && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onStartEditMemo(event.id, event.memo)}
-            title={event.memo ? "Edit memo" : "Add memo"}
-            className="ml-2"
-          >
-            <StickyNote className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-1 ml-2">
+            {canEditTime && onEditEventTime && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onEditEventTime(event)}
+                title="Edit end time"
+              >
+                <Clock className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onStartEditMemo(event.id, event.memo)}
+              title={event.memo ? "Edit memo" : "Add memo"}
+            >
+              <StickyNote className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
     </li>
