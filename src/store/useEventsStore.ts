@@ -2,6 +2,7 @@ import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Event, MyTask, Category } from '@/types';
 import { BusinessHoursSettings, BusinessHoursState } from '@/types/businessHours';
+import { shouldAutoRestartBusinessTask } from '@/lib/businessHours';
 import { dbGet, dbSet } from '@/lib/db';
 
 const EVENTS_STORE_KEY = 'events-store';
@@ -61,6 +62,7 @@ export interface EventsState {
     removeCategory: (id: string) => void;
     setCategories: (categories: Category[]) => void;
     toggleCategoryEnabled: () => void;
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string) => void;
     // Business Hours Mode actions
     updateBusinessHoursSettings: (settings: BusinessHoursSettings) => void;
     toggleBusinessHours: () => void;
@@ -70,6 +72,7 @@ export interface EventsState {
     initializeBusinessHoursInterval: () => void;
     cleanupBusinessHoursInterval: () => void;
     _persistBusinessHoursSettings: () => void;
+    _tryRestartBusinessTask: () => void;
   };
 }
 
@@ -207,13 +210,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
       
-      // If business hours mode is enabled and we're within business hours, restart the default task
-      if (businessHoursSettings?.enabled && get().actions.isWithinBusinessHours()) {
-        // Small delay to ensure the previous event is properly closed
-        setTimeout(() => {
-          get().actions.startBusinessHoursTask();
-        }, 100);
-      }
+      // Try to restart business hours task if applicable
+      get().actions._tryRestartBusinessTask();
     },
     startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
       const { events, currentEventId } = get();
@@ -286,21 +284,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         } else {
            console.warn('[useEventsStore] stopInterruptAndResumePreviousTask: Previous task event not found.');
            set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-           // Start business hours task if applicable
-           if (get().businessHoursSettings?.enabled && get().actions.isWithinBusinessHours()) {
-             setTimeout(() => {
-               get().actions.startBusinessHoursTask();
-             }, 100);
-           }
+           // Try to restart business hours task if applicable
+           get().actions._tryRestartBusinessTask();
         }
       } else {
         set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        // Start business hours task if applicable
-        if (get().businessHoursSettings?.enabled && get().actions.isWithinBusinessHours()) {
-          setTimeout(() => {
-            get().actions.startBusinessHoursTask();
-          }, 100);
-        }
+        // Try to restart business hours task if applicable
+        get().actions._tryRestartBusinessTask();
       }
     },
     startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => {
@@ -348,21 +338,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           set({ currentEventId: resumedEvent.id, previousTaskIdBeforeInterrupt: null });
         } else {
           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-          // Start business hours task if applicable
-          if (get().businessHoursSettings?.enabled && get().actions.isWithinBusinessHours()) {
-            setTimeout(() => {
-              get().actions.startBusinessHoursTask();
-            }, 100);
-          }
+          // Try to restart business hours task if applicable
+          get().actions._tryRestartBusinessTask();
         }
       } else {
         set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        // Start business hours task if applicable
-        if (get().businessHoursSettings?.enabled && get().actions.isWithinBusinessHours()) {
-          setTimeout(() => {
-            get().actions.startBusinessHoursTask();
-          }, 100);
-        }
+        // Try to restart business hours task if applicable
+        get().actions._tryRestartBusinessTask();
       }
       get().actions._persistEventsState();
     },
@@ -639,22 +621,14 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       const settings = get().businessHoursSettings;
       if (!settings || !settings.enabled) return;
       
-      const now = new Date();
-      const currentTime = now.getHours() * 60 + now.getMinutes();
-      
-      const [startHour, startMin] = settings.workStart.split(':').map(Number);
-      const [endHour, endMin] = settings.workEnd.split(':').map(Number);
-      const workStartMinutes = startHour * 60 + startMin;
-      const workEndMinutes = endHour * 60 + endMin;
-      
-      const isWithinHours = currentTime >= workStartMinutes && currentTime < workEndMinutes;
       const wasWithinHours = get().businessHoursState.isWithinBusinessHours;
+      const isWithinHours = get().actions.isWithinBusinessHours();
       
       set({
         businessHoursState: {
           ...get().businessHoursState,
           isWithinBusinessHours: isWithinHours,
-          lastCheckTime: now.getTime(),
+          lastCheckTime: Date.now(),
         }
       });
       
@@ -687,7 +661,23 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     isWithinBusinessHours: () => {
-      return get().businessHoursState.isWithinBusinessHours;
+      const settings = get().businessHoursSettings;
+      if (!settings || !settings.enabled) return false;
+      
+      try {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        const [startHour, startMin] = settings.workStart.split(':').map(Number);
+        const [endHour, endMin] = settings.workEnd.split(':').map(Number);
+        const workStartMinutes = startHour * 60 + startMin;
+        const workEndMinutes = endHour * 60 + endMin;
+        
+        return currentMinutes >= workStartMinutes && currentMinutes < workEndMinutes;
+      } catch (error) {
+        console.error('[useEventsStore] Error checking business hours:', error);
+        return false;
+      }
     },
     initializeBusinessHoursInterval: () => {
       // Clean up any existing interval
@@ -718,6 +708,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       dbSet(BUSINESS_HOURS_STATE_KEY, businessHoursState).catch(error => {
         console.error('[useEventsStore] Error persisting business hours state:', error);
       });
+    },
+    _tryRestartBusinessTask: () => {
+      const { businessHoursSettings } = get();
+      if (shouldAutoRestartBusinessTask(businessHoursSettings)) {
+        // Small delay to ensure the previous event is properly closed
+        setTimeout(() => {
+          get().actions.startBusinessHoursTask();
+        }, 100);
+      }
     },
   },
 });

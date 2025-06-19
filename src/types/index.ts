@@ -6,6 +6,7 @@ export interface Event {
   end?: number; // epoch ms (undefined while running)
   meta?: {
     myTaskId?: string;
+    isUnknownActivity?: boolean; // For events created when editing past events
     // 他のメタ情報があればここに追加
   };
   // Interruptモーダル用の新しいフィールド

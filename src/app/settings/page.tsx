@@ -4,8 +4,8 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask, Category } from '@/types';
-import { BusinessHoursSettings } from '@/types/businessHours';
-import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle, Tag, Palette, Clock } from 'lucide-react';
+import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle, Tag, Palette } from 'lucide-react';
+import BusinessHoursSettings from '@/components/settings/BusinessHoursSettings';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
@@ -14,8 +14,6 @@ const SettingsPage = () => {
     myTasks, 
     categories, 
     isCategoryEnabled, 
-    businessHoursSettings, 
-    businessHoursState, 
     actions, 
     isHydrated 
   } = useEventsStore((state: EventsState) => state);
@@ -25,26 +23,8 @@ const SettingsPage = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; color: string } | null>(null);
-  
-  // Business Hours settings
-  const [businessHoursEnabled, setBusinessHoursEnabled] = useState(false);
-  const [workStart, setWorkStart] = useState('09:00');
-  const [workEnd, setWorkEnd] = useState('18:00');
-  const [defaultTaskName, setDefaultTaskName] = useState('その他の業務');
-  const [autoStopOutsideHours, setAutoStopOutsideHours] = useState(true);
 
   useEffect(() => setMounted(true), []);
-  
-  // Load business hours settings from store
-  useEffect(() => {
-    if (businessHoursSettings) {
-      setBusinessHoursEnabled(businessHoursSettings.enabled);
-      setWorkStart(businessHoursSettings.workStart);
-      setWorkEnd(businessHoursSettings.workEnd);
-      setDefaultTaskName(businessHoursSettings.defaultTaskName);
-      setAutoStopOutsideHours(businessHoursSettings.autoStopOutsideHours);
-    }
-  }, [businessHoursSettings]);
 
   const handleExport = () => {
     if (!isHydrated) {
@@ -164,33 +144,6 @@ const SettingsPage = () => {
     }
   };
 
-  // Business Hours handlers
-  const handleBusinessHoursToggle = () => {
-    const newEnabled = !businessHoursEnabled;
-    setBusinessHoursEnabled(newEnabled);
-    
-    const settings: BusinessHoursSettings = {
-      enabled: newEnabled,
-      workStart,
-      workEnd,
-      defaultTaskName,
-      autoStopOutsideHours,
-    };
-    
-    actions.updateBusinessHoursSettings(settings);
-  };
-
-  const handleBusinessHoursSettingChange = () => {
-    const settings: BusinessHoursSettings = {
-      enabled: businessHoursEnabled,
-      workStart,
-      workEnd,
-      defaultTaskName,
-      autoStopOutsideHours,
-    };
-    
-    actions.updateBusinessHoursSettings(settings);
-  };
 
   const predefinedColors = [
     '#3B82F6', // Blue
@@ -410,108 +363,7 @@ const SettingsPage = () => {
         </div>
 
         {/* Business Hours Mode */}
-        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-medium flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              業務時間モード
-            </h2>
-            <button
-              onClick={handleBusinessHoursToggle}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                businessHoursEnabled 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-              }`}
-            >
-              {businessHoursEnabled ? 'ON' : 'OFF'}
-            </button>
-          </div>
-
-          {businessHoursEnabled && (
-            <div className="space-y-4 border-t pt-4 dark:border-gray-600">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    業務開始時刻
-                  </label>
-                  <input
-                    type="time"
-                    value={workStart}
-                    onChange={(e) => setWorkStart(e.target.value)}
-                    onBlur={handleBusinessHoursSettingChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    業務終了時刻
-                  </label>
-                  <input
-                    type="time"
-                    value={workEnd}
-                    onChange={(e) => setWorkEnd(e.target.value)}
-                    onBlur={handleBusinessHoursSettingChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  デフォルトタスク名
-                </label>
-                <input
-                  type="text"
-                  value={defaultTaskName}
-                  onChange={(e) => setDefaultTaskName(e.target.value)}
-                  onBlur={handleBusinessHoursSettingChange}
-                  placeholder="その他の業務"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="autoStopOutsideHours"
-                  checked={autoStopOutsideHours}
-                  onChange={(e) => {
-                    setAutoStopOutsideHours(e.target.checked);
-                    setTimeout(handleBusinessHoursSettingChange, 0);
-                  }}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                />
-                <label htmlFor="autoStopOutsideHours" className="text-sm text-gray-700 dark:text-gray-300">
-                  業務時間外は自動停止
-                </label>
-              </div>
-
-              <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  業務時間中は自動的に「{defaultTaskName}」が実行されます。
-                  他のタスクや割り込みが発生すると一時停止し、終了後に自動再開されます。
-                </p>
-              </div>
-
-              {businessHoursState.isWithinBusinessHours && (
-                <div className="rounded-md bg-green-50 p-3 dark:bg-green-900/20">
-                  <p className="text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    現在業務時間中です
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!businessHoursEnabled && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              業務時間モードを有効にすると、設定した時間帯で自動的に「その他の業務」が実行されます。
-              細かい作業の記録漏れを防ぎ、より正確な時間管理ができます。
-            </p>
-          )}
-        </div>
+        <BusinessHoursSettings />
 
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="mb-4 text-lg font-medium">データ管理</h2>
