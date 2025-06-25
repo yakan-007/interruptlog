@@ -48,7 +48,6 @@ export interface EventsState {
     startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
     addEvent: (event: Event) => void;
     updateEvent: (event: Event) => void;
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
     setEvents: (events: Event[]) => void;
     setCurrentEventId: (id: string | null) => void;
     addMyTask: (name: string, categoryId?: string) => void;
@@ -70,7 +69,7 @@ export interface EventsState {
     removeCategory: (id: string) => void;
     setCategories: (categories: Category[]) => void;
     toggleCategoryEnabled: () => void;
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string) => void;
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
     // Business Hours Mode actions
     updateBusinessHoursSettings: (settings: BusinessHoursSettings) => void;
     toggleBusinessHours: () => void;
