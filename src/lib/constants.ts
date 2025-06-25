@@ -20,8 +20,24 @@ export const BREAK_OPTIONS = [
   { value: 'indefinite', label: '時間未定' },
 ];
 
-// 割り込みカテゴリ
-export const INTERRUPT_TYPES = ['ミーティング', '電話', '質問', '訪問', 'チャット', 'その他'];
+// 割り込みカテゴリ（シンプル版）
+export const DEFAULT_INTERRUPT_CATEGORIES = {
+  category1: 'ミーティング',
+  category2: '電話',
+  category3: 'メール',
+  category4: 'チャット',
+  category5: '質問',
+  category6: 'その他'
+} as const;
+
+export const INTERRUPT_CATEGORY_COLORS = {
+  category1: '#EF4444', // 赤
+  category2: '#F59E0B', // オレンジ
+  category3: '#3B82F6', // 青
+  category4: '#8B5CF6', // 紫
+  category5: '#10B981', // 緑
+  category6: '#6B7280'  // グレー
+} as const;
 
 // 緊急度レベル
 export const URGENCY_LEVELS = ['Low', 'Medium', 'High'] as const;

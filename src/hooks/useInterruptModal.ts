@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import { Event } from '@/types';
+import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
 
 export interface InterruptFormState {
   label: string;
@@ -12,7 +13,7 @@ export interface InterruptFormState {
 const DEFAULT_FORM: InterruptFormState = {
   label: '',
   who: '',
-  interruptType: 'Other',
+  interruptType: DEFAULT_INTERRUPT_CATEGORIES.category1, // デフォルトは最初のカテゴリ
   urgency: 'Medium',
 };
 
@@ -26,15 +27,20 @@ const DEFAULT_FORM: InterruptFormState = {
  */
 export default function useInterruptModal() {
   const { startInterrupt, updateInterruptDetails, stopInterruptAndResumePreviousTask, cancelCurrentInterruptAndResumeTask, stopCurrentEvent } = useEventsStore((s) => s.actions);
+  const interruptCategorySettings = useEventsStore((s) => s.interruptCategorySettings);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<InterruptFormState>(DEFAULT_FORM);
 
   // モーダルを開く。割り込み開始（プレースホルダーラベルで）
   const openInterruptModal = useCallback(() => {
-    setForm(DEFAULT_FORM);
+    // Use first interrupt category as default
+    setForm({
+      ...DEFAULT_FORM,
+      interruptType: interruptCategorySettings.category1
+    });
     startInterrupt(); // デフォルトの「Interrupt」ラベルで開始
     setOpen(true);
-  }, [startInterrupt]);
+  }, [startInterrupt, interruptCategorySettings.category1]);
 
   // モーダルを閉じるのみ（イベント再開などは行わない）
   const closeInterruptModal = useCallback(() => {

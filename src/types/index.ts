@@ -35,4 +35,14 @@ export type Category = {
   name: string;
   color: string; // HEXカラーコード（例: #34D399）
   order: number; // 表示順
+};
+
+// シンプルな割り込みカテゴリ設定（6つの固定カテゴリ名のみ変更可能）
+export type InterruptCategorySettings = {
+  category1: string; // デフォルト: 'ミーティング'
+  category2: string; // デフォルト: '電話'
+  category3: string; // デフォルト: '質問'
+  category4: string; // デフォルト: '訪問'
+  category5: string; // デフォルト: 'チャット'
+  category6: string; // デフォルト: 'その他'
 }; 

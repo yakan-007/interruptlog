@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import EventList from '@/components/EventList';
 import StatBar from '@/components/StatBar';
@@ -16,22 +17,29 @@ const ReportPage = () => {
     isHydrated: state.isHydrated 
   }));
 
+  // Initialize selectedDate to today
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  });
+
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  // Parse selected date and create date range
+  const startDate = new Date(selectedDate);
+  startDate.setHours(0, 0, 0, 0);
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 1);
 
-  const todaysEvents = events.filter(event => {
+  const selectedDateEvents = events.filter(event => {
     const eventDate = new Date(event.start);
-    return eventDate >= today && eventDate < tomorrow;
+    return eventDate >= startDate && eventDate < endDate;
   });
 
   const calculateTotalTime = (type: 'task' | 'interrupt' | 'break') => {
-    return todaysEvents
+    return selectedDateEvents
       .filter(event => event.type === type && event.end)
       .reduce((total, event) => total + (event.end! - event.start), 0);
   };
@@ -46,23 +54,23 @@ const ReportPage = () => {
     { name: '休憩', value: totalBreakTime, fill: '#9CA3AF' }, // Gray
   ];
 
-  const last10Events = [...todaysEvents]
+  const last10Events = [...selectedDateEvents]
     .sort((a, b) => b.start - a.start)
     .slice(0, RECENT_EVENTS_LIMIT);
 
-  // Get completed tasks that had activity today
-  const completedTasksWithTodayActivity = myTasks.filter(task => {
+  // Get completed tasks that had activity on selected date
+  const completedTasksWithSelectedDateActivity = myTasks.filter(task => {
     if (!task.isCompleted) return false;
     
-    // Check if this task had any events today
-    return todaysEvents.some(event => 
+    // Check if this task had any events on selected date
+    return selectedDateEvents.some(event => 
       event.type === 'task' && event.meta?.myTaskId === task.id
     );
   });
 
   // Calculate category time data (using direct event categoryId)
   const categoryTimeData = isCategoryEnabled ? categories.map(category => {
-    const categoryTime = todaysEvents
+    const categoryTime = selectedDateEvents
       .filter(event => 
         event.end && 
         event.categoryId === category.id
@@ -78,15 +86,46 @@ const ReportPage = () => {
   }).filter(item => item.time > 0) : [];
 
   // Add uncategorized events time (events without categoryId)
-  const uncategorizedTime = isCategoryEnabled ? todaysEvents
+  const uncategorizedTime = isCategoryEnabled ? selectedDateEvents
     .filter(event => 
       event.end && !event.categoryId
     )
     .reduce((total, event) => total + (event.end! - event.start), 0) : 0;
 
+  // Format date for display
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Check if selected date is today
+    if (date.toDateString() === today.toDateString()) {
+      return '本日';
+    }
+    
+    // Format as YYYY年MM月DD日
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}年${month}月${day}日`;
+  };
+
   return (
     <div className="p-4">
-      <h1 className="mb-6 text-center text-2xl font-semibold">本日のレポート</h1>
+      <div className="mb-6">
+        <h1 className="mb-4 text-center text-2xl font-semibold">
+          {formatDateForDisplay(selectedDate)}のレポート
+        </h1>
+        <div className="flex justify-center">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]} // Limit to today or past
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+      </div>
 
       <div className="mb-8 grid grid-cols-3 gap-4 text-center">
         <div>
@@ -103,12 +142,12 @@ const ReportPage = () => {
         </div>
       </div>
 
-      {todaysEvents.length > 0 ? (
+      {selectedDateEvents.length > 0 ? (
          <div className="mb-8 h-60 w-full">
             <StatBar data={chartData} />
         </div>
       ) : (
-        <p className="text-center text-gray-500 dark:text-gray-400">本日のデータがないため、グラフを表示できません。</p>
+        <p className="text-center text-gray-500 dark:text-gray-400">選択した日付のデータがないため、グラフを表示できません。</p>
       )}
 
       {/* Category Time Analysis */}
@@ -170,26 +209,26 @@ const ReportPage = () => {
       {/* Completed Tasks Section */}
       <div className="mb-8">
         <h2 className="mb-3 text-xl font-semibold">
-          本日完了したタスク
-          {completedTasksWithTodayActivity.length > 0 && (
+          {formatDateForDisplay(selectedDate)}に完了したタスク
+          {completedTasksWithSelectedDateActivity.length > 0 && (
             <span className="ml-2 text-sm font-normal text-green-600 dark:text-green-400">
-              ({completedTasksWithTodayActivity.length})
+              ({completedTasksWithSelectedDateActivity.length})
             </span>
           )}
         </h2>
         <CompletedTasksList 
-          completedTasks={completedTasksWithTodayActivity} 
-          events={todaysEvents} 
+          completedTasks={completedTasksWithSelectedDateActivity} 
+          events={selectedDateEvents} 
         />
       </div>
 
       {/* Recent Events Section */}
       <div>
-        <h2 className="mb-3 text-xl font-semibold">本日の最新10イベント</h2>
+        <h2 className="mb-3 text-xl font-semibold">{formatDateForDisplay(selectedDate)}の最新10イベント</h2>
         {last10Events.length > 0 ? (
           <EventList events={last10Events} />
         ) : (
-          <p className="text-center text-gray-500 dark:text-gray-400">本日のイベントが記録されていません。</p>
+          <p className="text-center text-gray-500 dark:text-gray-400">選択した日付のイベントが記録されていません。</p>
         )}
       </div>
     </div>

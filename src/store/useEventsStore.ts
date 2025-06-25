@@ -1,12 +1,16 @@
 import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Event, MyTask, Category } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
+import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
 
 const EVENTS_STORE_KEY = 'events-store';
 const MY_TASKS_STORE_KEY = 'mytasks-store';
 const CATEGORIES_STORE_KEY = 'categories-store';
 const CATEGORY_ENABLED_KEY = 'category-enabled';
+const INTERRUPT_CATEGORY_SETTINGS_STORE_KEY = 'interrupt-category-settings-store';
+const TASK_PLACEMENT_SETTING_KEY = 'task-placement-setting';
+const AUTO_START_TASK_SETTING_KEY = 'auto-start-task-setting';
 
 // Helper to sort tasks by order
 const sortMyTasks = (tasks: MyTask[]): MyTask[] => tasks.slice().sort((a, b) => a.order - b.order);
@@ -30,6 +34,9 @@ export interface EventsState {
   myTasks: MyTask[];
   categories: Category[];
   isCategoryEnabled: boolean;
+  interruptCategorySettings: InterruptCategorySettings;
+  addTaskToTop: boolean; // true: 上に追加, false: 下に追加
+  autoStartTask: boolean; // true: タスク追加後即座開始, false: 手動で開始
   isHydrated: boolean;
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
@@ -62,6 +69,14 @@ export interface EventsState {
     setCategories: (categories: Category[]) => void;
     toggleCategoryEnabled: () => void;
     updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
+    updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => void;
+    resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => void;
+    resetAllInterruptCategoriesToDefault: () => void;
+    _persistInterruptCategorySettings: () => void;
+    toggleTaskPlacement: () => void;
+    _persistTaskPlacementSetting: () => void;
+    toggleAutoStartTask: () => void;
+    _persistAutoStartTaskSetting: () => void;
   };
 }
 
@@ -72,6 +87,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   myTasks: [],
   categories: [],
   isCategoryEnabled: false,
+  interruptCategorySettings: {
+    category1: 'ミーティング',
+    category2: '電話',
+    category3: '質問',
+    category4: '訪問',
+    category5: 'チャット',
+    category6: 'その他'
+  },
+  addTaskToTop: false, // デフォルトは下に追加
+  autoStartTask: false, // デフォルトは手動開始
   isHydrated: false,
   actions: {
     hydrate: async () => {
@@ -132,9 +157,31 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
 
         const categoryEnabled = await dbGet<boolean>(CATEGORY_ENABLED_KEY);
         set({ isCategoryEnabled: categoryEnabled ?? false });
+
+        const storedInterruptCategorySettings = await dbGet<InterruptCategorySettings>(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY);
+        if (storedInterruptCategorySettings) {
+          // マージしてデフォルト値で欠損を補完
+          const mergedSettings = {
+            ...DEFAULT_INTERRUPT_CATEGORIES,
+            ...storedInterruptCategorySettings
+          };
+          set({ interruptCategorySettings: mergedSettings });
+          // 更新されたデータを保存
+          await dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, mergedSettings);
+        } else {
+          // デフォルト割り込みカテゴリ設定を使用
+          set({ interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES } });
+          await dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, DEFAULT_INTERRUPT_CATEGORIES);
+        }
+
+        const storedTaskPlacement = await dbGet<boolean>(TASK_PLACEMENT_SETTING_KEY);
+        set({ addTaskToTop: storedTaskPlacement ?? false });
+
+        const storedAutoStartTask = await dbGet<boolean>(AUTO_START_TASK_SETTING_KEY);
+        set({ autoStartTask: storedAutoStartTask ?? false });
       } catch (error) {
         console.error('[useEventsStore] Failed to hydrate from IndexedDB:', error);
-        set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null, myTasks: [], isHydrated: false });
+        set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null, myTasks: [], interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, addTaskToTop: false, autoStartTask: false, isHydrated: false });
       }
 
       set({ isHydrated: true });
@@ -408,17 +455,49 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     addMyTask: (name: string, categoryId?: string) => {
       if (!name.trim()) return;
-      const currentTasks = get().myTasks;
+      const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events } = get();
+      
+      let newOrder: number;
+      let updatedTasksWithNewOrder: MyTask[];
+      
+      if (addTaskToTop) {
+        // 上に追加: 新タスクの order を 0 にし、他のタスクの order を +1
+        newOrder = 0;
+        updatedTasksWithNewOrder = currentTasks.map(task => ({
+          ...task,
+          order: task.order + 1
+        }));
+      } else {
+        // 下に追加: 現在の最大 order + 1
+        newOrder = currentTasks.length;
+        updatedTasksWithNewOrder = currentTasks;
+      }
+      
       const newTask: MyTask = {
         id: uuidv4(),
         name: name.trim(),
         isCompleted: false,
-        order: currentTasks.length,
+        order: newOrder,
         categoryId: categoryId,
       };
-      const updatedTasks = sortMyTasks([...currentTasks, newTask]);
+      
+      const updatedTasks = sortMyTasks([...updatedTasksWithNewOrder, newTask]);
       set({ myTasks: updatedTasks });
       get().actions._persistMyTasksState();
+      
+      // 自動開始が有効なら、すぐにタスクを開始
+      if (autoStartTask) {
+        // 現在実行中のイベントがある場合は停止
+        if (currentEventId) {
+          const currentEvent = events.find(e => e.id === currentEventId);
+          if (currentEvent && !currentEvent.end) {
+            get().actions.updateEvent({ ...currentEvent, end: Date.now() });
+          }
+        }
+        
+        // 新しいタスクを開始
+        get().actions.startTask(newTask.name, newTask.id);
+      }
     },
     removeMyTask: (id: string) => {
       const currentTasks = get().myTasks;
@@ -577,6 +656,54 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     toggleCategoryEnabled: () => {
       set({ isCategoryEnabled: !get().isCategoryEnabled });
       get().actions._persistCategoriesState();
+    },
+    _persistInterruptCategorySettings: () => {
+      const { interruptCategorySettings } = get();
+      dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, interruptCategorySettings).catch(error => {
+        console.error('[useEventsStore] Error persisting interrupt category settings to IndexedDB:', error);
+      });
+    },
+    updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => {
+      const currentSettings = get().interruptCategorySettings;
+      const updatedSettings = {
+        ...currentSettings,
+        [categoryId]: name.trim() || DEFAULT_INTERRUPT_CATEGORIES[categoryId]
+      };
+      set({ interruptCategorySettings: updatedSettings });
+      get().actions._persistInterruptCategorySettings();
+    },
+    resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => {
+      const currentSettings = get().interruptCategorySettings;
+      const updatedSettings = {
+        ...currentSettings,
+        [categoryId]: DEFAULT_INTERRUPT_CATEGORIES[categoryId]
+      };
+      set({ interruptCategorySettings: updatedSettings });
+      get().actions._persistInterruptCategorySettings();
+    },
+    resetAllInterruptCategoriesToDefault: () => {
+      set({ interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES } });
+      get().actions._persistInterruptCategorySettings();
+    },
+    toggleTaskPlacement: () => {
+      set({ addTaskToTop: !get().addTaskToTop });
+      get().actions._persistTaskPlacementSetting();
+    },
+    _persistTaskPlacementSetting: () => {
+      const { addTaskToTop } = get();
+      dbSet(TASK_PLACEMENT_SETTING_KEY, addTaskToTop).catch(error => {
+        console.error('[useEventsStore] Error persisting task placement setting to IndexedDB:', error);
+      });
+    },
+    toggleAutoStartTask: () => {
+      set({ autoStartTask: !get().autoStartTask });
+      get().actions._persistAutoStartTaskSetting();
+    },
+    _persistAutoStartTaskSetting: () => {
+      const { autoStartTask } = get();
+      dbSet(AUTO_START_TASK_SETTING_KEY, autoStartTask).catch(error => {
+        console.error('[useEventsStore] Error persisting auto-start task setting to IndexedDB:', error);
+      });
     },
   },
 });

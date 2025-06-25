@@ -3,8 +3,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
-import { Event, MyTask, Category } from '@/types';
-import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle, Tag, Palette } from 'lucide-react';
+import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
+import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle, Tag, Palette, AlertCircle, RotateCcw, ArrowUp, ArrowDown, Zap } from 'lucide-react';
+import { DEFAULT_INTERRUPT_CATEGORIES, INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
@@ -13,6 +14,9 @@ const SettingsPage = () => {
     myTasks, 
     categories, 
     isCategoryEnabled, 
+    interruptCategorySettings,
+    addTaskToTop,
+    autoStartTask,
     actions, 
     isHydrated 
   } = useEventsStore((state: EventsState) => state);
@@ -22,6 +26,8 @@ const SettingsPage = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [editingInterruptCategory, setEditingInterruptCategory] = useState<keyof InterruptCategorySettings | null>(null);
+  const [editingInterruptCategoryName, setEditingInterruptCategoryName] = useState('');
 
   useEffect(() => setMounted(true), []);
 
@@ -143,6 +149,25 @@ const SettingsPage = () => {
     }
   };
 
+  const handleUpdateInterruptCategory = (e: FormEvent) => {
+    e.preventDefault();
+    if (editingInterruptCategory && editingInterruptCategoryName.trim()) {
+      actions.updateInterruptCategoryName(editingInterruptCategory, editingInterruptCategoryName.trim());
+      setEditingInterruptCategory(null);
+      setEditingInterruptCategoryName('');
+    }
+  };
+
+  const handleStartEditInterruptCategory = (categoryId: keyof InterruptCategorySettings) => {
+    setEditingInterruptCategory(categoryId);
+    setEditingInterruptCategoryName(interruptCategorySettings[categoryId]);
+  };
+
+  const handleCancelEditInterruptCategory = () => {
+    setEditingInterruptCategory(null);
+    setEditingInterruptCategoryName('');
+  };
+
 
   const predefinedColors = [
     '#3B82F6', // Blue
@@ -222,6 +247,108 @@ const SettingsPage = () => {
           ) : (
             <p className="text-center text-sm text-gray-500 dark:text-gray-400">カスタムタスクがまだ追加されていません。</p>
           )}
+        </div>
+
+        {/* タスク配置設定セクション */}
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-medium flex items-center gap-2">
+              {addTaskToTop ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
+              新規タスクの追加位置
+            </h2>
+            <button
+              onClick={actions.toggleTaskPlacement}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                addTaskToTop 
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+              }`}
+            >
+              {addTaskToTop ? '上に追加' : '下に追加'}
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            新しいタスクをリストの上と下のどちらに追加するかを選択できます。
+          </p>
+          
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+            <div className="flex items-center gap-3">
+              {addTaskToTop ? (
+                <ArrowUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              ) : (
+                <ArrowDown className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              )}
+              <div>
+                <p className="text-sm font-medium">
+                  {addTaskToTop ? 'リストの上に追加' : 'リストの下に追加'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {addTaskToTop 
+                    ? '新しいタスクが一番上に表示されます'
+                    : '新しいタスクが一番下に表示されます'
+                  }
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={actions.toggleTaskPlacement}
+              className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              切り替え
+            </button>
+          </div>
+        </div>
+
+        {/* 自動開始設定セクション */}
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-medium flex items-center gap-2">
+              {autoStartTask ? <Zap className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
+              追加してすぐ開始
+            </h2>
+            <button
+              onClick={actions.toggleAutoStartTask}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                autoStartTask 
+                  ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' 
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+              }`}
+            >
+              {autoStartTask ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            新しいタスクを追加したら、そのまま自動でタスクを開始します。
+          </p>
+          
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+            <div className="flex items-center gap-3">
+              {autoStartTask ? (
+                <Zap className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              ) : (
+                <PlusCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              )}
+              <div>
+                <p className="text-sm font-medium">
+                  {autoStartTask ? '追加後自動で開始' : '追加後手動で開始'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {autoStartTask 
+                    ? 'タスク追加と同時にタイマーが開始されます'
+                    : 'タスク追加後、手動でスタートボタンを押します'
+                  }
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={actions.toggleAutoStartTask}
+              className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              切り替え
+            </button>
+          </div>
         </div>
 
         {/* カテゴリ管理セクション */}
@@ -361,6 +488,92 @@ const SettingsPage = () => {
           )}
         </div>
 
+        {/* 割り込みカテゴリ管理セクション */}
+        <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-medium flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              割り込みカテゴリ
+            </h2>
+            <button
+              onClick={actions.resetAllInterruptCategoriesToDefault}
+              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <RotateCcw className="h-4 w-4" />
+              全てリセット
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            6つの固定カテゴリの名前を変更できます。
+          </p>
+
+          <ul className="space-y-2">
+            {(['category1', 'category2', 'category3', 'category4', 'category5', 'category6'] as const).map((categoryId) => (
+              <li key={categoryId} className="flex items-center justify-between rounded-md bg-gray-50 p-3 dark:bg-gray-700/50">
+                {editingInterruptCategory === categoryId ? (
+                  <form onSubmit={handleUpdateInterruptCategory} className="flex-grow flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0"
+                      style={{ backgroundColor: INTERRUPT_CATEGORY_COLORS[categoryId] }}
+                    />
+                    <input
+                      type="text"
+                      value={editingInterruptCategoryName}
+                      onChange={(e) => setEditingInterruptCategoryName(e.target.value)}
+                      className="flex-grow text-sm rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1"
+                      autoFocus
+                      placeholder={DEFAULT_INTERRUPT_CATEGORIES[categoryId]}
+                    />
+                    <button type="submit" className="text-green-600 hover:text-green-800 dark:text-green-400 p-1">
+                      ✓
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleCancelEditInterruptCategory}
+                      className="text-gray-600 hover:text-gray-800 dark:text-gray-400 p-1"
+                    >
+                      ✕
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: INTERRUPT_CATEGORY_COLORS[categoryId] }}
+                      />
+                      <span className="text-sm font-medium">{interruptCategorySettings[categoryId]}</span>
+                      {interruptCategorySettings[categoryId] !== DEFAULT_INTERRUPT_CATEGORIES[categoryId] && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          (デフォルト: {DEFAULT_INTERRUPT_CATEGORIES[categoryId]})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleStartEditInterruptCategory(categoryId)}
+                        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        aria-label="Edit category name"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      {interruptCategorySettings[categoryId] !== DEFAULT_INTERRUPT_CATEGORIES[categoryId] && (
+                        <button 
+                          onClick={() => actions.resetInterruptCategoryToDefault(categoryId)}
+                          className="p-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                          aria-label="Reset to default"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="mb-4 text-lg font-medium">データ管理</h2>

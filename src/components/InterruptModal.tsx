@@ -19,11 +19,22 @@ export type InterruptModalProps = {
 };
 
 import { formatElapsedTime } from '@/lib/timeUtils';
-import { TIMER_UPDATE_INTERVAL_MS, INTERRUPT_TYPES } from '@/lib/constants';
+import { TIMER_UPDATE_INTERVAL_MS, INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import useEventsStore from '@/store/useEventsStore';
 
 
 export default function InterruptModal({ open, onOpenChange, form, setForm, onSubmit, onCancel, onSave, startTime }: InterruptModalProps) {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
+  const interruptCategorySettings = useEventsStore((state) => state.interruptCategorySettings);
+  
+  const interruptCategories = [
+    { id: 'category1', name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
+    { id: 'category2', name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
+    { id: 'category3', name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
+    { id: 'category4', name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
+    { id: 'category5', name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
+    { id: 'category6', name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
+  ];
 
   useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
@@ -70,14 +81,19 @@ export default function InterruptModal({ open, onOpenChange, form, setForm, onSu
             onChange={(e) => setForm({ ...form, who: e.target.value })}
           />
           <div className="grid grid-cols-3 gap-2">
-            {INTERRUPT_TYPES.map((type) => (
+            {interruptCategories.map((category) => (
               <Button
-                key={type}
-                variant={form.interruptType === type ? 'default' : 'outline'}
+                key={category.id}
+                variant={form.interruptType === category.name ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setForm({ ...form, interruptType: type })}
+                onClick={() => setForm({ ...form, interruptType: category.name })}
+                style={{
+                  backgroundColor: form.interruptType === category.name ? category.color : undefined,
+                  borderColor: form.interruptType === category.name ? category.color : undefined,
+                }}
+                className={form.interruptType === category.name ? 'text-white hover:opacity-90' : ''}
               >
-                {type}
+                {category.name}
               </Button>
             ))}
           </div>

@@ -6,7 +6,7 @@ import { Event } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Zap } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import EventHistoryItem from '@/components/EventHistoryItem';
 import EventEditModal from '@/components/EventEditModal';
@@ -14,7 +14,7 @@ import { formatEventTime } from '@/lib/timeUtils';
 import { YESTERDAY_EVENTS_LIMIT } from '@/lib/constants';
 
 export default function LogPage() {
-  const { events, currentEventId, myTasks, categories, isCategoryEnabled, isHydrated, actions } = useEventsStore();
+  const { events, currentEventId, myTasks, categories, isCategoryEnabled, autoStartTask, isHydrated, actions } = useEventsStore();
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategoryId, setNewTaskCategoryId] = useState<string>('');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -231,8 +231,18 @@ export default function LogPage() {
               </SelectContent>
             </Select>
           )}
-          <Button onClick={handleAddNewTask} variant="outline">
-            <PlusCircle className="mr-2 h-4 w-4" /> タスクを追加
+          <Button 
+            onClick={handleAddNewTask} 
+            variant="outline"
+            className={autoStartTask ? 'border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20' : ''}
+            title={autoStartTask ? 'タスク追加後、自動で開始されます' : 'タスクを追加します'}
+          >
+            {autoStartTask ? (
+              <Zap className="mr-2 h-4 w-4" />
+            ) : (
+              <PlusCircle className="mr-2 h-4 w-4" />
+            )}
+            {autoStartTask ? '追加して開始' : 'タスクを追加'}
           </Button>
         </div>
         <div className="space-y-2">
