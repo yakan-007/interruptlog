@@ -60,14 +60,12 @@ const ReportPage = () => {
     );
   });
 
-  // Calculate category time data
+  // Calculate category time data (using direct event categoryId)
   const categoryTimeData = isCategoryEnabled ? categories.map(category => {
-    const categoryTasks = myTasks.filter(task => task.categoryId === category.id);
     const categoryTime = todaysEvents
       .filter(event => 
-        event.type === 'task' && 
         event.end && 
-        categoryTasks.some(task => task.id === event.meta?.myTaskId)
+        event.categoryId === category.id
       )
       .reduce((total, event) => total + (event.end! - event.start), 0);
     
@@ -79,13 +77,11 @@ const ReportPage = () => {
     };
   }).filter(item => item.time > 0) : [];
 
-  // Add uncategorized tasks time
+  // Add uncategorized events time (events without categoryId)
   const uncategorizedTime = isCategoryEnabled ? todaysEvents
-    .filter(event => {
-      if (event.type !== 'task' || !event.end) return false;
-      const task = myTasks.find(t => t.id === event.meta?.myTaskId);
-      return task && !task.categoryId;
-    })
+    .filter(event => 
+      event.end && !event.categoryId
+    )
     .reduce((total, event) => total + (event.end! - event.start), 0) : 0;
 
   return (

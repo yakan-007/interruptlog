@@ -29,3 +29,6 @@
 # Vitest
 .vitest 
 .vercel
+
+# TypeScript
+tsconfig.tsbuildinfo

@@ -16,6 +16,13 @@ const reassignOrder = (tasks: MyTask[]): MyTask[] => {
   return tasks.map((task, index) => ({ ...task, order: index }));
 };
 
+// Helper to get category ID from task ID (for event category inheritance)
+const getCategoryFromTask = (taskId: string | undefined, tasks: MyTask[], isCategoryEnabled: boolean): string | undefined => {
+  if (!taskId || !isCategoryEnabled) return undefined;
+  const task = tasks.find(t => t.id === taskId);
+  return task?.categoryId;
+};
+
 export interface EventsState {
   events: Event[];
   currentEventId: string | null;
@@ -33,6 +40,7 @@ export interface EventsState {
     startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
     addEvent: (event: Event) => void;
     updateEvent: (event: Event) => void;
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
     setEvents: (events: Event[]) => void;
     setCurrentEventId: (id: string | null) => void;
     addMyTask: (name: string, categoryId?: string) => void;
@@ -135,17 +143,22 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     startTask: (label?: string, myTaskId?: string) => {
+      const { myTasks, isCategoryEnabled } = get();
       const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
       if (currentRunningEvent && !currentRunningEvent.end) {
         get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
       }
       set({ previousTaskIdBeforeInterrupt: null });
       
+      // カテゴリの継承
+      const categoryId = getCategoryFromTask(myTaskId, myTasks, isCategoryEnabled);
+      
       const newEvent: Event = {
         id: uuidv4(),
         type: 'task',
         label,
         start: Date.now(),
+        categoryId,
         meta: myTaskId ? { myTaskId } : undefined,
       };
       get().actions.addEvent(newEvent);
@@ -187,6 +200,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         type: 'interrupt',
         label: data?.label || 'Interrupt', 
         start: Date.now(),
+        categoryId: undefined, // 割り込みは初期状態ではカテゴリなし（編集で設定可能）
         who: data?.who,
         interruptType: data?.interruptType,
         urgency: data?.urgency,
@@ -260,6 +274,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         type: 'break',
         label: data.label || 'Break',
         start: Date.now(),
+        categoryId: undefined, // 休憩は初期状態ではカテゴリなし（編集で設定可能）
         breakType: data.breakType,
         breakDurationMinutes: data.breakDurationMinutes,
       };
@@ -267,7 +282,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       set({ currentEventId: newEvent.id });
     },
     stopBreakAndResumePreviousTask: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
+      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks, isCategoryEnabled } = get();
       if (currentEventId) {
         const breakEvt = events.find(e => e.id === currentEventId && e.type === 'break');
         if (breakEvt && !breakEvt.end) {
@@ -278,11 +293,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const prevTaskEvt = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
         if (prevTaskEvt) {
           const myTaskDetails = myTasks.find(mt => mt.id === prevTaskEvt.meta?.myTaskId);
+          // カテゴリの継承（前のタスクのカテゴリまたは元のタスクから）
+          const categoryId = prevTaskEvt.categoryId || getCategoryFromTask(prevTaskEvt.meta?.myTaskId, myTasks, isCategoryEnabled);
+          
           const resumedEvent: Event = {
             id: uuidv4(),
             type: 'task',
             label: prevTaskEvt.label || myTaskDetails?.name || 'Resumed Task',
             start: Date.now(),
+            categoryId,
             meta: prevTaskEvt.meta,
           };
           get().actions.addEvent(resumedEvent);
@@ -317,7 +336,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }));
       get().actions._persistEventsState();
     },
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string) => {
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => {
       const { events } = get();
       const eventIndex = events.findIndex(e => e.id === eventId);
       const event = events[eventIndex];
@@ -333,7 +352,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       
       // If reducing end time, create an "unknown activity" event to fill the gap
-      if (newEndTime < event.end) {
+      // Only create if the gap is at least 1 minute (60000ms)
+      if (newEndTime < event.end && (event.end - newEndTime) >= 60000) {
         const unknownActivityEvent: Event = {
           id: uuidv4(),
           type: 'task',
@@ -346,7 +366,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         };
         
         // Update the original event
-        const updatedEvent: Event = { ...event, end: newEndTime };
+        const updatedEvent: Event = { 
+          ...event, 
+          end: newEndTime,
+          ...(newEventType && { type: newEventType }),
+          ...(newLabel !== undefined && { label: newLabel }),
+          ...(newCategoryId !== undefined && { categoryId: newCategoryId })
+        };
         
         // Insert the unknown activity right after the edited event
         const newEvents = [...events];
@@ -355,8 +381,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         
         set({ events: newEvents });
       } else {
-        // Simply update the end time
-        get().actions.updateEvent({ ...event, end: newEndTime });
+        // Simply update the end time and/or type and/or label and/or category
+        // This includes cases where time is reduced but gap is less than 1 minute
+        const updatedEvent: Event = { 
+          ...event, 
+          end: newEndTime,
+          ...(newEventType && { type: newEventType }),
+          ...(newLabel !== undefined && { label: newLabel }),
+          ...(newCategoryId !== undefined && { categoryId: newCategoryId })
+        };
+        get().actions.updateEvent(updatedEvent);
       }
       
       get().actions._persistEventsState();
@@ -520,13 +554,21 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       set({ categories: updatedCategories });
       get().actions._persistCategoriesState();
       
-      // カテゴリが削除されたら、そのカテゴリを使用しているタスクのcategoryIdをクリア
+      // カテゴリが削除されたら、そのカテゴリを使用しているタスクとイベントのcategoryIdをクリア
       const currentTasks = get().myTasks;
       const updatedTasks = currentTasks.map(task =>
         task.categoryId === id ? { ...task, categoryId: undefined } : task
       );
       set({ myTasks: updatedTasks });
       get().actions._persistMyTasksState();
+      
+      // イベントのcategoryIdもクリーンアップ
+      const currentEvents = get().events;
+      const updatedEvents = currentEvents.map(event =>
+        event.categoryId === id ? { ...event, categoryId: undefined } : event
+      );
+      set({ events: updatedEvents });
+      get().actions._persistEventsState();
     },
     setCategories: (categories: Category[]) => {
       set({ categories });

@@ -4,8 +4,10 @@ export interface Event {
   label?: string; // optional free text
   start: number; // epoch ms
   end?: number; // epoch ms (undefined while running)
+  categoryId?: string; // カテゴリID（直接参照）
   meta?: {
     myTaskId?: string;
+    isUnknownActivity?: boolean;
     // 他のメタ情報があればここに追加
   };
   // Interruptモーダル用の新しいフィールド

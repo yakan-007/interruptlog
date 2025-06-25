@@ -4,7 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { StickyNote, Check, X, Clock } from 'lucide-react';
-import { Event } from '@/types';
+import { Event, Category } from '@/types';
 
 interface EventHistoryItemProps {
   event: Event;
@@ -17,6 +17,8 @@ interface EventHistoryItemProps {
   formatEventTime: (timestamp: number) => string;
   onEditEventTime?: (event: Event) => void;
   canEditTime?: boolean;
+  categories?: Category[];
+  isCategoryEnabled?: boolean;
 }
 
 export default function EventHistoryItem({
@@ -30,12 +32,26 @@ export default function EventHistoryItem({
   formatEventTime,
   onEditEventTime,
   canEditTime = false,
+  categories = [],
+  isCategoryEnabled = false,
 }: EventHistoryItemProps) {
+  // カテゴリ情報の取得
+  const category = isCategoryEnabled && event.categoryId 
+    ? categories.find(c => c.id === event.categoryId) 
+    : null;
+
   return (
     <li className="p-3 border rounded-md text-sm">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center">
+            {category && (
+              <div 
+                className="w-2 h-2 rounded-full mr-2 flex-shrink-0"
+                style={{ backgroundColor: category.color }}
+                title={category.name}
+              />
+            )}
             <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>
               {event.label ?? 'Unnamed'}
             </span>

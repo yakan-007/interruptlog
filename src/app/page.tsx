@@ -179,8 +179,8 @@ export default function LogPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEventTime = (eventId: string, newEndTime: number, gapActivityName?: string) => {
-    actions.updateEventEndTime(eventId, newEndTime, gapActivityName);
+  const handleSaveEventTime = (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => {
+    actions.updateEventEndTime(eventId, newEndTime, gapActivityName, newEventType, newLabel, newCategoryId);
     setIsEditModalOpen(false);
     setEditingEvent(null);
   };
@@ -284,6 +284,8 @@ export default function LogPage() {
                   formatEventTime={formatEventTime}
                   onEditEventTime={handleEditEventTime}
                   canEditTime={event.id === lastCompletedEvent?.id}
+                  categories={categories}
+                  isCategoryEnabled={isCategoryEnabled}
                 />
               ))}
           </ul>
