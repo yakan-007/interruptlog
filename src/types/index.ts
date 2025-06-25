@@ -7,7 +7,7 @@ export interface Event {
   categoryId?: string; // カテゴリID（直接参照）
   meta?: {
     myTaskId?: string;
-    isUnknownActivity?: boolean;
+    isUnknownActivity?: boolean; // For events created when editing past events
     // 他のメタ情報があればここに追加
   };
   // Interruptモーダル用の新しいフィールド

@@ -5,10 +5,18 @@ import { useTheme } from 'next-themes';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import { Event, MyTask, Category } from '@/types';
 import { Moon, Sun, Download, Upload, PlusCircle, Trash2, Edit3, AlertTriangle, Tag, Palette } from 'lucide-react';
+import BusinessHoursSettings from '@/components/settings/BusinessHoursSettings';
 
 const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
-  const { events, myTasks, categories, isCategoryEnabled, actions, isHydrated } = useEventsStore((state: EventsState) => state);
+  const { 
+    events, 
+    myTasks, 
+    categories, 
+    isCategoryEnabled, 
+    actions, 
+    isHydrated 
+  } = useEventsStore((state: EventsState) => state);
   const [mounted, setMounted] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -135,6 +143,7 @@ const SettingsPage = () => {
       setEditingCategory(null);
     }
   };
+
 
   const predefinedColors = [
     '#3B82F6', // Blue
@@ -352,6 +361,9 @@ const SettingsPage = () => {
             </p>
           )}
         </div>
+
+        {/* Business Hours Mode */}
+        <BusinessHoursSettings />
 
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
           <h2 className="mb-4 text-lg font-medium">データ管理</h2>
