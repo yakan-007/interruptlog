@@ -11,12 +11,13 @@ import { Event, Category } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useEventsStore from '@/store/useEventsStore';
+import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 interface EventEditModalProps {
   event: Event | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
+  onSave: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => void;
   nextEvent?: Event;
 }
 
@@ -27,7 +28,7 @@ export default function EventEditModal({
   onSave,
   nextEvent
 }: EventEditModalProps) {
-  const { categories, isCategoryEnabled } = useEventsStore();
+  const { categories, isCategoryEnabled, interruptCategorySettings } = useEventsStore();
   const [endTimeInput, setEndTimeInput] = useState('');
   const [validationError, setValidationError] = useState('');
   const [previewGap, setPreviewGap] = useState<{ start: number; end: number } | null>(null);
@@ -35,6 +36,7 @@ export default function EventEditModal({
   const [eventType, setEventType] = useState<Event['type']>('task');
   const [eventLabel, setEventLabel] = useState('');
   const [eventCategoryId, setEventCategoryId] = useState<string>('none');
+  const [interruptType, setInterruptType] = useState<string>('');
   const [showSmallGapNotice, setShowSmallGapNotice] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function EventEditModal({
         setEventType(event.type || 'task');
         setEventLabel(event.label || '');
         setEventCategoryId(event.categoryId || 'none');
+        setInterruptType(event.type === 'interrupt' && event.interruptType ? event.interruptType : '');
         setValidationError('');
         setPreviewGap(null);
         setShowSmallGapNotice(false);
@@ -63,6 +66,7 @@ export default function EventEditModal({
       setEventType('task');
       setEventLabel('');
       setEventCategoryId('none');
+      setInterruptType('');
       setValidationError('');
       setPreviewGap(null);
       setShowSmallGapNotice(false);
@@ -161,8 +165,10 @@ export default function EventEditModal({
       const originalCategoryId = event.categoryId || 'none';
       const selectedCategoryId = eventCategoryId === 'none' ? undefined : eventCategoryId;
       const newCategoryId = eventCategoryId !== originalCategoryId ? selectedCategoryId : undefined;
+      // Pass interrupt type if event is interrupt type
+      const newInterruptType = eventType === 'interrupt' ? interruptType : undefined;
       
-      onSave(event.id, newEndTime, gapName, newType, newLabel, newCategoryId);
+      onSave(event.id, newEndTime, gapName, newType, newLabel, newCategoryId, newInterruptType);
       onClose();
     } catch (error) {
       console.error('[EventEditModal] Error in handleSave:', error);
@@ -218,7 +224,31 @@ export default function EventEditModal({
             </Select>
           </div>
 
-          {isCategoryEnabled && categories && Array.isArray(categories) && (
+          {eventType === 'interrupt' && (
+            <div className="space-y-2">
+              <Label htmlFor="interruptCategory">割り込みカテゴリ</Label>
+              <Select value={interruptType} onValueChange={setInterruptType}>
+                <SelectTrigger id="interruptCategory">
+                  <SelectValue placeholder="カテゴリを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(interruptCategorySettings).map(([key, name]) => (
+                    <SelectItem key={key} value={name}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: INTERRUPT_CATEGORY_COLORS[key as keyof typeof INTERRUPT_CATEGORY_COLORS] }}
+                        />
+                        {name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {isCategoryEnabled && categories && Array.isArray(categories) && eventType === 'task' && (
             <div className="space-y-2">
               <Label htmlFor="eventCategory">カテゴリ</Label>
               <Select value={eventCategoryId || 'none'} onValueChange={setEventCategoryId}>

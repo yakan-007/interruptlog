@@ -8,6 +8,7 @@ import TaskPlacementSection from '@/components/settings/TaskPlacementSection';
 import AutoStartSection from '@/components/settings/AutoStartSection';
 import CategoryManagementSection from '@/components/settings/CategoryManagementSection';
 import InterruptCategorySection from '@/components/settings/InterruptCategorySection';
+import TaskTransitionSection from '@/components/settings/TaskTransitionSection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
 
 const SettingsPage = () => {
@@ -35,6 +36,7 @@ const SettingsPage = () => {
         <AutoStartSection />
         <CategoryManagementSection />
         <InterruptCategorySection />
+        <TaskTransitionSection />
         <DataManagementSection />
       </div>
     </div>

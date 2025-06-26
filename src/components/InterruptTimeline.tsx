@@ -5,6 +5,7 @@ import { Event } from '@/types';
 
 interface InterruptTimelineProps {
   events: Event[];
+  targetDate?: string; // Optional date in YYYY-MM-DD format
 }
 
 const ALL_HOURS = Array.from({ length: 24 }, (_, i) => i); // 0-23 (24 hours)
@@ -23,21 +24,33 @@ const formatHour = (hour: number): string => {
   return hour === 12 ? '12PM' : hour > 12 ? `${hour - 12}PM` : hour === 0 ? '12AM' : `${hour}AM`;
 };
 
-const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
+};
+
+const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events, targetDate }) => {
   const [selectedHour, setSelectedHour] = useState<{ hour: number; count: number } | null>(null);
 
-  // Filter today's interrupt events
+  // Determine target date (use provided date or default to today)
+  const targetDateObj = targetDate ? new Date(targetDate) : new Date();
+  targetDateObj.setHours(0, 0, 0, 0);
+  const nextDay = new Date(targetDateObj);
+  nextDay.setDate(targetDateObj.getDate() + 1);
+
+  // Check if target date is today
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  const isToday = targetDateObj.getTime() === today.getTime();
 
-  const todayInterrupts = events.filter(event => {
+  const targetInterrupts = events.filter(event => {
     const eventDate = new Date(event.start);
     return event.type === 'interrupt' && 
            event.end && 
-           eventDate >= today && 
-           eventDate < tomorrow;
+           eventDate >= targetDateObj && 
+           eventDate < nextDay;
   });
 
   // Count interrupts per hour
@@ -48,7 +61,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
     hourCounts[hour] = 0;
   });
 
-  todayInterrupts.forEach(event => {
+  targetInterrupts.forEach(event => {
     const hour = new Date(event.start).getHours();
     hourCounts[hour]++;
     maxCount = Math.max(maxCount, hourCounts[hour]);
@@ -56,15 +69,15 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
 
   // Get details for selected hour
   const getHourDetails = (hour: number) => {
-    return todayInterrupts.filter(event => {
+    return targetInterrupts.filter(event => {
       return new Date(event.start).getHours() === hour;
     });
   };
 
-  if (todayInterrupts.length === 0) {
+  if (targetInterrupts.length === 0) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-        <p className="text-lg">🧘 今日は割り込みがありません！</p>
+        <p className="text-lg">🧘 {isToday ? '今日は' : 'この日は'}割り込みがありません！</p>
         <p className="text-sm">割り込みを記録すると、ここにタイムラインが表示されます。</p>
       </div>
     );
@@ -74,7 +87,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">本日の割り込みタイムライン ⏰</h3>
+        <h3 className="text-lg font-semibold mb-2">{isToday ? '本日' : formatDate(targetDateObj)}の割り込みタイムライン ⏰</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           24時間の割り込み状況。時間をクリックすると詳細が見られます。
         </p>
@@ -156,9 +169,9 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events }) => {
 
       {/* Quick insights */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 本日のサマリー</h4>
+        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 {isToday ? '本日' : 'この日'}のサマリー</h4>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-          <div>総割り込み数: {todayInterrupts.length}件</div>
+          <div>総割り込み数: {targetInterrupts.length}件</div>
           <div>ピーク時間: {
             (() => {
               let peakHour = 0;

@@ -38,17 +38,26 @@ export const formatElapsedTime = (startTime: number): string => {
 };
 
 /**
- * ミリ秒を時間・分形式でフォーマット
+ * ミリ秒を時間・分・秒形式でフォーマット
  */
 export const formatDuration = (ms: number): string => {
-  if (ms <= 0) return '0分';
+  if (ms <= 0) return '0秒';
   
-  const totalMinutes = Math.floor(ms / (1000 * 60));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   
   if (hours > 0) {
-    return minutes > 0 ? `${hours}時間 ${minutes}分` : `${hours}時間`;
+    if (minutes > 0) {
+      return `${hours}時間 ${minutes}分`;
+    }
+    return `${hours}時間`;
   }
-  return `${minutes}分`;
+  
+  if (minutes > 0) {
+    return `${minutes}分`;
+  }
+  
+  return `${seconds}秒`;
 };

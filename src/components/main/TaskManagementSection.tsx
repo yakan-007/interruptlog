@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Zap } from 'lucide-react';
+import { PlusCircle, Zap, CheckCircle2, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import { Event, MyTask } from '@/types';
 import { useTaskManagement } from '@/hooks/useStoreSelectors';
@@ -51,6 +51,7 @@ export default function TaskManagementSection({
   const { myTasks, categories, isCategoryEnabled, autoStartTask, actions } = useTaskManagement();
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategoryId, setNewTaskCategoryId] = useState<string>('');
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
 
   const handleAddNewTask = () => {
     if (newTaskName.trim() !== '') {
@@ -60,6 +61,13 @@ export default function TaskManagementSection({
       setNewTaskCategoryId('');
     }
   };
+
+  // Separate tasks by completion status
+  const { activeTasks, completedTasks } = useMemo(() => {
+    const active = myTasks.filter(task => !task.isCompleted);
+    const completed = myTasks.filter(task => task.isCompleted);
+    return { activeTasks: active, completedTasks: completed };
+  }, [myTasks]);
 
   return (
     <div className="mb-8">
@@ -112,8 +120,17 @@ export default function TaskManagementSection({
           {autoStartTask ? '追加して開始' : 'タスクを追加'}
         </Button>
       </div>
+
+      {/* Active Tasks Section */}
       <div className="space-y-2">
-        {myTasks.map((task: MyTask) => (
+        <div className="flex items-center gap-2 mb-3">
+          <Circle className="w-4 h-4 text-blue-500" />
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            進行中のタスク ({activeTasks.length})
+          </h3>
+        </div>
+        
+        {activeTasks.map((task: MyTask) => (
           <TaskCard
             key={task.id}
             task={task}
@@ -136,8 +153,59 @@ export default function TaskManagementSection({
             onDragEnd={onDragEnd}
           />
         ))}
-        {myTasks.length === 0 && <p className="text-gray-500">タスクがまだありません。追加してください！</p>}
+        
+        {activeTasks.length === 0 && (
+          <p className="text-gray-500 text-sm ml-6">進行中のタスクがありません。新しいタスクを追加してください！</p>
+        )}
       </div>
+
+      {/* Completed Tasks Section */}
+      {completedTasks.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+            className="flex items-center gap-2 w-full text-left mb-3 hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-md transition-colors"
+          >
+            {showCompletedTasks ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              完了済みタスク ({completedTasks.length})
+            </h3>
+          </button>
+          
+          {showCompletedTasks && (
+            <div className="space-y-2 ml-6">
+              {completedTasks.map((task: MyTask) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  activeEvent={activeEvent}
+                  editingTaskId={editingTaskId}
+                  editingTaskName={editingTaskName}
+                  draggingTaskId={draggingTaskId}
+                  dragOverTaskId={dragOverTaskId}
+                  onStartEditTask={onStartEditTask}
+                  onSaveTaskName={onSaveTaskName}
+                  onCancelEditTask={onCancelEditTask}
+                  onSetEditingTaskName={onSetEditingTaskName}
+                  onToggleCompletion={onToggleCompletion}
+                  onStartEvent={onStartEvent}
+                  onDeleteTask={onDeleteTask}
+                  onDragStart={onDragStart}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  onDragEnd={onDragEnd}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

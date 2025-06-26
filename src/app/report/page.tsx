@@ -23,6 +23,17 @@ const ReportPage = () => {
     return today.toISOString().split('T')[0]; // YYYY-MM-DD format
   });
 
+  // Calculate the earliest date with events
+  const getEarliestEventDate = () => {
+    if (events.length === 0) return null;
+    const sortedEvents = [...events].sort((a, b) => a.start - b.start);
+    const earliestDate = new Date(sortedEvents[0].start);
+    earliestDate.setHours(0, 0, 0, 0);
+    return earliestDate.toISOString().split('T')[0];
+  };
+
+  const earliestEventDate = getEarliestEventDate();
+
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
@@ -121,10 +132,16 @@ const ReportPage = () => {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            min={earliestEventDate || undefined} // Set minimum to earliest event date
             max={new Date().toISOString().split('T')[0]} // Limit to today or past
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
           />
         </div>
+        {earliestEventDate && (
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+            データ利用可能期間: {earliestEventDate} 〜 {new Date().toISOString().split('T')[0]}
+          </p>
+        )}
       </div>
 
       <div className="mb-8 grid grid-cols-3 gap-4 text-center">
@@ -202,7 +219,7 @@ const ReportPage = () => {
       <div className="mb-8">
         <h2 className="mb-3 text-xl font-semibold">割り込み分析</h2>
         <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <InterruptTimeline events={events} />
+          <InterruptTimeline events={selectedDateEvents} targetDate={selectedDate} />
         </div>
       </div>
 
