@@ -3,29 +3,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
-
-const EVENTS_STORE_KEY = 'events-store';
-const MY_TASKS_STORE_KEY = 'mytasks-store';
-const CATEGORIES_STORE_KEY = 'categories-store';
-const CATEGORY_ENABLED_KEY = 'category-enabled';
-const INTERRUPT_CATEGORY_SETTINGS_STORE_KEY = 'interrupt-category-settings-store';
-const TASK_PLACEMENT_SETTING_KEY = 'task-placement-setting';
-const AUTO_START_TASK_SETTING_KEY = 'auto-start-task-setting';
-
-// Helper to sort tasks by order
-const sortMyTasks = (tasks: MyTask[]): MyTask[] => tasks.slice().sort((a, b) => a.order - b.order);
-
-// Helper to re-assign order after add/remove/reorder
-const reassignOrder = (tasks: MyTask[]): MyTask[] => {
-  return tasks.map((task, index) => ({ ...task, order: index }));
-};
-
-// Helper to get category ID from task ID (for event category inheritance)
-const getCategoryFromTask = (taskId: string | undefined, tasks: MyTask[], isCategoryEnabled: boolean): string | undefined => {
-  if (!taskId || !isCategoryEnabled) return undefined;
-  const task = tasks.find(t => t.id === taskId);
-  return task?.categoryId;
-};
+import { 
+  hydrateEventsData, 
+  hydrateTasksData, 
+  hydrateCategoriesData, 
+  hydrateSettingsData,
+  STORAGE_KEYS,
+  sortMyTasks 
+} from './hydrationHelpers';
+import { 
+  createTaskWithOrdering, 
+  handleAutoStartTask, 
+  reorderTasks, 
+  removeTaskAndReorder 
+} from './taskHelpers';
+import { 
+  updateEventWithTimeChange, 
+  insertEventWithGap 
+} from './eventHelpers';
+import { 
+  getCategoryFromTask, 
+  cleanupCategoryReferences, 
+  reorderCategories 
+} from './categoryHelpers';
 
 export interface EventsState {
   events: Event[];
@@ -116,72 +116,33 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
 
       try {
-        const storedEventsState = await dbGet<{ events: Event[]; currentEventId: string | null; previousTaskIdBeforeInterrupt?: string | null }>(EVENTS_STORE_KEY);
-        if (storedEventsState) {
-          set({ 
-            events: storedEventsState.events || [],
-            currentEventId: storedEventsState.currentEventId,
-            previousTaskIdBeforeInterrupt: storedEventsState.previousTaskIdBeforeInterrupt || null,
-           });
-        } else {
-          set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null });
-        }
+        const [eventsData, tasksData, categoriesData, settingsData] = await Promise.all([
+          hydrateEventsData(),
+          hydrateTasksData(),
+          hydrateCategoriesData(),
+          hydrateSettingsData(),
+        ]);
 
-        const storedMyTasks = await dbGet<MyTask[]>(MY_TASKS_STORE_KEY);
-        if (storedMyTasks) {
-          const hydratedTasks = storedMyTasks.map((task, index) => ({
-            ...task,
-            isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
-            order: task.order === undefined ? index : task.order,
-          }));
-          set({ myTasks: sortMyTasks(hydratedTasks) });
-        } else {
-          set({ myTasks: [] });
-        }
-
-        const storedCategories = await dbGet<Category[]>(CATEGORIES_STORE_KEY);
-        if (storedCategories) {
-          set({ categories: storedCategories });
-        } else {
-          // デフォルトカテゴリを作成
-          const defaultCategories: Category[] = [
-            { id: uuidv4(), name: '開発', color: '#3B82F6', order: 0 },
-            { id: uuidv4(), name: '会議', color: '#8B5CF6', order: 1 },
-            { id: uuidv4(), name: 'レビュー', color: '#10B981', order: 2 },
-            { id: uuidv4(), name: 'ドキュメント', color: '#F59E0B', order: 3 },
-            { id: uuidv4(), name: 'その他', color: '#6B7280', order: 4 },
-          ];
-          set({ categories: defaultCategories });
-          await dbSet(CATEGORIES_STORE_KEY, defaultCategories);
-        }
-
-        const categoryEnabled = await dbGet<boolean>(CATEGORY_ENABLED_KEY);
-        set({ isCategoryEnabled: categoryEnabled ?? false });
-
-        const storedInterruptCategorySettings = await dbGet<InterruptCategorySettings>(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY);
-        if (storedInterruptCategorySettings) {
-          // マージしてデフォルト値で欠損を補完
-          const mergedSettings = {
-            ...DEFAULT_INTERRUPT_CATEGORIES,
-            ...storedInterruptCategorySettings
-          };
-          set({ interruptCategorySettings: mergedSettings });
-          // 更新されたデータを保存
-          await dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, mergedSettings);
-        } else {
-          // デフォルト割り込みカテゴリ設定を使用
-          set({ interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES } });
-          await dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, DEFAULT_INTERRUPT_CATEGORIES);
-        }
-
-        const storedTaskPlacement = await dbGet<boolean>(TASK_PLACEMENT_SETTING_KEY);
-        set({ addTaskToTop: storedTaskPlacement ?? false });
-
-        const storedAutoStartTask = await dbGet<boolean>(AUTO_START_TASK_SETTING_KEY);
-        set({ autoStartTask: storedAutoStartTask ?? false });
+        set({
+          ...eventsData,
+          ...tasksData,
+          ...categoriesData,
+          ...settingsData,
+        });
       } catch (error) {
         console.error('[useEventsStore] Failed to hydrate from IndexedDB:', error);
-        set({ events: [], currentEventId: null, previousTaskIdBeforeInterrupt: null, myTasks: [], interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, addTaskToTop: false, autoStartTask: false, isHydrated: false });
+        set({ 
+          events: [], 
+          currentEventId: null, 
+          previousTaskIdBeforeInterrupt: null, 
+          myTasks: [], 
+          categories: [],
+          isCategoryEnabled: false,
+          interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, 
+          addTaskToTop: false, 
+          autoStartTask: false, 
+          isHydrated: false 
+        });
       }
 
       set({ isHydrated: true });
@@ -363,13 +324,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistEventsState: () => {
       const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
-      dbSet(EVENTS_STORE_KEY, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
+      dbSet(STORAGE_KEYS.EVENTS, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
         console.error('[useEventsStore] Error persisting events state to IndexedDB:', error);
       });
     },
     _persistMyTasksState: () => {
       const { myTasks } = get();
-      dbSet(MY_TASKS_STORE_KEY, myTasks).catch(error => {
+      dbSet(STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
         console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
       });
     },
@@ -388,59 +349,32 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       const eventIndex = events.findIndex(e => e.id === eventId);
       const event = events[eventIndex];
       
-      if (!event || !event.end) {
-        console.error('[useEventsStore] Cannot edit event: event not found or still running');
+      if (!event) {
+        console.error('[useEventsStore] Event not found');
         return;
       }
       
-      if (newEndTime <= event.start || newEndTime > Date.now()) {
-        console.error('[useEventsStore] Invalid end time');
-        return;
+      try {
+        const { updatedEvent, gapEvent, shouldCreateGap } = updateEventWithTimeChange(
+          event,
+          newEndTime,
+          gapActivityName,
+          newEventType,
+          newLabel,
+          newCategoryId
+        );
+        
+        if (shouldCreateGap && gapEvent) {
+          const newEvents = insertEventWithGap(events, eventIndex, updatedEvent, gapEvent);
+          set({ events: newEvents });
+        } else {
+          get().actions.updateEvent(updatedEvent);
+        }
+        
+        get().actions._persistEventsState();
+      } catch (error) {
+        console.error('[useEventsStore] Error updating event end time:', error);
       }
-      
-      // If reducing end time, create an "unknown activity" event to fill the gap
-      // Only create if the gap is at least 1 minute (60000ms)
-      if (newEndTime < event.end && (event.end - newEndTime) >= 60000) {
-        const unknownActivityEvent: Event = {
-          id: uuidv4(),
-          type: 'task',
-          label: gapActivityName || '不明なアクティビティ',
-          start: newEndTime,
-          end: event.end,
-          meta: {
-            isUnknownActivity: true
-          }
-        };
-        
-        // Update the original event
-        const updatedEvent: Event = { 
-          ...event, 
-          end: newEndTime,
-          ...(newEventType && { type: newEventType }),
-          ...(newLabel !== undefined && { label: newLabel }),
-          ...(newCategoryId !== undefined && { categoryId: newCategoryId })
-        };
-        
-        // Insert the unknown activity right after the edited event
-        const newEvents = [...events];
-        newEvents[eventIndex] = updatedEvent;
-        newEvents.splice(eventIndex + 1, 0, unknownActivityEvent);
-        
-        set({ events: newEvents });
-      } else {
-        // Simply update the end time and/or type and/or label and/or category
-        // This includes cases where time is reduced but gap is less than 1 minute
-        const updatedEvent: Event = { 
-          ...event, 
-          end: newEndTime,
-          ...(newEventType && { type: newEventType }),
-          ...(newLabel !== undefined && { label: newLabel }),
-          ...(newCategoryId !== undefined && { categoryId: newCategoryId })
-        };
-        get().actions.updateEvent(updatedEvent);
-      }
-      
-      get().actions._persistEventsState();
     },
     setEvents: (events: Event[]) => {
       set({ events });
@@ -454,55 +388,36 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       get().actions._persistEventsState();
     },
     addMyTask: (name: string, categoryId?: string) => {
-      if (!name.trim()) return;
-      const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events } = get();
+      const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events, actions } = get();
       
-      let newOrder: number;
-      let updatedTasksWithNewOrder: MyTask[];
-      
-      if (addTaskToTop) {
-        // 上に追加: 新タスクの order を 0 にし、他のタスクの order を +1
-        newOrder = 0;
-        updatedTasksWithNewOrder = currentTasks.map(task => ({
-          ...task,
-          order: task.order + 1
-        }));
-      } else {
-        // 下に追加: 現在の最大 order + 1
-        newOrder = currentTasks.length;
-        updatedTasksWithNewOrder = currentTasks;
-      }
-      
-      const newTask: MyTask = {
-        id: uuidv4(),
-        name: name.trim(),
-        isCompleted: false,
-        order: newOrder,
-        categoryId: categoryId,
-      };
-      
-      const updatedTasks = sortMyTasks([...updatedTasksWithNewOrder, newTask]);
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
-      
-      // 自動開始が有効なら、すぐにタスクを開始
-      if (autoStartTask) {
-        // 現在実行中のイベントがある場合は停止
-        if (currentEventId) {
-          const currentEvent = events.find(e => e.id === currentEventId);
-          if (currentEvent && !currentEvent.end) {
-            get().actions.updateEvent({ ...currentEvent, end: Date.now() });
-          }
-        }
+      try {
+        const { newTask, updatedTasks } = createTaskWithOrdering({
+          name,
+          categoryId,
+          addToTop: addTaskToTop,
+          existingTasks: currentTasks,
+        });
         
-        // 新しいタスクを開始
-        get().actions.startTask(newTask.name, newTask.id);
+        set({ myTasks: updatedTasks });
+        actions._persistMyTasksState();
+        
+        // Handle auto-start if enabled
+        if (autoStartTask) {
+          handleAutoStartTask({
+            task: newTask,
+            currentEventId,
+            events,
+            startTaskAction: actions.startTask,
+            updateEventAction: actions.updateEvent,
+          });
+        }
+      } catch (error) {
+        console.error('[useEventsStore] Error adding task:', error);
       }
     },
     removeMyTask: (id: string) => {
       const currentTasks = get().myTasks;
-      const remainingTasks = currentTasks.filter(task => task.id !== id);
-      const updatedTasks = reassignOrder(sortMyTasks(remainingTasks));
+      const updatedTasks = removeTaskAndReorder(currentTasks, id);
       set({ myTasks: updatedTasks });
       get().actions._persistMyTasksState();
     },
@@ -544,15 +459,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     reorderMyTasks: (taskId: string, newOrder: number) => {
       const currentTasks = get().myTasks;
-      const taskToMove = currentTasks.find(t => t.id === taskId);
-      if (!taskToMove) return;
-
-      const remainingTasks = currentTasks.filter(t => t.id !== taskId);
-      remainingTasks.splice(newOrder, 0, taskToMove);
-      
-      const updatedTasks = reassignOrder(remainingTasks);
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+      try {
+        const updatedTasks = reorderTasks(currentTasks, taskId, newOrder);
+        set({ myTasks: updatedTasks });
+        get().actions._persistMyTasksState();
+      } catch (error) {
+        console.error('[useEventsStore] Error reordering tasks:', error);
+      }
     },
     getTaskTotalDuration: (taskId: string) => {
         const { events } = get();
@@ -600,10 +513,10 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistCategoriesState: () => {
       const { categories, isCategoryEnabled } = get();
-      dbSet(CATEGORIES_STORE_KEY, categories).catch(error => {
+      dbSet(STORAGE_KEYS.CATEGORIES, categories).catch(error => {
         console.error('[useEventsStore] Error persisting categories to IndexedDB:', error);
       });
-      dbSet(CATEGORY_ENABLED_KEY, isCategoryEnabled).catch(error => {
+      dbSet(STORAGE_KEYS.CATEGORY_ENABLED, isCategoryEnabled).catch(error => {
         console.error('[useEventsStore] Error persisting category enabled state to IndexedDB:', error);
       });
     },
@@ -627,26 +540,17 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       get().actions._persistCategoriesState();
     },
     removeCategory: (id: string) => {
-      const currentCategories = get().categories;
+      const { categories: currentCategories, myTasks: currentTasks, events: currentEvents } = get();
+      
       const remainingCategories = currentCategories.filter(cat => cat.id !== id);
-      const updatedCategories = remainingCategories.map((cat, index) => ({ ...cat, order: index }));
+      const updatedCategories = reorderCategories(remainingCategories);
       set({ categories: updatedCategories });
       get().actions._persistCategoriesState();
       
-      // カテゴリが削除されたら、そのカテゴリを使用しているタスクとイベントのcategoryIdをクリア
-      const currentTasks = get().myTasks;
-      const updatedTasks = currentTasks.map(task =>
-        task.categoryId === id ? { ...task, categoryId: undefined } : task
-      );
-      set({ myTasks: updatedTasks });
+      // Clean up category references in tasks and events
+      const { updatedTasks, updatedEvents } = cleanupCategoryReferences(id, currentTasks, currentEvents);
+      set({ myTasks: updatedTasks, events: updatedEvents });
       get().actions._persistMyTasksState();
-      
-      // イベントのcategoryIdもクリーンアップ
-      const currentEvents = get().events;
-      const updatedEvents = currentEvents.map(event =>
-        event.categoryId === id ? { ...event, categoryId: undefined } : event
-      );
-      set({ events: updatedEvents });
       get().actions._persistEventsState();
     },
     setCategories: (categories: Category[]) => {
@@ -659,7 +563,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistInterruptCategorySettings: () => {
       const { interruptCategorySettings } = get();
-      dbSet(INTERRUPT_CATEGORY_SETTINGS_STORE_KEY, interruptCategorySettings).catch(error => {
+      dbSet(STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, interruptCategorySettings).catch(error => {
         console.error('[useEventsStore] Error persisting interrupt category settings to IndexedDB:', error);
       });
     },
@@ -691,7 +595,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistTaskPlacementSetting: () => {
       const { addTaskToTop } = get();
-      dbSet(TASK_PLACEMENT_SETTING_KEY, addTaskToTop).catch(error => {
+      dbSet(STORAGE_KEYS.TASK_PLACEMENT_SETTING, addTaskToTop).catch(error => {
         console.error('[useEventsStore] Error persisting task placement setting to IndexedDB:', error);
       });
     },
@@ -701,7 +605,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistAutoStartTaskSetting: () => {
       const { autoStartTask } = get();
-      dbSet(AUTO_START_TASK_SETTING_KEY, autoStartTask).catch(error => {
+      dbSet(STORAGE_KEYS.AUTO_START_TASK_SETTING, autoStartTask).catch(error => {
         console.error('[useEventsStore] Error persisting auto-start task setting to IndexedDB:', error);
       });
     },
