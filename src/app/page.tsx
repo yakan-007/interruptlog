@@ -118,15 +118,7 @@ export default function LogPage() {
   };
 
   const handleSaveEventTime = (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => {
-    // TODO: Store内のupdateEventEndTimeもinterruptTypeを受け取れるように拡張が必要
-    actions.updateEventEndTime(eventId, newEndTime, gapActivityName, newEventType, newLabel, newCategoryId);
-    // 割り込みタイプの場合は別途更新
-    if (newEventType === 'interrupt' && interruptType) {
-      const event = events.find(e => e.id === eventId);
-      if (event) {
-        actions.updateEvent({ ...event, interruptType });
-      }
-    }
+    actions.updateEventEndTime(eventId, newEndTime, gapActivityName, newEventType, newLabel, newCategoryId, interruptType);
     setIsEditModalOpen(false);
     setEditingEvent(null);
   };

@@ -2,13 +2,13 @@ import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
-import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
+import { DEFAULT_INTERRUPT_CATEGORIES, TIME_THRESHOLDS } from '@/lib/constants';
 import { 
   hydrateEventsData, 
   hydrateTasksData, 
   hydrateCategoriesData, 
   hydrateSettingsData,
-  STORAGE_KEYS,
+  STORE_STORAGE_KEYS,
   sortMyTasks 
 } from './hydrationHelpers';
 import { 
@@ -41,10 +41,10 @@ export interface EventsState {
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
     stopCurrentEvent: () => void;
-    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
+    startInterrupt: (data?: string | { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
     updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
     stopInterruptAndResumePreviousTask: () => void;
-    startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
+    startBreak: (data?: string | { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
     addEvent: (event: Event) => void;
     updateEvent: (event: Event) => void;
     setEvents: (events: Event[]) => void;
@@ -61,6 +61,7 @@ export interface EventsState {
     cancelCurrentInterruptAndResumeTask: () => void;
     _persistEventsState: () => void;
     _persistMyTasksState: () => void;
+    _persistMyTasksStateDebounced: () => void;
     _persistCategoriesState: () => void;
     stopBreakAndResumePreviousTask: () => void;
     addCategory: (name: string, color: string) => void;
@@ -68,7 +69,7 @@ export interface EventsState {
     removeCategory: (id: string) => void;
     setCategories: (categories: Category[]) => void;
     toggleCategoryEnabled: () => void;
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => void;
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => void;
     updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => void;
     resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => void;
     resetAllInterruptCategoriesToDefault: () => void;
@@ -80,6 +81,9 @@ export interface EventsState {
   };
 }
 
+// Debounce timer for myTasks persistence (to reduce IndexedDB writes during reorder operations)
+let _persistMyTasksDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   events: [],
   currentEventId: null,
@@ -87,14 +91,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   myTasks: [],
   categories: [],
   isCategoryEnabled: false,
-  interruptCategorySettings: {
-    category1: 'ミーティング',
-    category2: '電話',
-    category3: '質問',
-    category4: '訪問',
-    category5: 'チャット',
-    category6: 'その他'
-  },
+  interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES },
   addTaskToTop: false, // デフォルトは下に追加
   autoStartTask: false, // デフォルトは手動開始
   isHydrated: false,
@@ -105,14 +102,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       if (typeof window !== 'undefined') {
         (window as any).__eventStoreHydrating = true;
-      }
-
-      if (typeof window === 'undefined') {
-        set({ isHydrated: true });
-        if (typeof window !== 'undefined') {
-          (window as any).__eventStoreHydrating = false; 
-        }
-        return;
       }
 
       try {
@@ -181,15 +170,20 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     stopCurrentEvent: () => {
       const { events, currentEventId } = get();
-      if (currentEventId) {
-        const eventToEnd = events.find(e => e.id === currentEventId);
-        if (eventToEnd && !eventToEnd.end) {
-          get().actions.updateEvent({ ...eventToEnd, end: Date.now() });
-        }
+      if (!currentEventId) {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        return;
       }
-      set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      const eventToEnd = events.find(e => e.id === currentEventId);
+      if (eventToEnd && !eventToEnd.end) {
+        // Clear currentEventId first so persistence writes the cleared state
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+        get().actions.updateEvent({ ...eventToEnd, end: Date.now() });
+      } else {
+        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+      }
     },
-    startInterrupt: (data?: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
+    startInterrupt: (data?: string | { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => {
       const { events, currentEventId } = get();
       let previousActiveEventId: string | null = null;
 
@@ -203,15 +197,18 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       
       set({ previousTaskIdBeforeInterrupt: previousActiveEventId });
 
+      // Support both string label and object payload
+      const payload = typeof data === 'string' ? { label: data } : (data || {});
+
       const newEvent: Event = {
         id: uuidv4(),
         type: 'interrupt',
-        label: data?.label || 'Interrupt', 
+        label: payload.label || 'Interrupt', 
         start: Date.now(),
         categoryId: undefined, // 割り込みは初期状態ではカテゴリなし（編集で設定可能）
-        who: data?.who,
-        interruptType: data?.interruptType,
-        urgency: data?.urgency,
+        who: payload.who,
+        interruptType: payload.interruptType,
+        urgency: payload.urgency,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
@@ -235,7 +232,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     stopInterruptAndResumePreviousTask: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
+      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks, isCategoryEnabled } = get();
       
       if (currentEventId) {
         const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
@@ -248,12 +245,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
         if (taskEventToResume) {
           const myTaskDetails = get().myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
-          
+          // カテゴリの継承（前のタスクのカテゴリまたは元のタスクから）
+          const categoryId = taskEventToResume.categoryId || getCategoryFromTask(taskEventToResume.meta?.myTaskId, myTasks, isCategoryEnabled);
+
           const newResumedTaskEvent: Event = {
             id: uuidv4(),
             type: 'task',
             label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
             start: Date.now(),
+            categoryId,
             meta: taskEventToResume.meta,
           };
           get().actions.addEvent(newResumedTaskEvent);
@@ -266,7 +266,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
       }
     },
-    startBreak: (data: { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => {
+    startBreak: (data?: string | { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => {
       const { currentEventId, events } = get();
       const currentRunningEvent = events.find(e => e.id === currentEventId);
 
@@ -277,14 +277,17 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
       }
 
+      // Support both string label and object payload
+      const payload = typeof data === 'string' ? { label: data } : (data || {});
+
       const newEvent: Event = {
         id: uuidv4(),
         type: 'break',
-        label: data.label || 'Break',
+        label: payload.label || 'Break',
         start: Date.now(),
         categoryId: undefined, // 休憩は初期状態ではカテゴリなし（編集で設定可能）
-        breakType: data.breakType,
-        breakDurationMinutes: data.breakDurationMinutes,
+        breakType: payload.breakType,
+        breakDurationMinutes: payload.breakDurationMinutes,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
@@ -324,15 +327,26 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistEventsState: () => {
       const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
-      dbSet(STORAGE_KEYS.EVENTS, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.EVENTS, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
         console.error('[useEventsStore] Error persisting events state to IndexedDB:', error);
       });
     },
     _persistMyTasksState: () => {
       const { myTasks } = get();
-      dbSet(STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
         console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
       });
+    },
+    _persistMyTasksStateDebounced: () => {
+      if (_persistMyTasksDebounceTimer) {
+        clearTimeout(_persistMyTasksDebounceTimer);
+      }
+      _persistMyTasksDebounceTimer = setTimeout(() => {
+        const { myTasks } = get();
+        dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
+          console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
+        });
+      }, TIME_THRESHOLDS.AUTO_SAVE_DEBOUNCE_MS);
     },
     addEvent: (event: Event) => {
       set((state: EventsState) => ({ events: [...state.events, event] }));
@@ -344,7 +358,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }));
       get().actions._persistEventsState();
     },
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string) => {
+    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => {
       const { events } = get();
       const eventIndex = events.findIndex(e => e.id === eventId);
       const event = events[eventIndex];
@@ -363,12 +377,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           newLabel,
           newCategoryId
         );
-        
+        // If interrupt field is provided, merge when applicable
+        const finalUpdatedEvent = (interruptType !== undefined && (newEventType === 'interrupt' || updatedEvent.type === 'interrupt'))
+          ? { ...updatedEvent, interruptType }
+          : updatedEvent;
+
         if (shouldCreateGap && gapEvent) {
-          const newEvents = insertEventWithGap(events, eventIndex, updatedEvent, gapEvent);
+          const newEvents = insertEventWithGap(events, eventIndex, finalUpdatedEvent, gapEvent);
           set({ events: newEvents });
         } else {
-          get().actions.updateEvent(updatedEvent);
+          get().actions.updateEvent(finalUpdatedEvent);
         }
         
         get().actions._persistEventsState();
@@ -462,7 +480,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       try {
         const updatedTasks = reorderTasks(currentTasks, taskId, newOrder);
         set({ myTasks: updatedTasks });
-        get().actions._persistMyTasksState();
+        get().actions._persistMyTasksStateDebounced();
       } catch (error) {
         console.error('[useEventsStore] Error reordering tasks:', error);
       }
@@ -474,7 +492,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           .reduce((total, event) => total + (event.end! - event.start), 0);
     },
     cancelCurrentInterruptAndResumeTask: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks } = get();
+      const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks, isCategoryEnabled } = get();
       if (currentEventId) {
         const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
         if (interruptToEnd && !interruptToEnd.end) {
@@ -486,11 +504,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
         if (taskEventToResume) {
           const myTaskDetails = myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
+          const categoryId = taskEventToResume.categoryId || getCategoryFromTask(taskEventToResume.meta?.myTaskId, myTasks, isCategoryEnabled);
           const newResumedTaskEvent: Event = {
             id: uuidv4(),
             type: 'task',
             label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
             start: Date.now(),
+            categoryId,
             meta: taskEventToResume.meta,
           };
           get().actions.addEvent(newResumedTaskEvent);
@@ -513,10 +533,10 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistCategoriesState: () => {
       const { categories, isCategoryEnabled } = get();
-      dbSet(STORAGE_KEYS.CATEGORIES, categories).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.CATEGORIES, categories).catch(error => {
         console.error('[useEventsStore] Error persisting categories to IndexedDB:', error);
       });
-      dbSet(STORAGE_KEYS.CATEGORY_ENABLED, isCategoryEnabled).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.CATEGORY_ENABLED, isCategoryEnabled).catch(error => {
         console.error('[useEventsStore] Error persisting category enabled state to IndexedDB:', error);
       });
     },
@@ -563,7 +583,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistInterruptCategorySettings: () => {
       const { interruptCategorySettings } = get();
-      dbSet(STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, interruptCategorySettings).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, interruptCategorySettings).catch(error => {
         console.error('[useEventsStore] Error persisting interrupt category settings to IndexedDB:', error);
       });
     },
@@ -595,7 +615,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistTaskPlacementSetting: () => {
       const { addTaskToTop } = get();
-      dbSet(STORAGE_KEYS.TASK_PLACEMENT_SETTING, addTaskToTop).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING, addTaskToTop).catch(error => {
         console.error('[useEventsStore] Error persisting task placement setting to IndexedDB:', error);
       });
     },
@@ -605,7 +625,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     _persistAutoStartTaskSetting: () => {
       const { autoStartTask } = get();
-      dbSet(STORAGE_KEYS.AUTO_START_TASK_SETTING, autoStartTask).catch(error => {
+      dbSet(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING, autoStartTask).catch(error => {
         console.error('[useEventsStore] Error persisting auto-start task setting to IndexedDB:', error);
       });
     },

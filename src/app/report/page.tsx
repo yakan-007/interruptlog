@@ -6,7 +6,7 @@ import EventList from '@/components/EventList';
 import StatBar from '@/components/StatBar';
 import CompletedTasksList from '@/components/CompletedTasksList';
 import InterruptTimeline from '@/components/InterruptTimeline';
-import { RECENT_EVENTS_LIMIT } from '@/lib/constants';
+import { DISPLAY_LIMITS } from '@/lib/constants';
 
 const ReportPage = () => {
   const { events, myTasks, categories, isCategoryEnabled, isHydrated } = useEventsStore((state: EventsState) => ({ 
@@ -67,7 +67,7 @@ const ReportPage = () => {
 
   const last10Events = [...selectedDateEvents]
     .sort((a, b) => b.start - a.start)
-    .slice(0, RECENT_EVENTS_LIMIT);
+    .slice(0, DISPLAY_LIMITS.RECENT_EVENTS);
 
   // Get completed tasks that had activity on selected date
   const completedTasksWithSelectedDateActivity = myTasks.filter(task => {

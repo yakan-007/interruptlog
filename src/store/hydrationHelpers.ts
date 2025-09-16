@@ -4,7 +4,7 @@ import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
 
 // Storage keys
-export const STORAGE_KEYS = {
+export const STORE_STORAGE_KEYS = {
   EVENTS: 'events-store',
   MY_TASKS: 'mytasks-store',
   CATEGORIES: 'categories-store',
@@ -49,7 +49,7 @@ export async function hydrateEventsData(): Promise<HydratedEventsData> {
     events: Event[]; 
     currentEventId: string | null; 
     previousTaskIdBeforeInterrupt?: string | null 
-  }>(STORAGE_KEYS.EVENTS);
+  }>(STORE_STORAGE_KEYS.EVENTS);
   
   if (storedEventsState) {
     return {
@@ -67,7 +67,7 @@ export async function hydrateEventsData(): Promise<HydratedEventsData> {
 }
 
 export async function hydrateTasksData(): Promise<HydratedTasksData> {
-  const storedMyTasks = await dbGet<MyTask[]>(STORAGE_KEYS.MY_TASKS);
+  const storedMyTasks = await dbGet<MyTask[]>(STORE_STORAGE_KEYS.MY_TASKS);
   
   if (storedMyTasks) {
     const hydratedTasks = storedMyTasks.map((task, index) => ({
@@ -82,8 +82,8 @@ export async function hydrateTasksData(): Promise<HydratedTasksData> {
 }
 
 export async function hydrateCategoriesData(): Promise<HydratedCategoriesData> {
-  const storedCategories = await dbGet<Category[]>(STORAGE_KEYS.CATEGORIES);
-  const categoryEnabled = await dbGet<boolean>(STORAGE_KEYS.CATEGORY_ENABLED);
+  const storedCategories = await dbGet<Category[]>(STORE_STORAGE_KEYS.CATEGORIES);
+  const categoryEnabled = await dbGet<boolean>(STORE_STORAGE_KEYS.CATEGORY_ENABLED);
   
   let categories: Category[];
   
@@ -99,7 +99,7 @@ export async function hydrateCategoriesData(): Promise<HydratedCategoriesData> {
       { id: uuidv4(), name: 'その他', color: '#6B7280', order: 4 },
     ];
     categories = defaultCategories;
-    await dbSet(STORAGE_KEYS.CATEGORIES, defaultCategories);
+    await dbSet(STORE_STORAGE_KEYS.CATEGORIES, defaultCategories);
   }
   
   return {
@@ -114,9 +114,9 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     storedTaskPlacement,
     storedAutoStartTask
   ] = await Promise.all([
-    dbGet<InterruptCategorySettings>(STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS),
-    dbGet<boolean>(STORAGE_KEYS.TASK_PLACEMENT_SETTING),
-    dbGet<boolean>(STORAGE_KEYS.AUTO_START_TASK_SETTING),
+    dbGet<InterruptCategorySettings>(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS),
+    dbGet<boolean>(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING),
+    dbGet<boolean>(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING),
   ]);
 
   let interruptCategorySettings: InterruptCategorySettings;
@@ -129,10 +129,10 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     };
     interruptCategorySettings = mergedSettings;
     // Save updated data
-    await dbSet(STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, mergedSettings);
+    await dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, mergedSettings);
   } else {
     interruptCategorySettings = { ...DEFAULT_INTERRUPT_CATEGORIES };
-    await dbSet(STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, DEFAULT_INTERRUPT_CATEGORIES);
+    await dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, DEFAULT_INTERRUPT_CATEGORIES);
   }
 
   return {

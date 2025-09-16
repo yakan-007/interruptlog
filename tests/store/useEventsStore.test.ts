@@ -19,14 +19,18 @@ vi.mock('uuid', () => ({
 
 describe('useEventsStore', () => {
   beforeEach(async () => {
-    // Reset store state before each test
+    // Reset store state before each test (merge to keep actions)
     const initialState: Partial<EventsState> = {
       events: [],
       currentEventId: null,
+      previousTaskIdBeforeInterrupt: null,
+      myTasks: [],
+      categories: [],
+      isCategoryEnabled: false,
       isHydrated: false,
     };
-    useEventsStore.setState(initialState as EventsState, true);
-    
+    useEventsStore.setState((state) => ({ ...state, ...initialState }));
+
     vi.clearAllMocks();
     (idbKeyval.get as vi.Mock).mockResolvedValue(undefined);
     await useEventsStore.getState().actions.hydrate();
@@ -70,6 +74,9 @@ describe('useEventsStore', () => {
     const currentTime = Date.now();
     vi.setSystemTime(new Date(currentTime + 1000)); 
 
+    // Only count writes triggered by this stop sequence
+    (idbKeyval.set as vi.Mock).mockClear();
+
     actions.stopCurrentEvent();
 
     const { events, currentEventId } = useEventsStore.getState();
@@ -79,7 +86,8 @@ describe('useEventsStore', () => {
     expect(stoppedEvent?.end).toBeTypeOf('number');
     expect(stoppedEvent?.end).toBe(currentTime + 1000);
     expect(currentEventId).toBeNull();
-    expect(idbKeyval.set).toHaveBeenCalledTimes(initialEvents.length === 0 ? 2:3);
+    // stopCurrentEvent triggers one persist via updateEvent
+    expect(idbKeyval.set).toHaveBeenCalledTimes(1);
   });
 
   it('startInterrupt should stop current task and start an interrupt event', () => {
@@ -134,16 +142,188 @@ describe('useEventsStore', () => {
     const mockEvents: Event[] = [
       { id: '1', type: 'task', start: Date.now() - 10000, end: Date.now() - 5000, label: 'Past Task' },
     ];
-    (idbKeyval.get as vi.Mock).mockResolvedValue({ events: mockEvents, currentEventId: null });
+    // Return per-key values
+    (idbKeyval.get as vi.Mock).mockImplementation((key: string) => {
+      if (key === 'events-store') return Promise.resolve({ events: mockEvents, currentEventId: null });
+      if (key === 'mytasks-store') return Promise.resolve([]);
+      if (key === 'categories-store') return Promise.resolve(undefined);
+      if (key === 'category-enabled') return Promise.resolve(false);
+      if (key === 'interrupt-category-settings-store') return Promise.resolve(undefined);
+      if (key === 'task-placement-setting') return Promise.resolve(false);
+      if (key === 'auto-start-task-setting') return Promise.resolve(false);
+      return Promise.resolve(undefined);
+    });
     
     const initialState: Partial<EventsState> = { events: [], currentEventId: null, isHydrated: false };
-    useEventsStore.setState(initialState as EventsState, true);
+    useEventsStore.setState((state) => ({ ...state, ...initialState }));
     await useEventsStore.getState().actions.hydrate();
 
     const state = useEventsStore.getState();
     expect(state.events.length).toBe(1);
     expect(state.events[0].label).toBe('Past Task');
     expect(state.isHydrated).toBe(true);
+  });
+
+  it('stopInterruptAndResumePreviousTask should resume with category when enabled', () => {
+    const { actions } = useEventsStore.getState();
+
+    // Enable categories and pick one
+    actions.toggleCategoryEnabled();
+    const category = useEventsStore.getState().categories[0];
+
+    // Add a task with that category and start it
+    actions.addMyTask('CatTask', category.id);
+    const task = useEventsStore.getState().myTasks.find(t => t.name === 'CatTask');
+    expect(task).toBeDefined();
+    actions.startTask('CatTask', task!.id);
+
+    // Start an interrupt then resume
+    actions.startInterrupt('Interrupting');
+    actions.stopInterruptAndResumePreviousTask();
+
+    const { events } = useEventsStore.getState();
+    // Last event should be a resumed task with the same category
+    const last = events[events.length - 1];
+    expect(last.type).toBe('task');
+    expect(last.categoryId).toBe(category.id);
+  });
+
+  it('updateEventEndTime should support type change to interrupt with interruptType', () => {
+    const { actions } = useEventsStore.getState();
+
+    vi.useFakeTimers();
+    const now = Date.now();
+    actions.startTask('WillChange');
+    // Simulate 10 minutes of work
+    vi.setSystemTime(new Date(now + 10 * 60 * 1000));
+    const startedId = useEventsStore.getState().currentEventId!;
+    actions.stopCurrentEvent();
+
+    const state = useEventsStore.getState();
+    const original = state.events.find(e => e.id === startedId)!;
+    expect(original.end).toBeDefined();
+
+    const newEndTime = (original.end as number) - 60 * 1000; // -1min (ensures > start)
+    actions.updateEventEndTime(original.id, newEndTime, undefined, 'interrupt', 'Changed', undefined, '電話');
+
+    const updated = useEventsStore.getState().events.find(e => e.id === original.id)!;
+    expect(updated.type).toBe('interrupt');
+    expect(updated.label).toBe('Changed');
+    expect(updated.interruptType).toBe('電話');
+  });
+
+  it('updateEventEndTime creates a gap event when reducing by >= 1 minute', () => {
+    const { actions } = useEventsStore.getState();
+    vi.useFakeTimers();
+    const now = Date.now();
+    actions.startTask('WithGap');
+    // Let it run 6 minutes
+    vi.setSystemTime(new Date(now + 6 * 60 * 1000));
+    const id = useEventsStore.getState().currentEventId!;
+    actions.stopCurrentEvent();
+    const { events } = useEventsStore.getState();
+    const index = events.findIndex(e => e.id === id);
+    const evt = events[index]!;
+
+    const newEndTime = (evt.end as number) - 5 * 60 * 1000; // -5min
+    actions.updateEventEndTime(evt.id, newEndTime, '不明なアクティビティ');
+
+    const { events: after } = useEventsStore.getState();
+    // Updated event stays at index, gap inserted at index+1
+    const updatedEvt = after[index];
+    const gapEvt = after[index + 1];
+    expect(updatedEvt.end).toBe(newEndTime);
+    expect(gapEvt).toBeDefined();
+    expect(gapEvt.label).toBe('不明なアクティビティ');
+    expect(gapEvt.meta?.isUnknownActivity).toBe(true);
+  });
+
+  it('reorderMyTasks persistence is debounced', async () => {
+    const { actions } = useEventsStore.getState();
+    // Add tasks
+    actions.addMyTask('A');
+    actions.addMyTask('B');
+    
+    // Clear mock calls before measuring persistence
+    (idbKeyval.set as vi.Mock).mockClear();
+
+    vi.useFakeTimers();
+    const firstTask = useEventsStore.getState().myTasks[0];
+    actions.reorderMyTasks(firstTask.id, 1);
+
+    // Immediately no write yet (debounced)
+    expect((idbKeyval.set as vi.Mock).mock.calls.length).toBe(0);
+
+    // After debounce window, one write for MY_TASKS should occur
+    vi.advanceTimersByTime(500); // TIME_THRESHOLDS.AUTO_SAVE_DEBOUNCE_MS
+    expect((idbKeyval.set as vi.Mock).mock.calls.length).toBe(1);
+    const [key] = (idbKeyval.set as vi.Mock).mock.calls[0];
+    expect(key).toBe('mytasks-store');
+    vi.useRealTimers();
+  });
+
+  it('explicitly stopped event should not auto-resume after hydration', async () => {
+    const { actions } = useEventsStore.getState();
+
+    // Start and stop a task
+    actions.startTask('StopAndReload');
+    const startedId = useEventsStore.getState().currentEventId!;
+    actions.stopCurrentEvent();
+
+    // Capture the last persisted events-store payload
+    const calls = (idbKeyval.set as vi.Mock).mock.calls;
+    const lastEventsSet = [...calls].reverse().find(([key]) => key === 'events-store');
+    expect(lastEventsSet).toBeDefined();
+    const persisted = lastEventsSet![1];
+    expect(persisted.currentEventId).toBeNull();
+
+    // Simulate reload: reset store, then hydrate from persisted value
+    (idbKeyval.get as vi.Mock).mockImplementation((key: string) => {
+      if (key === 'events-store') return Promise.resolve(persisted);
+      if (key === 'mytasks-store') return Promise.resolve([]);
+      if (key === 'categories-store') return Promise.resolve(undefined);
+      if (key === 'category-enabled') return Promise.resolve(false);
+      if (key === 'interrupt-category-settings-store') return Promise.resolve(undefined);
+      if (key === 'task-placement-setting') return Promise.resolve(false);
+      if (key === 'auto-start-task-setting') return Promise.resolve(false);
+      return Promise.resolve(undefined);
+    });
+
+    useEventsStore.setState((state) => ({
+      ...state,
+      events: [],
+      currentEventId: null,
+      previousTaskIdBeforeInterrupt: null,
+      isHydrated: false,
+    }));
+    await useEventsStore.getState().actions.hydrate();
+
+    const state = useEventsStore.getState();
+    expect(state.currentEventId).toBeNull();
+    const ended = state.events.find(e => e.id === startedId);
+    expect(ended?.end).toBeTypeOf('number');
+  });
+
+  it('changing event type clears irrelevant fields', () => {
+    const { actions } = useEventsStore.getState();
+
+    // Create an interrupt with details
+    vi.useFakeTimers();
+    const now = Date.now();
+    actions.startInterrupt({ label: 'Int', who: 'A', interruptType: '電話', urgency: 'High' });
+    vi.setSystemTime(new Date(now + 5 * 60 * 1000));
+    const intId = useEventsStore.getState().currentEventId!;
+    actions.stopCurrentEvent();
+
+    const original = useEventsStore.getState().events.find(e => e.id === intId)!;
+    const newEnd = original.end!; // keep same end to avoid gap
+    actions.updateEventEndTime(original.id, newEnd, undefined, 'task', 'Back to task');
+
+    const updated = useEventsStore.getState().events.find(e => e.id === original.id)!;
+    expect(updated.type).toBe('task');
+    expect((updated as any).who).toBeUndefined();
+    expect((updated as any).interruptType).toBeUndefined();
+    expect((updated as any).urgency).toBeUndefined();
   });
 
 }); 

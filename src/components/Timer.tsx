@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import { TIMER_UPDATE_INTERVAL_MS } from '@/lib/constants';
 
 interface TimerProps {
   startTime: number; // Epoch ms, 0 if no active event
@@ -26,7 +27,7 @@ const Timer: React.FC<TimerProps> = ({ startTime, isActive }: TimerProps) => {
       setElapsedMs(calculateElapsed()); // Initial set
       intervalRef.current = setInterval(() => {
         setElapsedMs(calculateElapsed());
-      }, 1000);
+      }, TIMER_UPDATE_INTERVAL_MS);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

@@ -67,6 +67,26 @@ export interface EventUpdateResult {
   shouldCreateGap: boolean;
 }
 
+function clearTypeSpecificFields(event: Event, targetType: Event['type']): Event {
+  // Remove fields not applicable to the target type to keep data consistent
+  const base: Event = { ...event };
+  if (targetType === 'task') {
+    delete (base as any).who;
+    delete (base as any).interruptType;
+    delete (base as any).urgency;
+    delete (base as any).breakType;
+    delete (base as any).breakDurationMinutes;
+  } else if (targetType === 'interrupt') {
+    delete (base as any).breakType;
+    delete (base as any).breakDurationMinutes;
+  } else if (targetType === 'break') {
+    delete (base as any).who;
+    delete (base as any).interruptType;
+    delete (base as any).urgency;
+  }
+  return base;
+}
+
 export function updateEventWithTimeChange(
   event: Event,
   newEndTime: number,
@@ -82,14 +102,20 @@ export function updateEventWithTimeChange(
   }
   
   const shouldCreateGap = event.end! > newEndTime && (event.end! - newEndTime) >= 60000; // 1 minute gap
-  
-  const updatedEvent: Event = { 
-    ...event, 
+  // Start from original event, optionally switch type then clear irrelevant fields
+  const typeToApply = newEventType ?? event.type;
+  let updatedEvent: Event = { ...event } as Event;
+  if (newEventType) {
+    updatedEvent = { ...updatedEvent, type: typeToApply } as Event;
+    updatedEvent = clearTypeSpecificFields(updatedEvent, typeToApply);
+  }
+  // Apply common updates
+  updatedEvent = {
+    ...updatedEvent,
     end: newEndTime,
-    ...(newEventType && { type: newEventType }),
     ...(newLabel !== undefined && { label: newLabel }),
-    ...(newCategoryId !== undefined && { categoryId: newCategoryId })
-  };
+    ...(newCategoryId !== undefined && { categoryId: newCategoryId }),
+  } as Event;
   
   let gapEvent: Event | undefined;
   
