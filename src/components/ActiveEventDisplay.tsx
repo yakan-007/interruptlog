@@ -72,9 +72,9 @@ export default function ActiveEventDisplay({ activeEvent, className }: ActiveEve
       : undefined;
   const indicatorColor = matchedCategory?.color ?? '#ffffff';
 
-  let pillBackground = hexToRgba(baseColor, 0.12);
-  let pillBorder = baseColor;
-  let pillTextColor = baseColor;
+  let pillBackground: string = hexToRgba(baseColor, 0.12);
+  let pillBorder: string = baseColor;
+  let pillTextColor: string = baseColor;
 
   if (activeEvent.type === 'task') {
     if (matchedCategory) {
