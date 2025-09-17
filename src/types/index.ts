@@ -1,3 +1,8 @@
+export interface TaskPlanning {
+  plannedDurationMinutes?: number | null;
+  dueAt?: number | null;
+}
+
 export interface Event {
   id: string; // uuid
   type: 'task' | 'interrupt' | 'break';
@@ -8,13 +13,13 @@ export interface Event {
   meta?: {
     myTaskId?: string;
     isUnknownActivity?: boolean; // For events created when editing past events
-    // 他のメタ情報があればここに追加
+    planningSnapshot?: TaskPlanning;
   };
   // Interruptモーダル用の新しいフィールド
-  who?: string; 
+  who?: string;
   interruptType?: string;
   urgency?: 'Low' | 'Medium' | 'High';
-  originalTaskId?: string; 
+  originalTaskId?: string;
   // Breakモーダル用の新しいフィールド
   breakType?: 'short' | 'coffee' | 'lunch' | 'custom' | 'indefinite';
   breakDurationMinutes?: number | null;
@@ -28,6 +33,7 @@ export type MyTask = {
   isCompleted: boolean;
   order: number; // for sorting
   categoryId?: string; // カテゴリID（オプション）
+  planning?: TaskPlanning;
 };
 
 export type Category = {
@@ -41,8 +47,12 @@ export type Category = {
 export type InterruptCategorySettings = {
   category1: string; // デフォルト: 'ミーティング'
   category2: string; // デフォルト: '電話'
-  category3: string; // デフォルト: '質問'
-  category4: string; // デフォルト: '訪問'
-  category5: string; // デフォルト: 'チャット'
+  category3: string; // デフォルト: 'メール'
+  category4: string; // デフォルト: 'チャット'
+  category5: string; // デフォルト: '質問'
   category6: string; // デフォルト: 'その他'
-}; 
+};
+
+export interface FeatureFlags {
+  enableTaskPlanning: boolean;
+}

@@ -1,6 +1,6 @@
 import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES, TIME_THRESHOLDS } from '@/lib/constants';
 import { 
@@ -38,6 +38,7 @@ export interface EventsState {
   addTaskToTop: boolean; // true: 上に追加, false: 下に追加
   autoStartTask: boolean; // true: タスク追加後即座開始, false: 手動で開始
   isHydrated: boolean;
+  featureFlags: FeatureFlags;
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
     stopCurrentEvent: () => void;
@@ -49,9 +50,14 @@ export interface EventsState {
     updateEvent: (event: Event) => void;
     setEvents: (events: Event[]) => void;
     setCurrentEventId: (id: string | null) => void;
-    addMyTask: (name: string, categoryId?: string, options?: { suppressAutoStart?: boolean }) => void;
+    addMyTask: (
+      name: string,
+      categoryId?: string,
+      options?: { suppressAutoStart?: boolean; planning?: TaskPlanning }
+    ) => void;
     removeMyTask: (id: string) => void;
     updateMyTask: (id: string, newName: string) => void;
+    updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => void;
     updateMyTaskCategory: (id: string, categoryId: string | undefined) => void;
     setMyTasks: (tasks: MyTask[]) => void;
     hydrate: () => Promise<void>;
@@ -79,6 +85,9 @@ export interface EventsState {
     _persistTaskPlacementSetting: () => void;
     toggleAutoStartTask: () => void;
     _persistAutoStartTaskSetting: () => void;
+    setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => void;
+    toggleFeatureFlag: (flag: keyof FeatureFlags) => void;
+    _persistFeatureFlags: () => void;
   };
 }
 
@@ -96,6 +105,9 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   addTaskToTop: false, // デフォルトは下に追加
   autoStartTask: false, // デフォルトは手動開始
   isHydrated: false,
+  featureFlags: {
+    enableTaskPlanning: false,
+  },
   actions: {
     hydrate: async () => {
       if (get().isHydrated || (typeof window !== 'undefined' && (window as any).__eventStoreHydrating)) {
@@ -131,6 +143,9 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, 
           addTaskToTop: false, 
           autoStartTask: false, 
+          featureFlags: {
+            enableTaskPlanning: false,
+          },
           isHydrated: false 
         });
       }
@@ -141,7 +156,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     startTask: (label?: string, myTaskId?: string) => {
-      const { myTasks, isCategoryEnabled } = get();
+      const { myTasks, isCategoryEnabled, featureFlags } = get();
       const currentRunningEvent = get().events.find(e => e.id === get().currentEventId);
       if (currentRunningEvent && !currentRunningEvent.end) {
         get().actions.updateEvent({ ...currentRunningEvent, end: Date.now() });
@@ -150,6 +165,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       
       // カテゴリの継承
       const categoryId = getCategoryFromTask(myTaskId, myTasks, isCategoryEnabled);
+      const associatedTask = myTaskId ? myTasks.find(t => t.id === myTaskId) : undefined;
+      const planningSnapshot = featureFlags.enableTaskPlanning ? associatedTask?.planning : undefined;
       
       const newEvent: Event = {
         id: uuidv4(),
@@ -157,7 +174,12 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         label,
         start: Date.now(),
         categoryId,
-        meta: myTaskId ? { myTaskId } : undefined,
+        meta: myTaskId
+          ? {
+              myTaskId,
+              ...(planningSnapshot ? { planningSnapshot } : {}),
+            }
+          : undefined,
       };
       get().actions.addEvent(newEvent);
       set({ currentEventId: newEvent.id });
@@ -406,18 +428,24 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       get().actions._persistEventsState();
     },
-    addMyTask: (name: string, categoryId?: string, options?: { suppressAutoStart?: boolean }) => {
+    addMyTask: (
+      name: string,
+      categoryId?: string,
+      options?: { suppressAutoStart?: boolean; planning?: TaskPlanning }
+    ) => {
       const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events, actions } = get();
       const suppressAutoStart = options?.suppressAutoStart ?? false;
-      
+      const planning = options?.planning;
+
       try {
         const { newTask, updatedTasks } = createTaskWithOrdering({
           name,
           categoryId,
           addToTop: addTaskToTop,
           existingTasks: currentTasks,
+          planning,
         });
-        
+
         set({ myTasks: updatedTasks });
         actions._persistMyTasksState();
         
@@ -459,6 +487,44 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       });
       set({ events: updatedEvents });
       get().actions._persistEventsState();
+    },
+    updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => {
+      const currentTasks = get().myTasks;
+      const normalizedPlanning = updates.planning === null ? undefined : updates.planning;
+
+      const updatedTasks = currentTasks.map(task => {
+        if (task.id !== id) {
+          return task;
+        }
+
+        return {
+          ...task,
+          planning: updates.planning !== undefined ? normalizedPlanning : task.planning,
+        };
+      });
+
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
+
+      const { events, currentEventId } = get();
+      if (!currentEventId) {
+        return;
+      }
+      const currentEvent = events.find(event => event.id === currentEventId);
+      if (currentEvent && currentEvent.type === 'task' && currentEvent.meta?.myTaskId === id && !currentEvent.end) {
+        const updatedEvent: Event = {
+          ...currentEvent,
+          meta: {
+            ...currentEvent.meta,
+            ...(updates.planning !== undefined ? { planningSnapshot: normalizedPlanning } : {}),
+          },
+        };
+
+        set({
+          events: events.map(event => (event.id === currentEventId ? updatedEvent : event)),
+        });
+        get().actions._persistEventsState();
+      }
     },
     setMyTasks: (tasks: MyTask[]) => {
       const sortedTasks = sortMyTasks(tasks.map((task, index) => ({
@@ -618,6 +684,21 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     resetAllInterruptCategoriesToDefault: () => {
       set({ interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES } });
       get().actions._persistInterruptCategorySettings();
+    },
+    setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => {
+      set({ featureFlags: { ...get().featureFlags, [flag]: value } });
+      get().actions._persistFeatureFlags();
+    },
+    toggleFeatureFlag: (flag: keyof FeatureFlags) => {
+      const current = get().featureFlags[flag];
+      set({ featureFlags: { ...get().featureFlags, [flag]: !current } });
+      get().actions._persistFeatureFlags();
+    },
+    _persistFeatureFlags: () => {
+      const { featureFlags } = get();
+      dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags).catch(error => {
+        console.error('[useEventsStore] Error persisting feature flags to IndexedDB:', error);
+      });
     },
     toggleTaskPlacement: () => {
       set({ addTaskToTop: !get().addTaskToTop });

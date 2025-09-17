@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useEventsStore from '@/store/useEventsStore';
-import { Event, MyTask, Category } from '@/types';
+import { Event, MyTask, Category, FeatureFlags } from '@/types';
 
 // Optimized selectors to prevent unnecessary re-renders
 
@@ -144,6 +144,10 @@ export function useAutoStartTask() {
 
 export function useInterruptCategorySettings() {
   return useEventsStore(state => state.interruptCategorySettings);
+}
+
+export function useFeatureFlags(): FeatureFlags {
+  return useEventsStore(state => state.featureFlags);
 }
 
 // Actions selector (stable reference)

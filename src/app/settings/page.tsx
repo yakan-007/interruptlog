@@ -10,6 +10,7 @@ import CategoryManagementSection from '@/components/settings/CategoryManagementS
 import InterruptCategorySection from '@/components/settings/InterruptCategorySection';
 import TaskTransitionSection from '@/components/settings/TaskTransitionSection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
+import FeatureFlagsSection from '@/components/settings/FeatureFlagsSection';
 
 const SettingsPage = () => {
   const { isHydrated } = useEventsStore();
@@ -37,6 +38,7 @@ const SettingsPage = () => {
         <CategoryManagementSection />
         <InterruptCategorySection />
         <TaskTransitionSection />
+        <FeatureFlagsSection />
         <DataManagementSection />
       </div>
     </div>

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Zap, CheckCircle2, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
-import { Event, MyTask } from '@/types';
-import { useTaskManagement } from '@/hooks/useStoreSelectors';
+import { Event, MyTask, TaskPlanning } from '@/types';
+import { useFeatureFlags, useTaskManagement } from '@/hooks/useStoreSelectors';
+import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
 
 interface TaskManagementSectionProps {
   activeEvent?: Event;
@@ -49,16 +50,37 @@ export default function TaskManagementSection({
   onDragEnd,
 }: TaskManagementSectionProps) {
   const { myTasks, categories, isCategoryEnabled, autoStartTask, actions } = useTaskManagement();
+  const featureFlags = useFeatureFlags();
+  const planningEnabled = featureFlags.enableTaskPlanning;
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategoryId, setNewTaskCategoryId] = useState<string>('');
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [newTaskPlannedDuration, setNewTaskPlannedDuration] = useState<string>('');
+  const [newTaskDueAt, setNewTaskDueAt] = useState<string>('');
+  const [planningEditorTaskId, setPlanningEditorTaskId] = useState<string | null>(null);
+
+  const resetAdvancedInputs = () => {
+    setNewTaskPlannedDuration('');
+    setNewTaskDueAt('');
+  };
 
   const handleAddNewTask = () => {
     if (newTaskName.trim() !== '') {
       const categoryId = newTaskCategoryId && newTaskCategoryId !== 'none' ? newTaskCategoryId : undefined;
-      actions.addMyTask(newTaskName.trim(), categoryId);
+      const planningData: TaskPlanning | undefined = planningEnabled
+        ? buildPlanningFromInputs({
+            plannedDuration: newTaskPlannedDuration,
+            dueAt: newTaskDueAt,
+          })
+        : undefined;
+
+      actions.addMyTask(newTaskName.trim(), categoryId, {
+        planning: planningData,
+      });
       setNewTaskName('');
       setNewTaskCategoryId('');
+      resetAdvancedInputs();
     }
   };
 
@@ -68,6 +90,40 @@ export default function TaskManagementSection({
     const completed = myTasks.filter(task => task.isCompleted);
     return { activeTasks: active, completedTasks: completed };
   }, [myTasks]);
+
+  const planningEditorTask = useMemo(
+    () => (planningEditorTaskId ? myTasks.find(task => task.id === planningEditorTaskId) ?? null : null),
+    [myTasks, planningEditorTaskId]
+  );
+
+  useEffect(() => {
+    if (!planningEnabled) {
+      setIsAdvancedOpen(false);
+      resetAdvancedInputs();
+    }
+  }, [planningEnabled]);
+
+  const handleOpenPlanningEditor = (taskId: string) => {
+    setPlanningEditorTaskId(taskId);
+  };
+
+  const handleClosePlanningEditor = () => {
+    setPlanningEditorTaskId(null);
+  };
+
+  const handleSavePlanning = (updates: { planning?: TaskPlanning | null }) => {
+    if (!planningEditorTaskId) return;
+    actions.updateMyTaskPlanning(planningEditorTaskId, updates);
+    handleClosePlanningEditor();
+  };
+
+  const handleResetPlanning = () => {
+    if (!planningEditorTaskId) return;
+    actions.updateMyTaskPlanning(planningEditorTaskId, {
+      planning: null,
+    });
+    handleClosePlanningEditor();
+  };
 
   return (
     <div className="mb-8">
@@ -121,6 +177,47 @@ export default function TaskManagementSection({
         </Button>
       </div>
 
+      {planningEnabled && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setIsAdvancedOpen(prev => !prev)}
+            className="text-xs text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            {isAdvancedOpen ? '詳細入力を閉じる' : '詳細を追加'}
+          </button>
+          {isAdvancedOpen && (
+            <div className="mt-3 space-y-3 rounded-lg border border-gray-200 p-4 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">予定時間 (分)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={newTaskPlannedDuration}
+                    onChange={event => setNewTaskPlannedDuration(event.target.value)}
+                    placeholder="例: 90"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">期限</label>
+                  <Input
+                    type="datetime-local"
+                    value={newTaskDueAt}
+                    onChange={event => setNewTaskDueAt(event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button type="button" variant="ghost" size="sm" onClick={resetAdvancedInputs}>
+                  クリア
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Active Tasks Section */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-3">
@@ -151,6 +248,7 @@ export default function TaskManagementSection({
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onDragEnd={onDragEnd}
+            onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
           />
         ))}
         
@@ -200,12 +298,42 @@ export default function TaskManagementSection({
                   onDragLeave={onDragLeave}
                   onDrop={onDrop}
                   onDragEnd={onDragEnd}
+                  onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
                 />
               ))}
             </div>
           )}
         </div>
       )}
+
+      {planningEnabled && planningEditorTask && (
+        <TaskPlanningDialog
+          task={planningEditorTask}
+          isOpen={Boolean(planningEditorTask)}
+          onClose={handleClosePlanningEditor}
+          onSave={handleSavePlanning}
+          onReset={handleResetPlanning}
+        />
+      )}
     </div>
   );
+}
+
+function buildPlanningFromInputs({
+  plannedDuration,
+  dueAt,
+}: {
+  plannedDuration: string;
+  dueAt: string;
+}): TaskPlanning | undefined {
+  const cleanedDuration = plannedDuration ? Math.max(Number(plannedDuration), 0) : undefined;
+  const parsedDueAt = dueAt ? new Date(dueAt).getTime() : undefined;
+  const normalizedDueAt = parsedDueAt && !Number.isNaN(parsedDueAt) ? parsedDueAt : undefined;
+  const planning: TaskPlanning = {
+    plannedDurationMinutes: cleanedDuration && Number.isFinite(cleanedDuration) ? cleanedDuration : undefined,
+    dueAt: normalizedDueAt ?? undefined,
+  };
+
+  const hasData = Object.values(planning).some(value => value !== undefined);
+  return hasData ? planning : undefined;
 }

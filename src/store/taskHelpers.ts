@@ -1,4 +1,4 @@
-import { MyTask, Event } from '@/types';
+import { MyTask, Event, TaskPlanning } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 import { sortMyTasks } from './hydrationHelpers';
 
@@ -7,6 +7,7 @@ export interface TaskCreationOptions {
   categoryId?: string;
   addToTop: boolean;
   existingTasks: MyTask[];
+  planning?: TaskPlanning;
 }
 
 export interface TaskCreationResult {
@@ -19,6 +20,7 @@ export function createTaskWithOrdering({
   categoryId,
   addToTop,
   existingTasks,
+  planning,
 }: TaskCreationOptions): TaskCreationResult {
   if (!name.trim()) {
     throw new Error('Task name cannot be empty');
@@ -46,6 +48,7 @@ export function createTaskWithOrdering({
     isCompleted: false,
     order: newOrder,
     categoryId: categoryId,
+    planning,
   };
   
   const updatedTasks = sortMyTasks([...updatedTasksWithNewOrder, newTask]);

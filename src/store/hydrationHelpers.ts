@@ -1,4 +1,4 @@
-import { Event, MyTask, Category, InterruptCategorySettings } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, FeatureFlags } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +12,7 @@ export const STORE_STORAGE_KEYS = {
   INTERRUPT_CATEGORY_SETTINGS: 'interrupt-category-settings-store',
   TASK_PLACEMENT_SETTING: 'task-placement-setting',
   AUTO_START_TASK_SETTING: 'auto-start-task-setting',
+  FEATURE_FLAGS_SETTING: 'feature-flags-setting',
 } as const;
 
 // Helper to sort tasks by order
@@ -42,6 +43,7 @@ export interface HydratedSettingsData {
   interruptCategorySettings: InterruptCategorySettings;
   addTaskToTop: boolean;
   autoStartTask: boolean;
+  featureFlags: FeatureFlags;
 }
 
 export async function hydrateEventsData(): Promise<HydratedEventsData> {
@@ -74,6 +76,7 @@ export async function hydrateTasksData(): Promise<HydratedTasksData> {
       ...task,
       isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
       order: task.order === undefined ? index : task.order,
+      planning: task.planning || undefined,
     }));
     return { myTasks: sortMyTasks(hydratedTasks) };
   }
@@ -112,11 +115,13 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
   const [
     storedInterruptCategorySettings,
     storedTaskPlacement,
-    storedAutoStartTask
+    storedAutoStartTask,
+    storedFeatureFlags
   ] = await Promise.all([
     dbGet<InterruptCategorySettings>(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS),
     dbGet<boolean>(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING),
     dbGet<boolean>(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING),
+    dbGet<FeatureFlags>(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING),
   ]);
 
   let interruptCategorySettings: InterruptCategorySettings;
@@ -135,9 +140,16 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     await dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, DEFAULT_INTERRUPT_CATEGORIES);
   }
 
+  const featureFlags: FeatureFlags = {
+    enableTaskPlanning: storedFeatureFlags?.enableTaskPlanning ?? false,
+  };
+
+  await dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags);
+
   return {
     interruptCategorySettings,
     addTaskToTop: storedTaskPlacement ?? false,
     autoStartTask: storedAutoStartTask ?? false,
+    featureFlags,
   };
 }

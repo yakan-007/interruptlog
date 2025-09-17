@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
-import { Event } from '@/types';
+import { Event, FeatureFlags } from '@/types';
 import * as idbKeyval from 'idb-keyval';
 
 // Mock idb-keyval
@@ -28,6 +28,9 @@ describe('useEventsStore', () => {
       categories: [],
       isCategoryEnabled: false,
       isHydrated: false,
+      featureFlags: {
+        enableTaskPlanning: false,
+      },
     };
     useEventsStore.setState((state) => ({ ...state, ...initialState }));
 
@@ -151,6 +154,7 @@ describe('useEventsStore', () => {
       if (key === 'interrupt-category-settings-store') return Promise.resolve(undefined);
       if (key === 'task-placement-setting') return Promise.resolve(false);
       if (key === 'auto-start-task-setting') return Promise.resolve(false);
+      if (key === 'feature-flags-setting') return Promise.resolve(undefined);
       return Promise.resolve(undefined);
     });
     
@@ -286,6 +290,7 @@ describe('useEventsStore', () => {
       if (key === 'interrupt-category-settings-store') return Promise.resolve(undefined);
       if (key === 'task-placement-setting') return Promise.resolve(false);
       if (key === 'auto-start-task-setting') return Promise.resolve(false);
+      if (key === 'feature-flags-setting') return Promise.resolve(undefined);
       return Promise.resolve(undefined);
     });
 
@@ -324,6 +329,64 @@ describe('useEventsStore', () => {
     expect((updated as any).who).toBeUndefined();
     expect((updated as any).interruptType).toBeUndefined();
     expect((updated as any).urgency).toBeUndefined();
+  });
+
+  it('startTask captures planning snapshot when feature enabled', () => {
+    const { actions } = useEventsStore.getState();
+    actions.setFeatureFlag('enableTaskPlanning', true);
+    actions.addMyTask('Planned Task', undefined, {
+      planning: {
+        plannedDurationMinutes: 90,
+        dueAt: new Date('2025-01-10T12:00:00').getTime(),
+      },
+    });
+
+    const task = useEventsStore.getState().myTasks.find(t => t.name === 'Planned Task');
+    expect(task).toBeDefined();
+
+    actions.startTask('Planned Task', task!.id);
+
+    const { events, currentEventId } = useEventsStore.getState();
+    const running = events.find(event => event.id === currentEventId)!;
+    expect(running.meta?.planningSnapshot?.plannedDurationMinutes).toBe(90);
+    expect(running.meta?.planningSnapshot?.dueAt).toBeDefined();
+  });
+
+  it('updateMyTaskMetadata synchronizes active event meta and trimming', () => {
+    const { actions } = useEventsStore.getState();
+    actions.setFeatureFlag('enableTaskPlanning', true);
+    actions.addMyTask('Meta Task');
+    const task = useEventsStore.getState().myTasks[0];
+    actions.startTask('Meta Task', task.id);
+
+    actions.updateMyTaskPlanning(task.id, {
+      planning: {
+        plannedDurationMinutes: 120,
+        dueAt: new Date('2025-01-12T09:00:00').getTime(),
+      },
+    });
+
+    const updatedTask = useEventsStore.getState().myTasks.find(t => t.id === task.id)!;
+    expect(updatedTask.planning?.plannedDurationMinutes).toBe(120);
+    expect(updatedTask.planning?.dueAt).toBeDefined();
+
+    const { events, currentEventId } = useEventsStore.getState();
+    const running = events.find(event => event.id === currentEventId)!;
+    expect(running.meta?.planningSnapshot?.plannedDurationMinutes).toBe(120);
+    expect(running.meta?.planningSnapshot?.dueAt).toBeDefined();
+  });
+
+  it('setFeatureFlag persists feature flags to storage', () => {
+    const { actions } = useEventsStore.getState();
+    (idbKeyval.set as vi.Mock).mockClear();
+    actions.setFeatureFlag('enableTaskPlanning', true);
+    expect(idbKeyval.set).toHaveBeenCalled();
+    const featureCall = (idbKeyval.set as vi.Mock).mock.calls.find(
+      ([key]) => key === 'feature-flags-setting'
+    );
+    expect(featureCall).toBeDefined();
+    const [, payload] = featureCall as [string, FeatureFlags];
+    expect(payload.enableTaskPlanning).toBe(true);
   });
 
 }); 
