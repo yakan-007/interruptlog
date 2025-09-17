@@ -24,45 +24,39 @@ export default function EventControlButtons({
   const isBreakActive = activeEvent.type === 'break';
 
   return (
-    <div className="flex gap-2 w-full">
-      {/* Stop Button */}
+    <div className="flex w-full flex-row gap-2">
       <Button
         onClick={onStopEvent}
         disabled={disabled}
         variant="destructive"
-        size="sm"
-        className="flex-1 flex items-center justify-center gap-1"
+        className="flex-1 min-w-[96px] items-center justify-center gap-2 rounded-lg text-sm font-semibold"
       >
-        <StopCircle className="w-4 h-4" />
+        <StopCircle className="h-4 w-4" />
         {isTaskActive && '停止'}
         {isInterruptActive && '割り込み終了'}
         {isBreakActive && '休憩終了'}
       </Button>
 
-      {/* Interrupt Button - only show during tasks */}
       {isTaskActive && (
         <Button
           onClick={onStartInterrupt}
           disabled={disabled}
           variant="outline"
-          size="sm"
-          className="flex-shrink-0 flex items-center justify-center gap-1 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20"
+          className="flex-1 min-w-[96px] items-center justify-center gap-2 rounded-lg border-orange-200 bg-orange-50 text-sm font-semibold text-orange-700 hover:bg-orange-100 dark:border-orange-700/60 dark:bg-orange-900/20 dark:text-orange-200 dark:hover:bg-orange-900/40"
         >
-          <Zap className="w-4 h-4" />
+          <Zap className="h-4 w-4" />
           割り込み
         </Button>
       )}
 
-      {/* Break Button - only show during tasks */}
       {isTaskActive && (
         <Button
           onClick={onStartBreak}
           disabled={disabled}
           variant="outline"
-          size="sm"
-          className="flex-shrink-0 flex items-center justify-center gap-1 border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/20"
+          className="flex-1 min-w-[96px] items-center justify-center gap-2 rounded-lg border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700/60 dark:bg-blue-900/20 dark:text-blue-200 dark:hover:bg-blue-900/40"
         >
-          <Coffee className="w-4 h-4" />
+          <Coffee className="h-4 w-4" />
           休憩
         </Button>
       )}

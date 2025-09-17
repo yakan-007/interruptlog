@@ -5,6 +5,7 @@ import { Event } from '@/types';
 import TaskManagementSection from '@/components/main/TaskManagementSection';
 import EventHistorySection from '@/components/main/EventHistorySection';
 import EventEditModal from '@/components/EventEditModal';
+// Nowカードや操作バーは従来どおりの構成に戻す
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { 
   useActiveEvent, 
@@ -174,6 +175,8 @@ export default function LogPage() {
         onSave={handleSaveEventTime}
         nextEvent={editingEvent ? events[events.findIndex(e => e.id === editingEvent.id) + 1] : undefined}
       />
+
+      {/* 画面下部の操作バーは元の構成に依存しているため、ここでは使わない */}
     </div>
   );
-} 
+}

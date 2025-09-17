@@ -49,7 +49,7 @@ export interface EventsState {
     updateEvent: (event: Event) => void;
     setEvents: (events: Event[]) => void;
     setCurrentEventId: (id: string | null) => void;
-    addMyTask: (name: string, categoryId?: string) => void;
+    addMyTask: (name: string, categoryId?: string, options?: { suppressAutoStart?: boolean }) => void;
     removeMyTask: (id: string) => void;
     updateMyTask: (id: string, newName: string) => void;
     updateMyTaskCategory: (id: string, categoryId: string | undefined) => void;
@@ -405,8 +405,9 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
       get().actions._persistEventsState();
     },
-    addMyTask: (name: string, categoryId?: string) => {
+    addMyTask: (name: string, categoryId?: string, options?: { suppressAutoStart?: boolean }) => {
       const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events, actions } = get();
+      const suppressAutoStart = options?.suppressAutoStart ?? false;
       
       try {
         const { newTask, updatedTasks } = createTaskWithOrdering({
@@ -420,7 +421,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         actions._persistMyTasksState();
         
         // Handle auto-start if enabled
-        if (autoStartTask) {
+        if (autoStartTask && !suppressAutoStart) {
           handleAutoStartTask({
             task: newTask,
             currentEventId,

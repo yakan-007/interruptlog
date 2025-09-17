@@ -98,6 +98,8 @@ export default function TaskCard({
           onChange={() => onToggleCompletion(task.id)}
           className="mr-3"
           id={`task-${task.id}`}
+          disabled={isActiveTask}
+          title={isActiveTask ? '進行中のタスクは完了できません。先に停止してください。' : undefined}
         />
         {editingTaskId === task.id ? (
           <div className="flex-grow flex gap-2">

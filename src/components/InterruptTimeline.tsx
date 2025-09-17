@@ -77,7 +77,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events, targetDat
   if (targetInterrupts.length === 0) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-        <p className="text-lg">🧘 {isToday ? '今日は' : 'この日は'}割り込みがありません！</p>
+        <p className="text-lg">{isToday ? '今日は' : 'この日は'}割り込みがありません。</p>
         <p className="text-sm">割り込みを記録すると、ここにタイムラインが表示されます。</p>
       </div>
     );
@@ -87,7 +87,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events, targetDat
     <div className="space-y-4">
       {/* Header */}
       <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">{isToday ? '本日' : formatDate(targetDateObj)}の割り込みタイムライン ⏰</h3>
+        <h3 className="text-lg font-semibold mb-2">{isToday ? '本日' : formatDate(targetDateObj)}の割り込みタイムライン</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           24時間の割り込み状況。時間をクリックすると詳細が見られます。
         </p>
@@ -169,7 +169,7 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events, targetDat
 
       {/* Quick insights */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 {isToday ? '本日' : 'この日'}のサマリー</h4>
+        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{isToday ? '本日' : 'この日'}のサマリー</h4>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <div>総割り込み数: {targetInterrupts.length}件</div>
           <div>ピーク時間: {

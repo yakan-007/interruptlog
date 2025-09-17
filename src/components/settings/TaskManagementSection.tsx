@@ -10,7 +10,7 @@ export default function TaskManagementSection() {
   
   const { values, handleSubmit, updateValue } = useFormHandler({
     initialValues: { taskName: '' },
-    onSubmit: (values) => actions.addMyTask(values.taskName),
+    onSubmit: (values) => actions.addMyTask(values.taskName, undefined, { suppressAutoStart: true }),
     validate: (values) => values.taskName.trim() !== '',
   });
 
