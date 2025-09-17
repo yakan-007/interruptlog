@@ -17,8 +17,10 @@ export default function FloatingActionControls() {
     isEventActive,
     isTaskActive,
     isInterruptActive,
+    canCompleteTask,
     isStopConfirmOpen,
-    handleStopEvent,
+    handleStopOnly,
+    handleStopAndComplete,
     handleStartInterrupt,
     handleStartBreak,
     handleResumeTask,
@@ -87,19 +89,41 @@ export default function FloatingActionControls() {
       <Dialog open={isStopConfirmOpen} onOpenChange={closeStopConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>イベントを停止しますか？</DialogTitle>
-            <DialogDescription>
-              現在の{isTaskActive ? 'タスク' : isInterruptActive ? '割り込み' : '休憩'}を停止します。
-              {isInterruptActive && '前のタスクに自動で戻ります。'}
+            <DialogTitle>作業を停止しますか？</DialogTitle>
+            <DialogDescription className="text-sm text-gray-600 dark:text-gray-300">
+              タイマーを停止すると現在の{isTaskActive ? 'タスク' : isInterruptActive ? '割り込み' : '休憩'}は終了します。
+              {isInterruptActive && '停止後は前のタスクに自動で戻ります。'}
+              {isTaskActive && ' 停止後に完了扱いにするか選択できます。'}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeStopConfirm}>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={closeStopConfirm} className="w-full sm:w-auto">
               キャンセル
             </Button>
-            <Button variant="destructive" onClick={handleStopEvent}>
-              停止
-            </Button>
+            {isTaskActive && canCompleteTask ? (
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={handleStopOnly}
+                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                >
+                  停止のみ
+                </Button>
+                <Button
+                  onClick={handleStopAndComplete}
+                  className="w-full bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                >
+                  停止して完了
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleStopOnly}
+                className="w-full bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 sm:w-auto"
+              >
+                停止
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

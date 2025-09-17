@@ -56,6 +56,7 @@ export interface EventsState {
     setMyTasks: (tasks: MyTask[]) => void;
     hydrate: () => Promise<void>;
     toggleMyTaskCompletion: (taskId: string) => void;
+    setMyTaskCompletion: (taskId: string, completed: boolean) => void;
     reorderMyTasks: (taskId: string, newOrder: number) => void;
     getTaskTotalDuration: (taskId: string) => number;
     cancelCurrentInterruptAndResumeTask: () => void;
@@ -472,6 +473,14 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       const currentTasks = get().myTasks;
       const updatedTasks = currentTasks.map(task =>
           task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+      );
+      set({ myTasks: updatedTasks });
+      get().actions._persistMyTasksState();
+    },
+    setMyTaskCompletion: (taskId: string, completed: boolean) => {
+      const currentTasks = get().myTasks;
+      const updatedTasks = currentTasks.map(task =>
+        task.id === taskId ? { ...task, isCompleted: completed } : task
       );
       set({ myTasks: updatedTasks });
       get().actions._persistMyTasksState();

@@ -20,11 +20,26 @@ export function useEventControls() {
   const isEventActive = !!activeEvent;
 
   // Stop current event
-  const handleStopEvent = useCallback(() => {
+  const handleStopOnly = useCallback(() => {
     if (!activeEvent) return;
 
     try {
       actions.stopCurrentEvent();
+      setIsStopConfirmOpen(false);
+    } catch (error) {
+      console.error('Error stopping event:', error);
+    }
+  }, [activeEvent, actions]);
+
+  const handleStopAndComplete = useCallback(() => {
+    if (!activeEvent) return;
+
+    try {
+      const taskId = activeEvent.type === 'task' ? activeEvent.meta?.myTaskId : undefined;
+      actions.stopCurrentEvent();
+      if (activeEvent.type === 'task' && taskId) {
+        actions.setMyTaskCompletion(taskId, true);
+      }
       setIsStopConfirmOpen(false);
     } catch (error) {
       console.error('Error stopping event:', error);
@@ -70,6 +85,8 @@ export function useEventControls() {
   const isInterruptActive = activeEvent?.type === 'interrupt';
   const isBreakActive = activeEvent?.type === 'break';
 
+  const canCompleteTask = activeEvent?.type === 'task' && Boolean(activeEvent.meta?.myTaskId);
+
   return {
     // State
     activeEvent,
@@ -78,9 +95,11 @@ export function useEventControls() {
     isInterruptActive,
     isBreakActive,
     isStopConfirmOpen,
+    canCompleteTask,
 
     // Actions
-    handleStopEvent,
+    handleStopOnly,
+    handleStopAndComplete,
     handleStartInterrupt,
     handleStartBreak,
     handleResumeTask,
