@@ -3,38 +3,38 @@
 import { useMemo, useState } from 'react';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
 import EventList from '@/components/EventList';
-import StatBar from '@/components/StatBar';
 import CompletedTasksList from '@/components/CompletedTasksList';
-import SummaryCards from '@/components/report/SummaryCards';
-import TrendChart from '@/components/report/TrendChart';
-import InterruptionInsights from '@/components/report/InterruptionInsights';
-import TaskHighlights from '@/components/report/TaskHighlights';
-import AdvancedPlanningSummary from '@/components/report/AdvancedPlanningSummary';
+import DailySummarySection from '@/components/report/DailySummarySection';
+import ProgressCounters from '@/components/report/ProgressCounters';
+import HighlightsSection from '@/components/report/HighlightsSection';
+import TaskPlanTable from '@/components/report/TaskPlanTable';
+import InterruptionSummaryCompact from '@/components/report/InterruptionSummaryCompact';
+import DayTimeline from '@/components/report/DayTimeline';
+import WeeklyFocusChart from '@/components/report/WeeklyFocusChart';
 import {
   computeSummaryMetrics,
-  computeDailyTrend,
   computeInterruptionStats,
-  computeTaskHighlights,
   filterEventsByDateKey,
   shiftDateKey,
-  formatDuration,
   getDuration,
 } from '@/lib/reportUtils';
 import { DISPLAY_LIMITS } from '@/lib/constants';
-import { useFeatureFlags } from '@/hooks/useStoreSelectors';
-import { PlanningInsight, computePlanningAggregates } from '@/lib/planningInsights';
+import { useDueAlertSettings, useFeatureFlags } from '@/hooks/useStoreSelectors';
+import { PlanningInsight } from '@/lib/planningInsights';
+import { buildDailyReportData, buildWeeklyFocusData } from '@/lib/reportBuilder';
+import { buildTimeline } from '@/lib/timelineBuilder';
 
 const ReportPage = () => {
-  const { events, myTasks, categories, isCategoryEnabled, isHydrated } = useEventsStore((state: EventsState) => ({
+  const { events, myTasks, categories, isHydrated, uiSettings } = useEventsStore((state: EventsState) => ({
     events: state.events,
     myTasks: state.myTasks,
     categories: state.categories,
-    isCategoryEnabled: state.isCategoryEnabled,
     isHydrated: state.isHydrated,
+    uiSettings: state.uiSettings,
   }));
   const featureFlags = useFeatureFlags();
+  const dueAlertSettings = useDueAlertSettings();
 
-  // Initialize selectedDate to today
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -58,40 +58,7 @@ const ReportPage = () => {
   const previousDateEvents = filterEventsByDateKey(events, previousDateKey);
 
   const summaryMetrics = computeSummaryMetrics(selectedDateEvents, previousDateEvents);
-  const trendData = computeDailyTrend(events, selectedDate);
   const interruptionStats = computeInterruptionStats(selectedDateEvents);
-  const taskHighlights = computeTaskHighlights(selectedDateEvents, myTasks, 4);
-
-  const lastEvents = [...selectedDateEvents]
-    .sort((a, b) => b.start - a.start)
-    .slice(0, DISPLAY_LIMITS.RECENT_EVENTS);
-
-  const completedTasksWithSelectedDateActivity = myTasks.filter(task => {
-    if (!task.isCompleted) return false;
-    return selectedDateEvents.some(event => event.type === 'task' && event.meta?.myTaskId === task.id);
-  });
-
-  const categoryTimeData = isCategoryEnabled
-    ? categories
-        .map(category => {
-          const time = selectedDateEvents
-            .filter(event => event.end && event.categoryId === category.id)
-            .reduce((total, event) => total + (event.end! - event.start), 0);
-          return {
-            id: category.id,
-            name: category.name,
-            color: category.color,
-            time,
-          };
-        })
-        .filter(item => item.time > 0)
-    : [];
-
-  const uncategorizedTime = isCategoryEnabled
-    ? selectedDateEvents
-        .filter(event => event.end && !event.categoryId)
-        .reduce((total, event) => total + (event.end! - event.start), 0)
-    : 0;
 
   const planningInsights = useMemo(() => {
     if (!featureFlags.enableTaskPlanning) return [] as PlanningInsight[];
@@ -123,26 +90,34 @@ const ReportPage = () => {
         map.set(key, current);
       });
 
-    return Array.from(map.values())
-      .map(item => ({
-        ...item,
-        varianceMinutes:
-          item.plannedMinutes !== undefined ? item.actualMinutes - item.plannedMinutes : undefined,
-      }))
-      .filter(item =>
-        item.plannedMinutes !== undefined || item.actualMinutes > 0 || item.dueAt !== undefined
-      )
-      .sort((a, b) => (b.plannedMinutes ?? 0) - (a.plannedMinutes ?? 0));
+    return Array.from(map.values()).map(item => ({
+      ...item,
+      varianceMinutes:
+        item.plannedMinutes !== undefined ? item.actualMinutes - item.plannedMinutes : undefined,
+    }));
   }, [featureFlags.enableTaskPlanning, selectedDateEvents]);
 
-  const planningAggregates = useMemo(() => {
-    if (!featureFlags.enableTaskPlanning) return null;
-    return computePlanningAggregates({
-      insights: planningInsights,
-      summaryItems: summaryMetrics.items,
-      selectedDateKey: selectedDate,
-    });
-  }, [featureFlags.enableTaskPlanning, planningInsights, summaryMetrics.items, selectedDate]);
+  const reportData = useMemo(
+    () =>
+      buildDailyReportData(events, myTasks, selectedDate, planningInsights, {
+        warningMinutes: dueAlertSettings.warningMinutes,
+        dangerMinutes: dueAlertSettings.dangerMinutes,
+      }),
+    [dueAlertSettings.dangerMinutes, dueAlertSettings.warningMinutes, events, myTasks, planningInsights, selectedDate],
+  );
+
+  const timelineData = useMemo(() => buildTimeline(selectedDateEvents, categories), [selectedDateEvents, categories]);
+
+  const weeklyTrendData = useMemo(() => buildWeeklyFocusData(events, selectedDate), [events, selectedDate]);
+
+  const lastEvents = [...selectedDateEvents]
+    .sort((a, b) => b.start - a.start)
+    .slice(0, DISPLAY_LIMITS.RECENT_EVENTS);
+
+  const completedTasksWithSelectedDateActivity = myTasks.filter(task => {
+    if (!task.isCompleted) return false;
+    return selectedDateEvents.some(event => event.type === 'task' && event.meta?.myTaskId === task.id);
+  });
 
   const formatDateForDisplay = (dateString: string) => {
     const date = new Date(dateString);
@@ -160,8 +135,11 @@ const ReportPage = () => {
   return (
     <div className="space-y-6 p-4 pb-16">
       <header className="space-y-3 text-center">
-        <h1 className="text-2xl font-semibold">{formatDateForDisplay(selectedDate)}のレポート</h1>
-        <div className="flex justify-center">
+        <h1 className="text-2xl font-semibold">{formatDateForDisplay(selectedDate)}の報告</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          本日の作業状況とポイントをまとめています。印刷してそのまま共有できます。
+        </p>
+        <div className="flex justify-center gap-3">
           <input
             type="date"
             value={selectedDate}
@@ -178,111 +156,29 @@ const ReportPage = () => {
         )}
       </header>
 
-      <SummaryCards items={summaryMetrics.items} />
+      <DailySummarySection summaryMetrics={summaryMetrics} />
 
-      <TrendChart data={trendData} />
-
-      <InterruptionInsights
-        stats={interruptionStats}
-        eventsForSelectedDate={selectedDateEvents}
-        selectedDateKey={selectedDate}
-      />
-
-      <TaskHighlights items={taskHighlights} />
-
-      {featureFlags.enableTaskPlanning && planningAggregates && (
-        <AdvancedPlanningSummary aggregates={planningAggregates} />
+      {uiSettings.showCounters && (
+        <ProgressCounters
+          summaryMetrics={summaryMetrics}
+          completedTaskCount={completedTasksWithSelectedDateActivity.length}
+          interruptionCount={interruptionStats.totalCount}
+        />
       )}
 
-      {featureFlags.enableTaskPlanning && planningInsights.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">計画と実績のサマリー</h2>
-          <div className="space-y-3">
-            {planningInsights.map(insight => (
-              <div
-                key={insight.taskName + (insight.dueAt ?? '')}
-                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{insight.taskName}</p>
-                  {insight.varianceMinutes !== undefined && (
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-semibold ${varianceToneClass(insight.varianceMinutes)}`}
-                    >
-                      {varianceLabel(insight.varianceMinutes)}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 grid gap-3 text-xs text-gray-600 dark:text-gray-300 md:grid-cols-3">
-                  <div>
-                    <span className="block text-gray-400">実績</span>
-                    {formatDurationMinutes(insight.actualMinutes)}
-                  </div>
-                  <div>
-                    <span className="block text-gray-400">予定</span>
-                    {insight.plannedMinutes !== undefined
-                      ? formatDurationMinutes(insight.plannedMinutes)
-                      : '—'}
-                  </div>
-                  <div>
-                    <span className="block text-gray-400">期限</span>
-                    {insight.dueAt ? formatDueDate(insight.dueAt) : '—'}
-                  </div>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400">
-                  {insight.plannedMinutes !== undefined && <span>予定: {formatDurationMinutes(insight.plannedMinutes)}</span>}
-                  <span>実績: {formatDurationMinutes(insight.actualMinutes)}</span>
-                  {insight.dueAt && <span>期限: {formatDueDate(insight.dueAt)}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      <HighlightsSection highlights={reportData.highlights} />
+
+      {uiSettings.highlightTimeline && timelineData.segments.length > 0 && (
+        <DayTimeline data={timelineData} />
       )}
 
-      {isCategoryEnabled && (categoryTimeData.length > 0 || uncategorizedTime > 0) && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">カテゴリ別時間配分</h2>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            <div className="mb-4">
-              <StatBar
-                data={[
-                  ...categoryTimeData.map(item => ({ name: item.name, value: item.time, fill: item.color })),
-                  ...(uncategorizedTime > 0
-                    ? [
-                        {
-                          name: '未分類',
-                          value: uncategorizedTime,
-                          fill: '#9CA3AF',
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            </div>
-            <div className="space-y-2">
-              {categoryTimeData.map(item => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-4 w-4 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">{item.name}</span>
-                  </div>
-                  <span className="text-sm font-mono text-gray-600 dark:text-gray-300">{formatDuration(item.time)}</span>
-                </div>
-              ))}
-              {uncategorizedTime > 0 && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-4 w-4 rounded-full bg-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">未分類</span>
-                  </div>
-                  <span className="text-sm font-mono text-gray-600 dark:text-gray-300">{formatDuration(uncategorizedTime)}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+      <WeeklyFocusChart data={weeklyTrendData} />
+
+      {featureFlags.enableTaskPlanning && (
+        <TaskPlanTable rows={reportData.topPlannedTasks} />
       )}
+
+      <InterruptionSummaryCompact stats={interruptionStats} />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -313,34 +209,3 @@ const ReportPage = () => {
 };
 
 export default ReportPage;
-
-const formatDurationMinutes = (minutes: number | undefined): string => {
-  if (minutes === undefined) return '—';
-  const ms = minutes * 60 * 1000;
-  return formatDuration(ms);
-};
-
-const formatDueDate = (timestamp: number): string => {
-  const date = new Date(timestamp);
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${month}/${day} ${hours}:${minutes}`;
-};
-
-const varianceLabel = (varianceMinutes: number): string => {
-  if (Math.abs(varianceMinutes) < 5) {
-    return 'オンペース';
-  }
-  return varianceMinutes > 0 ? `+${Math.round(varianceMinutes)}分` : `${Math.round(varianceMinutes)}分`;
-};
-
-const varianceToneClass = (varianceMinutes: number): string => {
-  if (Math.abs(varianceMinutes) < 5) {
-    return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
-  }
-  return varianceMinutes > 0
-    ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
-};

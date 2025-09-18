@@ -1,6 +1,6 @@
 import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES, TIME_THRESHOLDS } from '@/lib/constants';
 import { 
@@ -39,6 +39,8 @@ export interface EventsState {
   autoStartTask: boolean; // true: タスク追加後即座開始, false: 手動で開始
   isHydrated: boolean;
   featureFlags: FeatureFlags;
+  dueAlertSettings: DueAlertSettings;
+  uiSettings: UiSettings;
   actions: {
     startTask: (label?: string, myTaskId?: string) => void;
     stopCurrentEvent: () => void;
@@ -88,6 +90,14 @@ export interface EventsState {
     setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => void;
     toggleFeatureFlag: (flag: keyof FeatureFlags) => void;
     _persistFeatureFlags: () => void;
+    setDueAlertPreset: (preset: DueAlertSettings['preset']) => void;
+    setDueAlertSettings: (settings: DueAlertSettings) => void;
+    _persistDueAlertSettings: () => void;
+    toggleSortTasksByDueDate: () => void;
+    setSortTasksByDueDate: (value: boolean) => void;
+    _persistUiSettings: () => void;
+    toggleHighlightTimeline: () => void;
+    toggleShowCounters: () => void;
   };
 }
 
@@ -107,6 +117,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   isHydrated: false,
   featureFlags: {
     enableTaskPlanning: false,
+  },
+  dueAlertSettings: {
+    warningMinutes: 6 * 60,
+    dangerMinutes: 60,
+    preset: 'few-hours',
+  },
+  uiSettings: {
+    sortTasksByDueDate: false,
+    highlightTimeline: true,
+    showCounters: true,
   },
   actions: {
     hydrate: async () => {
@@ -145,6 +165,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           autoStartTask: false, 
           featureFlags: {
             enableTaskPlanning: false,
+          },
+          dueAlertSettings: {
+            warningMinutes: 6 * 60,
+            dangerMinutes: 60,
+            preset: 'few-hours',
+          },
+          uiSettings: {
+            sortTasksByDueDate: false,
+            highlightTimeline: true,
+            showCounters: true,
           },
           isHydrated: false 
         });
@@ -699,6 +729,59 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags).catch(error => {
         console.error('[useEventsStore] Error persisting feature flags to IndexedDB:', error);
       });
+    },
+    setDueAlertPreset: (preset: DueAlertSettings['preset']) => {
+      const presetMap: Record<DueAlertSettings['preset'], DueAlertSettings> = {
+        'day-before': {
+          warningMinutes: 24 * 60,
+          dangerMinutes: 4 * 60,
+          preset: 'day-before',
+        },
+        'few-hours': {
+          warningMinutes: 6 * 60,
+          dangerMinutes: 60,
+          preset: 'few-hours',
+        },
+        tight: {
+          warningMinutes: 120,
+          dangerMinutes: 30,
+          preset: 'tight',
+        },
+      };
+      set({ dueAlertSettings: presetMap[preset] });
+      get().actions._persistDueAlertSettings();
+    },
+    setDueAlertSettings: (settings: DueAlertSettings) => {
+      set({ dueAlertSettings: settings });
+      get().actions._persistDueAlertSettings();
+    },
+    _persistDueAlertSettings: () => {
+      const { dueAlertSettings } = get();
+      dbSet(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS, dueAlertSettings).catch(error => {
+        console.error('[useEventsStore] Error persisting due alert settings to IndexedDB:', error);
+      });
+    },
+    toggleSortTasksByDueDate: () => {
+      set(state => ({ uiSettings: { ...state.uiSettings, sortTasksByDueDate: !state.uiSettings.sortTasksByDueDate } }));
+      get().actions._persistUiSettings();
+    },
+    setSortTasksByDueDate: (value: boolean) => {
+      set(state => ({ uiSettings: { ...state.uiSettings, sortTasksByDueDate: value } }));
+      get().actions._persistUiSettings();
+    },
+    _persistUiSettings: () => {
+      const { uiSettings } = get();
+      dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings).catch(error => {
+        console.error('[useEventsStore] Error persisting UI settings to IndexedDB:', error);
+      });
+    },
+    toggleHighlightTimeline: () => {
+      set(state => ({ uiSettings: { ...state.uiSettings, highlightTimeline: !state.uiSettings.highlightTimeline } }));
+      get().actions._persistUiSettings();
+    },
+    toggleShowCounters: () => {
+      set(state => ({ uiSettings: { ...state.uiSettings, showCounters: !state.uiSettings.showCounters } }));
+      get().actions._persistUiSettings();
     },
     toggleTaskPlacement: () => {
       set({ addTaskToTop: !get().addTaskToTop });

@@ -56,3 +56,15 @@ export type InterruptCategorySettings = {
 export interface FeatureFlags {
   enableTaskPlanning: boolean;
 }
+
+export interface DueAlertSettings {
+  warningMinutes: number; // minutes before due date to show warning tone
+  dangerMinutes: number; // minutes before due date to show danger tone
+  preset: 'day-before' | 'few-hours' | 'tight';
+}
+
+export interface UiSettings {
+  sortTasksByDueDate: boolean;
+  highlightTimeline: boolean;
+  showCounters: boolean;
+}

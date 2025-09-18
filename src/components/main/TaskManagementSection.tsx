@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Zap, CheckCircle2, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import { Event, MyTask, TaskPlanning } from '@/types';
+import useEventsStore from '@/store/useEventsStore';
 import { useFeatureFlags, useTaskManagement } from '@/hooks/useStoreSelectors';
 import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
 
@@ -52,6 +53,7 @@ export default function TaskManagementSection({
   const { myTasks, categories, isCategoryEnabled, autoStartTask, actions } = useTaskManagement();
   const featureFlags = useFeatureFlags();
   const planningEnabled = featureFlags.enableTaskPlanning;
+  const sortByDueDate = useEventsStore(state => state.uiSettings.sortTasksByDueDate);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskCategoryId, setNewTaskCategoryId] = useState<string>('');
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
@@ -226,6 +228,11 @@ export default function TaskManagementSection({
             進行中のタスク ({activeTasks.length})
           </h3>
         </div>
+        {sortByDueDate && (
+          <p className="ml-6 text-xs text-gray-500 dark:text-gray-400">
+            納期が近い順に並べ替えています。ドラッグでの順序入れ替えは一時的に無効です。
+          </p>
+        )}
         
         {activeTasks.map((task: MyTask) => (
           <TaskCard
@@ -243,12 +250,13 @@ export default function TaskManagementSection({
             onToggleCompletion={onToggleCompletion}
             onStartEvent={onStartEvent}
             onDeleteTask={onDeleteTask}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
+            onDragStart={sortByDueDate ? undefined : onDragStart}
+            onDragOver={sortByDueDate ? undefined : onDragOver}
+            onDragLeave={sortByDueDate ? undefined : onDragLeave}
+            onDrop={sortByDueDate ? undefined : onDrop}
+            onDragEnd={sortByDueDate ? undefined : onDragEnd}
             onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
+            isDragDisabled={sortByDueDate}
           />
         ))}
         
@@ -293,12 +301,13 @@ export default function TaskManagementSection({
                   onToggleCompletion={onToggleCompletion}
                   onStartEvent={onStartEvent}
                   onDeleteTask={onDeleteTask}
-                  onDragStart={onDragStart}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  onDrop={onDrop}
-                  onDragEnd={onDragEnd}
+                  onDragStart={sortByDueDate ? undefined : onDragStart}
+                  onDragOver={sortByDueDate ? undefined : onDragOver}
+                  onDragLeave={sortByDueDate ? undefined : onDragLeave}
+                  onDrop={sortByDueDate ? undefined : onDrop}
+                  onDragEnd={sortByDueDate ? undefined : onDragEnd}
                   onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
+                  isDragDisabled={sortByDueDate}
                 />
               ))}
             </div>

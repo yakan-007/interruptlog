@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useEventsStore from '@/store/useEventsStore';
-import { Event, MyTask, Category, FeatureFlags } from '@/types';
+import { Event, MyTask, Category, FeatureFlags, DueAlertSettings } from '@/types';
 
 // Optimized selectors to prevent unnecessary re-renders
 
@@ -27,12 +27,38 @@ export function useActiveEvent() {
 }
 
 export function useSortedTasks() {
-  const myTasks = useEventsStore(state => state.myTasks);
-  
-  return useMemo(() => 
-    [...myTasks].sort((a, b) => a.order - b.order),
-    [myTasks]
-  );
+  const tasks = useEventsStore(state => state.myTasks);
+  const sortByDueDate = useEventsStore(state => state.uiSettings.sortTasksByDueDate);
+
+  return useMemo(() => {
+    if (!sortByDueDate) {
+      return [...tasks].sort((a, b) => a.order - b.order);
+    }
+
+    const withDueDate: MyTask[] = [];
+    const withoutDueDate: MyTask[] = [];
+
+    tasks.forEach(task => {
+      if (task.planning?.dueAt) {
+        withDueDate.push(task);
+      } else {
+        withoutDueDate.push(task);
+      }
+    });
+
+    withDueDate.sort((a, b) => {
+      const dueA = a.planning?.dueAt ?? 0;
+      const dueB = b.planning?.dueAt ?? 0;
+      if (dueA === dueB) {
+        return a.order - b.order;
+      }
+      return dueA - dueB;
+    });
+
+    withoutDueDate.sort((a, b) => a.order - b.order);
+
+    return [...withDueDate, ...withoutDueDate];
+  }, [tasks, sortByDueDate]);
 }
 
 export function useTaskById(taskId: string) {
@@ -148,6 +174,10 @@ export function useInterruptCategorySettings() {
 
 export function useFeatureFlags(): FeatureFlags {
   return useEventsStore(state => state.featureFlags);
+}
+
+export function useDueAlertSettings(): DueAlertSettings {
+  return useEventsStore(state => state.dueAlertSettings);
 }
 
 // Actions selector (stable reference)

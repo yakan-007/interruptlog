@@ -11,6 +11,8 @@ import InterruptCategorySection from '@/components/settings/InterruptCategorySec
 import TaskTransitionSection from '@/components/settings/TaskTransitionSection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
 import FeatureFlagsSection from '@/components/settings/FeatureFlagsSection';
+import DueAlertSettingsSection from '@/components/settings/DueAlertSettingsSection';
+import TimelineOptionsSection from '@/components/settings/TimelineOptionsSection';
 
 const SettingsPage = () => {
   const { isHydrated } = useEventsStore();
@@ -39,6 +41,8 @@ const SettingsPage = () => {
         <InterruptCategorySection />
         <TaskTransitionSection />
         <FeatureFlagsSection />
+        <DueAlertSettingsSection />
+        <TimelineOptionsSection />
         <DataManagementSection />
       </div>
     </div>

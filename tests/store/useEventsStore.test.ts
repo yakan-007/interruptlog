@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import useEventsStore, { EventsState } from '@/store/useEventsStore';
-import { Event, FeatureFlags } from '@/types';
+import { Event, FeatureFlags, DueAlertSettings } from '@/types';
 import * as idbKeyval from 'idb-keyval';
 
 // Mock idb-keyval
@@ -30,6 +30,16 @@ describe('useEventsStore', () => {
       isHydrated: false,
       featureFlags: {
         enableTaskPlanning: false,
+      },
+      dueAlertSettings: {
+        warningMinutes: 6 * 60,
+        dangerMinutes: 60,
+        preset: 'few-hours',
+      },
+      uiSettings: {
+        sortTasksByDueDate: false,
+        highlightTimeline: true,
+        showCounters: true,
       },
     };
     useEventsStore.setState((state) => ({ ...state, ...initialState }));
@@ -155,6 +165,8 @@ describe('useEventsStore', () => {
       if (key === 'task-placement-setting') return Promise.resolve(false);
       if (key === 'auto-start-task-setting') return Promise.resolve(false);
       if (key === 'feature-flags-setting') return Promise.resolve(undefined);
+      if (key === 'due-alert-settings') return Promise.resolve(undefined);
+      if (key === 'ui-settings') return Promise.resolve(undefined);
       return Promise.resolve(undefined);
     });
     
@@ -291,6 +303,8 @@ describe('useEventsStore', () => {
       if (key === 'task-placement-setting') return Promise.resolve(false);
       if (key === 'auto-start-task-setting') return Promise.resolve(false);
       if (key === 'feature-flags-setting') return Promise.resolve(undefined);
+      if (key === 'due-alert-settings') return Promise.resolve(undefined);
+      if (key === 'ui-settings') return Promise.resolve(undefined);
       return Promise.resolve(undefined);
     });
 
@@ -387,6 +401,59 @@ describe('useEventsStore', () => {
     expect(featureCall).toBeDefined();
     const [, payload] = featureCall as [string, FeatureFlags];
     expect(payload.enableTaskPlanning).toBe(true);
+  });
+
+  it('setDueAlertPreset updates settings and persists', () => {
+    const { actions } = useEventsStore.getState();
+    (idbKeyval.set as vi.Mock).mockClear();
+
+    actions.setDueAlertPreset('tight');
+
+    const state = useEventsStore.getState();
+    expect(state.dueAlertSettings.preset).toBe('tight');
+    expect(state.dueAlertSettings.dangerMinutes).toBe(30);
+
+    const dueAlertCall = (idbKeyval.set as vi.Mock).mock.calls.find(
+      ([key]) => key === 'due-alert-settings'
+    );
+    expect(dueAlertCall).toBeDefined();
+    const [, payload] = dueAlertCall as [string, DueAlertSettings];
+    expect(payload.preset).toBe('tight');
+  });
+
+  it('toggleSortTasksByDueDate updates ui settings', () => {
+    const { actions } = useEventsStore.getState();
+    (idbKeyval.set as vi.Mock).mockClear();
+
+    actions.toggleSortTasksByDueDate();
+
+    const state = useEventsStore.getState();
+    expect(state.uiSettings.sortTasksByDueDate).toBe(true);
+
+    const uiCall = (idbKeyval.set as vi.Mock).mock.calls.find(([key]) => key === 'ui-settings');
+    expect(uiCall).toBeDefined();
+    const [, payload] = uiCall as [string, { sortTasksByDueDate: boolean }];
+    expect(payload.sortTasksByDueDate).toBe(true);
+  });
+
+  it('toggleHighlightTimeline and toggleShowCounters persist settings', () => {
+    const { actions } = useEventsStore.getState();
+    (idbKeyval.set as vi.Mock).mockClear();
+
+    actions.toggleHighlightTimeline();
+    actions.toggleShowCounters();
+
+    const state = useEventsStore.getState();
+    expect(state.uiSettings.highlightTimeline).toBe(false);
+    expect(state.uiSettings.showCounters).toBe(false);
+
+    const uiCall = (idbKeyval.set as vi.Mock).mock.calls
+      .filter(([key]) => key === 'ui-settings')
+      .pop();
+    expect(uiCall).toBeDefined();
+    const [, payload] = uiCall as [string, { highlightTimeline: boolean; showCounters: boolean }];
+    expect(payload.highlightTimeline).toBe(false);
+    expect(payload.showCounters).toBe(false);
   });
 
 }); 
