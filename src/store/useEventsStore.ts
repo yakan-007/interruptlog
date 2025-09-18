@@ -98,6 +98,7 @@ export interface EventsState {
     _persistUiSettings: () => void;
     toggleHighlightTimeline: () => void;
     toggleShowCounters: () => void;
+    toggleShowPersonalProgress: () => void;
   };
 }
 
@@ -127,6 +128,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     sortTasksByDueDate: false,
     highlightTimeline: true,
     showCounters: true,
+    showPersonalProgress: true,
   },
   actions: {
     hydrate: async () => {
@@ -175,6 +177,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
             sortTasksByDueDate: false,
             highlightTimeline: true,
             showCounters: true,
+            showPersonalProgress: true,
           },
           isHydrated: false 
         });
@@ -781,6 +784,10 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     toggleShowCounters: () => {
       set(state => ({ uiSettings: { ...state.uiSettings, showCounters: !state.uiSettings.showCounters } }));
+      get().actions._persistUiSettings();
+    },
+    toggleShowPersonalProgress: () => {
+      set(state => ({ uiSettings: { ...state.uiSettings, showPersonalProgress: !state.uiSettings.showPersonalProgress } }));
       get().actions._persistUiSettings();
     },
     toggleTaskPlacement: () => {

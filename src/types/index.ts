@@ -67,4 +67,5 @@ export interface UiSettings {
   sortTasksByDueDate: boolean;
   highlightTimeline: boolean;
   showCounters: boolean;
+  showPersonalProgress: boolean;
 }

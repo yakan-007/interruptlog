@@ -152,10 +152,11 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
   };
   await dbSet(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS, dueAlertSettings);
 
-  const uiSettings: UiSettings = storedUiSettings ?? {
-    sortTasksByDueDate: false,
-    highlightTimeline: true,
-    showCounters: true,
+  const uiSettings: UiSettings = {
+    sortTasksByDueDate: storedUiSettings?.sortTasksByDueDate ?? false,
+    highlightTimeline: storedUiSettings?.highlightTimeline ?? true,
+    showCounters: storedUiSettings?.showCounters ?? true,
+    showPersonalProgress: storedUiSettings?.showPersonalProgress ?? true,
   };
   await dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings);
 

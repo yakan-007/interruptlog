@@ -24,6 +24,12 @@ export default function TimelineOptionsSection() {
           checked={uiSettings.showCounters}
           onToggle={actions.toggleShowCounters}
         />
+        <ToggleRow
+          label="積み上げサマリーを表示"
+          description="自分の頑張りをまとめたレポートを追加表示します"
+          checked={uiSettings.showPersonalProgress}
+          onToggle={actions.toggleShowPersonalProgress}
+        />
       </div>
     </div>
   );
