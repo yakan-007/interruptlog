@@ -151,20 +151,20 @@ const ReportContent = ({
         const key = event.meta?.myTaskId ?? event.id;
         const snapshot = event.meta?.planningSnapshot;
         const label = event.label || 'タスク';
-        const current = map.get(key) ?? {
+        const current: PlanningInsight = map.get(key) ?? {
           taskName: label,
           actualMinutes: 0,
-          plannedMinutes: snapshot?.plannedDurationMinutes,
-          dueAt: snapshot?.dueAt,
+          plannedMinutes: snapshot?.plannedDurationMinutes ?? undefined,
+          dueAt: snapshot?.dueAt ?? undefined,
         };
 
         const durationMinutes = getDuration(event) / (1000 * 60);
         current.actualMinutes += durationMinutes;
 
-        if (snapshot?.plannedDurationMinutes) {
+        if (snapshot?.plannedDurationMinutes != null) {
           current.plannedMinutes = snapshot.plannedDurationMinutes;
         }
-        if (snapshot?.dueAt) {
+        if (snapshot?.dueAt != null) {
           current.dueAt = snapshot.dueAt;
         }
         map.set(key, current);
