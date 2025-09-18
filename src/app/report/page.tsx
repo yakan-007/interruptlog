@@ -26,6 +26,7 @@ import { useDueAlertSettings, useFeatureFlags } from '@/hooks/useStoreSelectors'
 import { PlanningInsight } from '@/lib/planningInsights';
 import { buildDailyReportData, buildWeeklyFocusData } from '@/lib/reportBuilder';
 import { buildTimeline } from '@/lib/timelineBuilder';
+import { FeatureFlags, DueAlertSettings } from '@/types';
 
 const formatMinutesNarrative = (minutes: number): string => {
   if (!Number.isFinite(minutes) || minutes <= 0) {
@@ -41,6 +42,19 @@ const formatMinutesNarrative = (minutes: number): string => {
     return `${hours}時間`;
   }
   return `${Math.max(mins, 1)}分`;
+};
+
+const formatDateForDisplay = (dateString: string): string => {
+  const date = new Date(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date.toDateString() === today.toDateString()) {
+    return '本日';
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
 };
 
 const ReportPage = () => {
@@ -60,6 +74,45 @@ const ReportPage = () => {
     return today.toISOString().split('T')[0];
   });
 
+  if (!isHydrated) {
+    return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
+  }
+
+  return (
+    <ReportContent
+      events={events}
+      myTasks={myTasks}
+      categories={categories}
+      uiSettings={uiSettings}
+      featureFlags={featureFlags}
+      dueAlertSettings={dueAlertSettings}
+      selectedDate={selectedDate}
+      onSelectedDateChange={setSelectedDate}
+    />
+  );
+};
+
+interface ReportContentProps {
+  events: EventsState['events'];
+  myTasks: EventsState['myTasks'];
+  categories: EventsState['categories'];
+  uiSettings: EventsState['uiSettings'];
+  featureFlags: FeatureFlags;
+  dueAlertSettings: DueAlertSettings;
+  selectedDate: string;
+  onSelectedDateChange: (value: string) => void;
+}
+
+const ReportContent = ({
+  events,
+  myTasks,
+  categories,
+  uiSettings,
+  featureFlags,
+  dueAlertSettings,
+  selectedDate,
+  onSelectedDateChange,
+}: ReportContentProps) => {
   const earliestEventDate = useMemo(() => {
     if (events.length === 0) return null;
     const sortedEvents = [...events].sort((a, b) => a.start - b.start);
@@ -68,12 +121,24 @@ const ReportPage = () => {
     return earliestDate.toISOString().split('T')[0];
   }, [events]);
 
-  const selectedDateEvents = filterEventsByDateKey(events, selectedDate);
+  const selectedDateEvents = useMemo(
+    () => filterEventsByDateKey(events, selectedDate),
+    [events, selectedDate],
+  );
   const previousDateKey = shiftDateKey(selectedDate, -1);
-  const previousDateEvents = filterEventsByDateKey(events, previousDateKey);
+  const previousDateEvents = useMemo(
+    () => filterEventsByDateKey(events, previousDateKey),
+    [events, previousDateKey],
+  );
 
-  const summaryMetrics = computeSummaryMetrics(selectedDateEvents, previousDateEvents);
-  const interruptionStats = computeInterruptionStats(selectedDateEvents);
+  const summaryMetrics = useMemo(
+    () => computeSummaryMetrics(selectedDateEvents, previousDateEvents),
+    [selectedDateEvents, previousDateEvents],
+  );
+  const interruptionStats = useMemo(
+    () => computeInterruptionStats(selectedDateEvents),
+    [selectedDateEvents],
+  );
 
   const planningInsights = useMemo(() => {
     if (!featureFlags.enableTaskPlanning) return [] as PlanningInsight[];
@@ -121,20 +186,32 @@ const ReportPage = () => {
     [dueAlertSettings.dangerMinutes, dueAlertSettings.warningMinutes, events, myTasks, planningInsights, selectedDate],
   );
 
-  const timelineData = useMemo(() => buildTimeline(selectedDateEvents, categories), [selectedDateEvents, categories]);
+  const timelineData = useMemo(
+    () => buildTimeline(selectedDateEvents, categories),
+    [selectedDateEvents, categories],
+  );
 
-  const weeklyTrendData = useMemo(() => buildWeeklyFocusData(events, selectedDate), [events, selectedDate]);
+  const weeklyTrendData = useMemo(
+    () => buildWeeklyFocusData(events, selectedDate),
+    [events, selectedDate],
+  );
 
-  const lastEvents = [...selectedDateEvents]
-    .sort((a, b) => b.start - a.start)
-    .slice(0, DISPLAY_LIMITS.RECENT_EVENTS);
+  const lastEvents = useMemo(
+    () =>
+      [...selectedDateEvents]
+        .sort((a, b) => b.start - a.start)
+        .slice(0, DISPLAY_LIMITS.RECENT_EVENTS),
+    [selectedDateEvents],
+  );
 
-
-
-  const completedTasksWithSelectedDateActivity = myTasks.filter(task => {
-    if (!task.isCompleted) return false;
-    return selectedDateEvents.some(event => event.type === 'task' && event.meta?.myTaskId === task.id);
-  });
+  const completedTasksWithSelectedDateActivity = useMemo(
+    () =>
+      myTasks.filter(task => {
+        if (!task.isCompleted) return false;
+        return selectedDateEvents.some(event => event.type === 'task' && event.meta?.myTaskId === task.id);
+      }),
+    [myTasks, selectedDateEvents],
+  );
 
   const completedTaskSummaries = useMemo<CompletedTaskSummary[]>(() => {
     return completedTasksWithSelectedDateActivity
@@ -235,24 +312,8 @@ const ReportPage = () => {
     completedTaskSummaries,
     focusStreakDays,
   ]);
-  const formatDateForDisplay = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (date.toDateString() === today.toDateString()) {
-      return '本日';
-    }
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${year}年${month}月${day}日`;
-  };
 
   const selectedDateLabel = formatDateForDisplay(selectedDate);
-
-  if (!isHydrated) {
-    return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
-  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 pb-16 print:max-w-none print:p-8 print:bg-white print:text-black">
@@ -265,7 +326,7 @@ const ReportPage = () => {
           <input
             type="date"
             value={selectedDate}
-            onChange={event => setSelectedDate(event.target.value)}
+            onChange={event => onSelectedDateChange(event.target.value)}
             min={earliestEventDate || undefined}
             max={new Date().toISOString().split('T')[0]}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
@@ -324,9 +385,7 @@ const ReportPage = () => {
 
       <WeeklyFocusChart data={weeklyTrendData} />
 
-      {featureFlags.enableTaskPlanning && (
-        <TaskPlanTable rows={reportData.topPlannedTasks} />
-      )}
+      {featureFlags.enableTaskPlanning && <TaskPlanTable rows={reportData.topPlannedTasks} />}
 
       <InterruptionSummaryCompact stats={interruptionStats} />
 

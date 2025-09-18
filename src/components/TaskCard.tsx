@@ -63,7 +63,6 @@ export default function TaskCard({
   }));
   const featureFlags = useFeatureFlags();
   const dueAlertSettings = useEventsStore(state => state.dueAlertSettings);
-  const getTaskTotalDuration = useEventsStore(state => state.actions.getTaskTotalDuration);
   const events = useEvents();
 
   const taskCategory = task.categoryId ? categories.find(cat => cat.id === task.categoryId) : null;
@@ -78,7 +77,11 @@ export default function TaskCard({
   const planning = task.planning;
   const hasPlanningDetails = featureFlags.enableTaskPlanning && planning && (planning.plannedDurationMinutes || planning.dueAt);
 
-  const totalDurationMs = useMemo(() => getTaskTotalDuration(task.id), [events, getTaskTotalDuration, task.id]);
+  const totalDurationMs = useMemo(() => {
+    return events
+      .filter(event => event.type === 'task' && event.meta?.myTaskId === task.id && event.end)
+      .reduce((total, event) => total + (event.end! - event.start), 0);
+  }, [events, task.id]);
   const runningDurationMs =
     activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end
       ? Date.now() - activeEvent.start
