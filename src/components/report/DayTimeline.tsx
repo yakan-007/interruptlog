@@ -87,21 +87,24 @@ function segmentDurationLabel(segment: TimelineSegment): string {
   return `${minutes}分 休憩`;
 }
 
+type ChipTone = 'info' | 'warning' | 'muted' | 'positive';
+
 interface ChipProps {
   label: string;
   value: string;
-  tone?: 'info' | 'warning' | 'muted' | 'positive';
+  tone?: ChipTone;
 }
 
 function Chip({ label, value, tone = 'info' }: ChipProps) {
-  const toneClasses: Record<ChipProps['tone'], string> = {
+  const chipTone: ChipTone = tone ?? 'info';
+  const toneClasses: Record<ChipTone, string> = {
     info: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/40 dark:text-blue-200',
     warning: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/30 dark:text-amber-200',
     muted: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
     positive: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-200',
   };
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium ${toneClasses[tone]}`}>
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-medium ${toneClasses[chipTone]}`}>
       <span className="uppercase text-[10px] tracking-wide">{label}</span>
       <span>{value}</span>
     </span>
