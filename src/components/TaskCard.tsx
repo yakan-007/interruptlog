@@ -26,11 +26,11 @@ interface TaskCardProps {
   onToggleCompletion: (taskId: string) => void;
   onStartEvent: (label: string, taskId?: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
-  onDragOver: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
-  onDragLeave: () => void;
-  onDrop: (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
-  onDragEnd: () => void;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
+  onDragOver?: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
+  onDragEnd?: () => void;
   onEditPlanning?: (taskId: string) => void;
   isDragDisabled?: boolean;
 }
@@ -100,16 +100,16 @@ export default function TaskCard({
         dragEnabled && dragOverTaskId === task.id && draggingTaskId !== task.id &&
           'border-2 border-blue-500 ring-2 ring-blue-300 dark:border-blue-300'
       )}
-      onDragOver={dragEnabled ? event => onDragOver(event, task.id) : undefined}
+      onDragOver={dragEnabled && onDragOver ? event => onDragOver(event, task.id) : undefined}
       onDragLeave={dragEnabled ? onDragLeave : undefined}
-      onDrop={dragEnabled ? event => onDrop(event, task.id) : undefined}
+      onDrop={dragEnabled && onDrop ? event => onDrop(event, task.id) : undefined}
       onDragEnd={dragEnabled ? onDragEnd : undefined}
     >
       <div className="flex flex-wrap items-center gap-3">
         <div
           className={cn('p-1', dragEnabled ? 'cursor-grab' : 'cursor-default opacity-40')}
           draggable={dragEnabled}
-          onDragStart={dragEnabled ? event => onDragStart(event, task.id) : undefined}
+          onDragStart={dragEnabled && onDragStart ? event => onDragStart(event, task.id) : undefined}
         >
           <GripVertical className="h-5 w-5 text-gray-400" />
         </div>
