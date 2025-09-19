@@ -1,418 +1,261 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import useEventsStore, { EventsState } from '@/store/useEventsStore';
-import EventList from '@/components/EventList';
-import CompletedTasksList from '@/components/CompletedTasksList';
-import DailySummarySection from '@/components/report/DailySummarySection';
-import ProgressCounters from '@/components/report/ProgressCounters';
-import HighlightsSection from '@/components/report/HighlightsSection';
-import ManagementSummary from '@/components/report/ManagementSummary';
-import PersonalProgressPanel from '@/components/report/PersonalProgressPanel';
-import TaskPlanTable from '@/components/report/TaskPlanTable';
-import InterruptionSummaryCompact from '@/components/report/InterruptionSummaryCompact';
-import DayTimeline from '@/components/report/DayTimeline';
-import WeeklyFocusChart from '@/components/report/WeeklyFocusChart';
-import { CompletedTaskSummary } from '@/components/report/types';
+import useEventsStore from '@/store/useEventsStore';
+import type { Granularity } from './utils/types';
+import { buildRangeInfo, toDateKey } from './utils/range';
+import { buildTaskRangeData, buildMonthlyTaskPoints, buildYearlyTaskPoints, buildWeeklyTaskPoints } from './utils/taskMetrics';
+import { computeCategoryStats } from './utils/categoryMetrics';
+import { buildWeeklyCategorySeries } from './utils/categoryTimeSeries';
+import { buildTaskDailyChanges } from './utils/taskChanges';
+import { buildHighlights } from './utils/highlights';
+import { buildHourlyTrend, buildHeatmapData, buildWeeklyActivityPoints } from './utils/timeSeries';
+import { formatRangeLabel } from './utils/formatters';
+import type { HighlightMetric } from './utils/types';
 import {
   computeSummaryMetrics,
   computeInterruptionStats,
-  filterEventsByDateKey,
-  shiftDateKey,
-  getDuration,
+  filterEventsByDateRange,
 } from '@/lib/reportUtils';
-import { DISPLAY_LIMITS } from '@/lib/constants';
-import { useDueAlertSettings, useFeatureFlags } from '@/hooks/useStoreSelectors';
-import { PlanningInsight } from '@/lib/planningInsights';
-import { buildDailyReportData, buildWeeklyFocusData } from '@/lib/reportBuilder';
-import { buildTimeline } from '@/lib/timelineBuilder';
-import { FeatureFlags, DueAlertSettings } from '@/types';
+import HighlightsGrid from '@/components/report/HighlightsGrid';
+import {
+  DayTrendChart,
+  HourlyHeatmap,
+  WeeklyActivityChart,
+  WeeklyTaskFlowChart,
+  MonthlyTaskFlowChart,
+  YearlyTaskFlowChart,
+  TaskAggregateSummary,
+  WeeklyCategoryStackedChart,
+} from '@/components/report/ReportCharts';
+import InterruptionSummaryCompact from '@/components/report/InterruptionSummaryCompact';
+import CategoryOverview from '@/components/report/CategoryOverview';
+import TaskDailyChanges from '@/components/report/TaskDailyChanges';
 
-const formatMinutesNarrative = (minutes: number): string => {
-  if (!Number.isFinite(minutes) || minutes <= 0) {
-    return '0分';
-  }
-  const totalMinutes = Math.round(minutes);
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  if (hours > 0 && mins > 0) {
-    return `${hours}時間${mins}分`;
-  }
-  if (hours > 0) {
-    return `${hours}時間`;
-  }
-  return `${Math.max(mins, 1)}分`;
-};
+const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
-const formatDateForDisplay = (dateString: string): string => {
-  const date = new Date(dateString);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (date.toDateString() === today.toDateString()) {
-    return '本日';
+const formatRangeDescription = (granularity: Granularity) => {
+  switch (granularity) {
+    case 'day':
+      return '今日を主役に、週・月・年をワンタップで俯瞰できるダッシュボード。';
+    case 'week':
+      return '1週間の稼働と割り込みを俯瞰し、ペースを評価できます。';
+    case 'month':
+      return '日別の新規／完了フローから未完了タスクの変動を把握します。';
+    case 'year':
+    default:
+      return '月ごとの仕事量と未完了タスクの推移を年間でチェック。';
   }
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}年${month}月${day}日`;
 };
 
 const ReportPage = () => {
-  const { events, myTasks, categories, isHydrated, uiSettings } = useEventsStore((state: EventsState) => ({
+  const { events, taskLedger, categories, isHydrated } = useEventsStore(state => ({
     events: state.events,
-    myTasks: state.myTasks,
+    taskLedger: state.taskLedger,
     categories: state.categories,
     isHydrated: state.isHydrated,
-    uiSettings: state.uiSettings,
   }));
-  const featureFlags = useFeatureFlags();
-  const dueAlertSettings = useDueAlertSettings();
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState(() => toDateKey(new Date()));
+
+  const [granularity, setGranularity] = useState<Granularity>('day');
+
+  const earliestEventDate = useMemo(() => {
+    if (events.length === 0) return null;
+    const earliest = events.reduce((min, event) => (event.start < min ? event.start : min), events[0].start);
+    return toDateKey(new Date(earliest));
+  }, [events]);
+
+  const rangeInfo = useMemo(() => buildRangeInfo(selectedDate, granularity), [selectedDate, granularity]);
+  const { current: currentRange, previous: previousRange } = rangeInfo;
+
+  const currentEvents = useMemo(
+    () => filterEventsByDateRange(events, currentRange.startKey, currentRange.endKey),
+    [events, currentRange.startKey, currentRange.endKey],
+  );
+
+  const previousEvents = useMemo(
+    () => filterEventsByDateRange(events, previousRange.startKey, previousRange.endKey),
+    [events, previousRange.startKey, previousRange.endKey],
+  );
+
+  const summaryMetrics = useMemo(
+    () => computeSummaryMetrics(currentEvents, previousEvents),
+    [currentEvents, previousEvents],
+  );
+
+  const interruptionStats = useMemo(() => computeInterruptionStats(currentEvents), [currentEvents]);
+
+  const taskRangeData = useMemo(
+    () => buildTaskRangeData(taskLedger, currentRange, previousRange),
+    [taskLedger, currentRange, previousRange],
+  );
+
+  const highlightMetrics: HighlightMetric[] = useMemo(
+    () =>
+      buildHighlights({
+        summaryMetrics,
+        taskRanges: taskRangeData,
+        granularity,
+        interruptionStats,
+      }),
+    [summaryMetrics, taskRangeData, granularity, interruptionStats],
+  );
+
+  const categoryStats = useMemo(
+    () => computeCategoryStats(taskLedger, categories, currentRange, currentEvents, taskRangeData.current),
+    [taskLedger, categories, currentRange, currentEvents, taskRangeData],
+  );
+
+  const taskDailyChanges = useMemo(
+    () =>
+      granularity === 'day'
+        ? buildTaskDailyChanges(taskLedger, categories, currentRange, events)
+        : null,
+    [granularity, taskLedger, categories, currentRange, events],
+  );
+
+  const hourlyTrend = useMemo(
+    () => (granularity === 'day' ? buildHourlyTrend(currentEvents) : []),
+    [granularity, currentEvents],
+  );
+
+  const heatmapData = useMemo(
+    () => (granularity === 'day' ? buildHeatmapData(events, selectedDate) : []),
+    [granularity, events, selectedDate],
+  );
+
+  const weeklyActivity = useMemo(
+    () => (granularity === 'week' ? buildWeeklyActivityPoints(currentEvents, currentRange) : []),
+    [granularity, currentEvents, currentRange],
+  );
+
+  const weeklyTaskFlow = useMemo(
+    () => (granularity === 'week' ? buildWeeklyTaskPoints(taskRangeData.current.daily) : []),
+    [granularity, taskRangeData],
+  );
+
+  const weeklyCategorySeries = useMemo(
+    () => (granularity === 'week' ? buildWeeklyCategorySeries(events, taskLedger, categories, currentRange) : null),
+    [granularity, events, taskLedger, categories, currentRange],
+  );
+
+  const monthlyTaskFlow = useMemo(
+    () => (granularity === 'month' ? buildMonthlyTaskPoints(taskRangeData.current.daily) : []),
+    [granularity, taskRangeData],
+  );
+
+  const yearlyTaskFlow = useMemo(
+    () =>
+      granularity === 'year'
+        ? buildYearlyTaskPoints(taskRangeData.current, currentRange.start.getFullYear())
+        : [],
+    [granularity, taskRangeData, currentRange.start],
+  );
+
+  const rangeLabel = useMemo(() => formatRangeLabel(selectedDate, granularity), [selectedDate, granularity]);
 
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
 
   return (
-    <ReportContent
-      events={events}
-      myTasks={myTasks}
-      categories={categories}
-      uiSettings={uiSettings}
-      featureFlags={featureFlags}
-      dueAlertSettings={dueAlertSettings}
-      selectedDate={selectedDate}
-      onSelectedDateChange={setSelectedDate}
-    />
-  );
-};
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-sky-50 px-4 pb-16 pt-10 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 print:bg-white print:px-0 print:pb-0 print:pt-0">
+      <div className="mx-auto max-w-6xl space-y-8 print:max-w-none">
+        <header className="rounded-3xl border border-white/60 bg-white/80 px-6 py-8 shadow-lg shadow-rose-100/40 backdrop-blur-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none print:border-0 print:bg-white print:p-0 print:shadow-none">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-600 dark:bg-rose-500/20 dark:text-rose-200 print:hidden">
+                Activity Studio Report
+              </span>
+              <div className="space-y-1">
+                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{rangeLabel}</h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{formatRangeDescription(granularity)}</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-3 md:items-end">
+              <div className="flex flex-wrap items-center gap-3 print:hidden">
+                <div className="inline-flex rounded-full bg-white/80 p-1 shadow-sm ring-1 ring-rose-100 dark:bg-slate-800 dark:ring-slate-700">
+                  {GRANULARITY_OPTIONS.map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setGranularity(option)}
+                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                        granularity === option
+                          ? 'bg-rose-500 text-white shadow-md shadow-rose-200/60 dark:bg-rose-500'
+                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {option === 'day' && '今日'}
+                      {option === 'week' && '週'}
+                      {option === 'month' && '月'}
+                      {option === 'year' && '年'}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={event => setSelectedDate(event.target.value)}
+                  min={earliestEventDate || undefined}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="rounded-lg border border-transparent bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-rose-100 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
+                />
+              </div>
+              {earliestEventDate && (
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  データ利用可能期間: {earliestEventDate} 〜 {new Date().toISOString().split('T')[0]}
+                </p>
+              )}
+            </div>
+          </div>
+        </header>
 
-interface ReportContentProps {
-  events: EventsState['events'];
-  myTasks: EventsState['myTasks'];
-  categories: EventsState['categories'];
-  uiSettings: EventsState['uiSettings'];
-  featureFlags: FeatureFlags;
-  dueAlertSettings: DueAlertSettings;
-  selectedDate: string;
-  onSelectedDateChange: (value: string) => void;
-}
+        <HighlightsGrid metrics={highlightMetrics} />
 
-const ReportContent = ({
-  events,
-  myTasks,
-  categories,
-  uiSettings,
-  featureFlags,
-  dueAlertSettings,
-  selectedDate,
-  onSelectedDateChange,
-}: ReportContentProps) => {
-  const earliestEventDate = useMemo(() => {
-    if (events.length === 0) return null;
-    const sortedEvents = [...events].sort((a, b) => a.start - b.start);
-    const earliestDate = new Date(sortedEvents[0].start);
-    earliestDate.setHours(0, 0, 0, 0);
-    return earliestDate.toISOString().split('T')[0];
-  }, [events]);
-
-  const selectedDateEvents = useMemo(
-    () => filterEventsByDateKey(events, selectedDate),
-    [events, selectedDate],
-  );
-  const previousDateKey = shiftDateKey(selectedDate, -1);
-  const previousDateEvents = useMemo(
-    () => filterEventsByDateKey(events, previousDateKey),
-    [events, previousDateKey],
-  );
-
-  const summaryMetrics = useMemo(
-    () => computeSummaryMetrics(selectedDateEvents, previousDateEvents),
-    [selectedDateEvents, previousDateEvents],
-  );
-  const interruptionStats = useMemo(
-    () => computeInterruptionStats(selectedDateEvents),
-    [selectedDateEvents],
-  );
-
-  const planningInsights = useMemo(() => {
-    if (!featureFlags.enableTaskPlanning) return [] as PlanningInsight[];
-
-    const map = new Map<string, PlanningInsight>();
-
-    selectedDateEvents
-      .filter(event => event.type === 'task')
-      .forEach(event => {
-        const key = event.meta?.myTaskId ?? event.id;
-        const snapshot = event.meta?.planningSnapshot;
-        const label = event.label || 'タスク';
-        const current: PlanningInsight = map.get(key) ?? {
-          taskName: label,
-          actualMinutes: 0,
-          plannedMinutes: snapshot?.plannedDurationMinutes ?? undefined,
-          dueAt: snapshot?.dueAt ?? undefined,
-        };
-
-        const durationMinutes = getDuration(event) / (1000 * 60);
-        current.actualMinutes += durationMinutes;
-
-        if (snapshot?.plannedDurationMinutes != null) {
-          current.plannedMinutes = snapshot.plannedDurationMinutes;
-        }
-        if (snapshot?.dueAt != null) {
-          current.dueAt = snapshot.dueAt;
-        }
-        map.set(key, current);
-      });
-
-    return Array.from(map.values()).map(item => ({
-      ...item,
-      varianceMinutes:
-        item.plannedMinutes !== undefined ? item.actualMinutes - item.plannedMinutes : undefined,
-    }));
-  }, [featureFlags.enableTaskPlanning, selectedDateEvents]);
-
-  const reportData = useMemo(
-    () =>
-      buildDailyReportData(events, myTasks, selectedDate, planningInsights, {
-        warningMinutes: dueAlertSettings.warningMinutes,
-        dangerMinutes: dueAlertSettings.dangerMinutes,
-      }),
-    [dueAlertSettings.dangerMinutes, dueAlertSettings.warningMinutes, events, myTasks, planningInsights, selectedDate],
-  );
-
-  const timelineData = useMemo(
-    () => buildTimeline(selectedDateEvents, categories),
-    [selectedDateEvents, categories],
-  );
-
-  const weeklyTrendData = useMemo(
-    () => buildWeeklyFocusData(events, selectedDate),
-    [events, selectedDate],
-  );
-
-  const lastEvents = useMemo(
-    () =>
-      [...selectedDateEvents]
-        .sort((a, b) => b.start - a.start)
-        .slice(0, DISPLAY_LIMITS.RECENT_EVENTS),
-    [selectedDateEvents],
-  );
-
-  const completedTasksWithSelectedDateActivity = useMemo(
-    () =>
-      myTasks.filter(task => {
-        if (!task.isCompleted) return false;
-        return selectedDateEvents.some(event => event.type === 'task' && event.meta?.myTaskId === task.id);
-      }),
-    [myTasks, selectedDateEvents],
-  );
-
-  const completedTaskSummaries = useMemo<CompletedTaskSummary[]>(() => {
-    return completedTasksWithSelectedDateActivity
-      .map(task => {
-        const taskEvents = selectedDateEvents.filter(
-          event => event.type === 'task' && event.meta?.myTaskId === task.id && event.end,
-        );
-        const totalTimeMs = taskEvents.reduce((sum, event) => sum + getDuration(event), 0);
-        return {
-          id: task.id,
-          name: task.name,
-          totalTimeMs,
-          sessionsCount: taskEvents.length,
-        };
-      })
-      .sort((a, b) => b.totalTimeMs - a.totalTimeMs);
-  }, [completedTasksWithSelectedDateActivity, selectedDateEvents]);
-
-  const focusSessionMetrics = useMemo(() => {
-    const focusEvents = selectedDateEvents.filter(event => event.type === 'task' && event.end);
-
-    if (focusEvents.length === 0) {
-      return { focusSessionCount: 0, averageFocusMinutes: 0, longestSessionMinutes: 0 };
-    }
-
-    const durations = focusEvents.map(event => getDuration(event));
-    const totalMs = durations.reduce((sum, duration) => sum + duration, 0);
-    const longestMs = Math.max(...durations);
-
-    return {
-      focusSessionCount: focusEvents.length,
-      averageFocusMinutes: totalMs / focusEvents.length / (1000 * 60),
-      longestSessionMinutes: longestMs / (1000 * 60),
-    };
-  }, [selectedDateEvents]);
-
-  const { focusSessionCount, averageFocusMinutes, longestSessionMinutes } = focusSessionMetrics;
-
-  const focusStreakDays = useMemo(() => {
-    let streak = 0;
-    let counting = false;
-
-    for (let index = weeklyTrendData.length - 1; index >= 0; index -= 1) {
-      const day = weeklyTrendData[index];
-
-      if (day.dateKey > selectedDate) {
-        continue;
-      }
-
-      if (!counting) {
-        if (day.dateKey !== selectedDate) {
-          continue;
-        }
-        counting = true;
-        if (day.focusMinutes <= 0) {
-          return 0;
-        }
-        streak = 1;
-        continue;
-      }
-
-      if (day.focusMinutes > 0) {
-        streak += 1;
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }, [weeklyTrendData, selectedDate]);
-
-  const managementHighlights = useMemo(() => {
-    const notes = [...reportData.highlights];
-    if (interruptionStats.peakHourLabel) {
-      notes.push(`割り込みのピークは${interruptionStats.peakHourLabel}です。`);
-    }
-    return notes;
-  }, [reportData.highlights, interruptionStats.peakHourLabel]);
-
-  const progressHighlights = useMemo(() => {
-    const lines: string[] = [];
-    lines.push(`集中時間: ${formatMinutesNarrative(reportData.totalFocusMinutes)}（${focusSessionCount}セッション）`);
-    if (longestSessionMinutes > 0) {
-      lines.push(`最長集中は${formatMinutesNarrative(longestSessionMinutes)}でした`);
-    }
-    if (completedTaskSummaries.length > 0) {
-      const taskNames = completedTaskSummaries.slice(0, 3).map(task => task.name);
-      lines.push(`完了タスク: ${taskNames.join('、')}`);
-    }
-    if (focusStreakDays > 1) {
-      lines.push(`${focusStreakDays}日連続で積み上げ中`);
-    }
-    return lines;
-  }, [
-    reportData.totalFocusMinutes,
-    focusSessionCount,
-    longestSessionMinutes,
-    completedTaskSummaries,
-    focusStreakDays,
-  ]);
-
-  const selectedDateLabel = formatDateForDisplay(selectedDate);
-
-  return (
-    <div className="mx-auto max-w-5xl space-y-6 p-4 pb-16 print:max-w-none print:p-8 print:bg-white print:text-black">
-      <header className="space-y-3 text-center print:text-left">
-        <h1 className="text-2xl font-semibold">{selectedDateLabel}のレポート</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          マネジメントに伝える要約と、自分の積み上げを同じページで確認できます。
-        </p>
-        <div className="flex justify-center gap-3 print:hidden">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={event => onSelectedDateChange(event.target.value)}
-            min={earliestEventDate || undefined}
-            max={new Date().toISOString().split('T')[0]}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-          />
-        </div>
-        <p className="hidden text-xs text-gray-500 dark:text-gray-400 print:block">
-          印刷ビューではインタラクティブな要素を自動的に省いて整理しています。
-        </p>
-        {earliestEventDate && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            データ利用可能期間: {earliestEventDate} 〜 {new Date().toISOString().split('T')[0]}
-          </p>
+        {granularity === 'day' && (
+          <div className="space-y-6">
+            <DayTrendChart data={hourlyTrend} />
+            <HourlyHeatmap data={heatmapData} />
+            {taskDailyChanges && (
+              <TaskDailyChanges
+                created={taskDailyChanges.created}
+                completed={taskDailyChanges.completed}
+                label={rangeLabel}
+              />
+            )}
+          </div>
         )}
-      </header>
 
-      <ManagementSummary
-        dateLabel={selectedDateLabel}
-        summaryMetrics={summaryMetrics}
-        totalFocusMinutes={reportData.totalFocusMinutes}
-        totalInterruptMinutes={reportData.totalInterruptMinutes}
-        breakMinutes={reportData.breakMinutes}
-        interruptionStats={interruptionStats}
-        highlights={managementHighlights}
-        completedTasks={completedTaskSummaries}
-      />
-
-      <DailySummarySection summaryMetrics={summaryMetrics} />
-
-      {uiSettings.showCounters && (
-        <ProgressCounters
-          summaryMetrics={summaryMetrics}
-          completedTaskCount={completedTaskSummaries.length}
-          interruptionCount={interruptionStats.totalCount}
-        />
-      )}
-
-      <HighlightsSection highlights={reportData.highlights} />
-
-      {uiSettings.showPersonalProgress && (
-        <PersonalProgressPanel
-          dateLabel={selectedDateLabel}
-          totalFocusMinutes={reportData.totalFocusMinutes}
-          focusSessionCount={focusSessionCount}
-          averageSessionMinutes={averageFocusMinutes}
-          longestSessionMinutes={longestSessionMinutes}
-          focusStreakDays={focusStreakDays}
-          completedTasks={completedTaskSummaries}
-          progressHighlights={progressHighlights}
-          dataInsights={managementHighlights}
-        />
-      )}
-
-      {uiSettings.highlightTimeline && timelineData.segments.length > 0 && (
-        <DayTimeline data={timelineData} />
-      )}
-
-      <WeeklyFocusChart data={weeklyTrendData} />
-
-      {featureFlags.enableTaskPlanning && <TaskPlanTable rows={reportData.topPlannedTasks} />}
-
-      <InterruptionSummaryCompact stats={interruptionStats} />
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-          {selectedDateLabel}に完了したタスク
-          {completedTaskSummaries.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-green-600 dark:text-green-400">
-              ({completedTaskSummaries.length})
-            </span>
-          )}
-        </h2>
-        <CompletedTasksList tasks={completedTaskSummaries} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-          {selectedDateLabel}の最新イベント
-        </h2>
-        {lastEvents.length > 0 ? (
-          <EventList events={lastEvents} />
-        ) : (
-          <p className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-            観測されたイベントがありません。
-          </p>
+        {granularity === 'week' && (
+          <div className="space-y-6">
+            <WeeklyActivityChart data={weeklyActivity} />
+            <WeeklyTaskFlowChart data={weeklyTaskFlow} />
+            {weeklyCategorySeries && <WeeklyCategoryStackedChart series={weeklyCategorySeries} />}
+          </div>
         )}
-      </section>
+
+        {granularity === 'month' && (
+          <div className="space-y-6">
+            <MonthlyTaskFlowChart data={monthlyTaskFlow} />
+            <TaskAggregateSummary totals={taskRangeData.current.totals} label="月間" />
+          </div>
+        )}
+
+        {granularity === 'year' && (
+          <div className="space-y-6">
+            <YearlyTaskFlowChart data={yearlyTaskFlow} />
+            <TaskAggregateSummary totals={taskRangeData.current.totals} label="年間" />
+          </div>
+        )}
+
+        {granularity !== 'day' && granularity !== 'year' && (
+          <InterruptionSummaryCompact stats={interruptionStats} />
+        )}
+
+        <CategoryOverview stats={categoryStats} />
+      </div>
     </div>
   );
 };

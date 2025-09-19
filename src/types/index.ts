@@ -34,7 +34,32 @@ export type MyTask = {
   order: number; // for sorting
   categoryId?: string; // カテゴリID（オプション）
   planning?: TaskPlanning;
+  createdAt: number;
+  completedAt?: number | null;
+  canceledAt?: number | null;
 };
+
+export interface TaskLifecycleRecord {
+  id: string;
+  name: string;
+  createdAt: number;
+  createdCategoryId?: string | null;
+  createdCategoryName?: string;
+  createdPlannedMinutes?: number | null;
+  createdDueAt?: number | null;
+  latestCategoryId?: string | null;
+  latestCategoryName?: string;
+  latestPlannedMinutes?: number | null;
+  latestDueAt?: number | null;
+  completedAt?: number | null;
+  completedCategoryId?: string | null;
+  completedCategoryName?: string;
+  completedPlannedMinutes?: number | null;
+  completedDueAt?: number | null;
+  canceledAt?: number | null;
+  canceledCategoryId?: string | null;
+  canceledCategoryName?: string;
+}
 
 export type Category = {
   id: string; // uuid

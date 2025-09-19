@@ -42,19 +42,19 @@ export default function ManagementSummary({
   });
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900 print:border-gray-400 print:bg-white print:shadow-none">
-      <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 dark:border-gray-800">
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          MANAGEMENT SNAPSHOT
+    <section className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-xl shadow-rose-100/40 backdrop-blur-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none print:border-gray-300 print:bg-white print:shadow-none">
+      <header className="flex flex-col gap-3 border-b border-white/60 pb-5 dark:border-slate-800 print:border-gray-300">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-400 dark:text-rose-300">
+          Management Snapshot
         </p>
-        <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{dateLabel}の報告サマリー</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              上司・チーム向けに重要な指標を一枚で把握できます。
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{dateLabel}の報告サマリー</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              上司・チーム向けの主要指標を、YouTube Studio 風のカードでまとめました。
             </p>
           </div>
-          <p className="text-sm text-gray-400 dark:text-gray-500">作成時点: {generatedAtLabel}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">作成時点: {generatedAtLabel}</p>
         </div>
       </header>
 
@@ -63,6 +63,7 @@ export default function ManagementSummary({
           title="集中時間"
           value={formatMinutes(totalFocusMinutes)}
           detail={`前日比 ${formatDelta(focusItem?.deltaDuration ?? 0)}`}
+          tone="focus"
         />
         <MetricCard
           title="完了タスク"
@@ -72,6 +73,7 @@ export default function ManagementSummary({
               ? `${topCompletedTasks.map(task => task.name).join(' / ')}`
               : '主要タスクなし'
           }
+          tone="tasks"
         />
         <MetricCard
           title="割り込み対応"
@@ -79,18 +81,20 @@ export default function ManagementSummary({
           detail={`前日比 ${formatDelta(interruptItem?.deltaDuration ?? 0)} / 合計 ${formatMinutes(totalInterruptMinutes)}${
             topContributor ? ` / 最多: ${topContributor.label}` : ''
           }`}
+          tone="interrupt"
         />
         <MetricCard
           title="休憩"
           value={formatMinutes(breakMinutes)}
           detail={`前日比 ${formatDelta(breakItem?.deltaDuration ?? 0)}`}
+          tone="break"
         />
       </dl>
 
       {managementNotes.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">トピック</h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-700 dark:text-gray-300">
+        <div className="mt-6 rounded-2xl border border-rose-100/80 bg-rose-50/60 p-4 text-sm text-rose-900 shadow-sm dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100 print:border-gray-300 print:bg-white">
+          <h3 className="font-semibold uppercase tracking-wide text-xs text-rose-500 dark:text-rose-200">トピック</h3>
+          <ul className="mt-2 space-y-1 text-sm">
             {managementNotes.map((note, index) => (
               <li key={index}>{note}</li>
             ))}
@@ -164,12 +168,33 @@ function buildManagementNotes({
   return notes.slice(0, 5);
 }
 
-function MetricCard({ title, value, detail }: { title: string; value: string; detail: string }) {
+type MetricTone = 'focus' | 'tasks' | 'interrupt' | 'break';
+
+function MetricCard({
+  title,
+  value,
+  detail,
+  tone = 'focus',
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  tone?: MetricTone;
+}) {
+  const toneStyles: Record<MetricTone, string> = {
+    focus: 'border-rose-100/80 bg-gradient-to-br from-rose-50 via-white to-white text-rose-900 dark:border-rose-500/30 dark:from-rose-500/20 dark:via-transparent dark:to-transparent dark:text-rose-100',
+    tasks: 'border-sky-100/80 bg-gradient-to-br from-sky-50 via-white to-white text-sky-900 dark:border-sky-500/30 dark:from-sky-500/20 dark:text-sky-100',
+    interrupt:
+      'border-amber-100/80 bg-gradient-to-br from-amber-50 via-white to-white text-amber-900 dark:border-amber-500/30 dark:from-amber-500/20 dark:text-amber-100',
+    break:
+      'border-emerald-100/80 bg-gradient-to-br from-emerald-50 via-white to-white text-emerald-900 dark:border-emerald-500/30 dark:from-emerald-500/20 dark:text-emerald-100',
+  };
+
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50 print:border-gray-300 print:bg-white">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{title}</dt>
-      <dd className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-50">{value}</dd>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{detail}</p>
+    <div className={`rounded-2xl border p-4 shadow-sm backdrop-blur-sm print:border-gray-300 print:bg-white ${toneStyles[tone]}`}>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">{title}</dt>
+      <dd className="mt-2 text-2xl font-bold">{value}</dd>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">{detail}</p>
     </div>
   );
 }

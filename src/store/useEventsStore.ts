@@ -1,6 +1,6 @@
 import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES, TIME_THRESHOLDS } from '@/lib/constants';
 import { 
@@ -32,6 +32,7 @@ export interface EventsState {
   currentEventId: string | null;
   previousTaskIdBeforeInterrupt: string | null;
   myTasks: MyTask[];
+  taskLedger: Record<string, TaskLifecycleRecord>;
   categories: Category[];
   isCategoryEnabled: boolean;
   interruptCategorySettings: InterruptCategorySettings;
@@ -71,6 +72,7 @@ export interface EventsState {
     _persistEventsState: () => void;
     _persistMyTasksState: () => void;
     _persistMyTasksStateDebounced: () => void;
+    _persistTaskLedger: () => void;
     _persistCategoriesState: () => void;
     stopBreakAndResumePreviousTask: () => void;
     addCategory: (name: string, color: string) => void;
@@ -110,14 +112,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   currentEventId: null,
   previousTaskIdBeforeInterrupt: null,
   myTasks: [],
+  taskLedger: {},
   categories: [],
-  isCategoryEnabled: false,
+  isCategoryEnabled: true,
   interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES },
   addTaskToTop: false, // デフォルトは下に追加
   autoStartTask: false, // デフォルトは手動開始
   isHydrated: false,
   featureFlags: {
-    enableTaskPlanning: false,
+    enableTaskPlanning: true,
   },
   dueAlertSettings: {
     warningMinutes: 6 * 60,
@@ -161,12 +164,12 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           previousTaskIdBeforeInterrupt: null, 
           myTasks: [], 
           categories: [],
-          isCategoryEnabled: false,
+          isCategoryEnabled: true,
           interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, 
           addTaskToTop: false, 
           autoStartTask: false, 
           featureFlags: {
-            enableTaskPlanning: false,
+            enableTaskPlanning: true,
           },
           dueAlertSettings: {
             warningMinutes: 6 * 60,
@@ -404,6 +407,12 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         });
       }, TIME_THRESHOLDS.AUTO_SAVE_DEBOUNCE_MS);
     },
+    _persistTaskLedger: () => {
+      const { taskLedger } = get();
+      dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, taskLedger).catch(error => {
+        console.error('[useEventsStore] Error persisting task ledger to IndexedDB:', error);
+      });
+    },
     addEvent: (event: Event) => {
       set((state: EventsState) => ({ events: [...state.events, event] }));
       get().actions._persistEventsState();
@@ -466,7 +475,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       categoryId?: string,
       options?: { suppressAutoStart?: boolean; planning?: TaskPlanning }
     ) => {
-      const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events, actions } = get();
+      const { myTasks: currentTasks, addTaskToTop, autoStartTask, currentEventId, events, actions, categories } = get();
       const suppressAutoStart = options?.suppressAutoStart ?? false;
       const planning = options?.planning;
 
@@ -479,8 +488,39 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           planning,
         });
 
-        set({ myTasks: updatedTasks });
+        const category = categories.find(cat => cat.id === categoryId);
+        const plannedMinutes = planning?.plannedDurationMinutes ?? null;
+        const dueAt = planning?.dueAt ?? null;
+
+        set(state => ({
+          myTasks: updatedTasks,
+          taskLedger: {
+            ...state.taskLedger,
+            [newTask.id]: {
+              id: newTask.id,
+              name: newTask.name,
+              createdAt: newTask.createdAt,
+              createdCategoryId: category?.id ?? null,
+              createdCategoryName: category?.name,
+              createdPlannedMinutes: plannedMinutes,
+              createdDueAt: dueAt,
+              latestCategoryId: category?.id ?? null,
+              latestCategoryName: category?.name,
+              latestPlannedMinutes: plannedMinutes,
+              latestDueAt: dueAt,
+              completedAt: null,
+              completedCategoryId: null,
+              completedCategoryName: undefined,
+              completedPlannedMinutes: null,
+              completedDueAt: null,
+              canceledAt: null,
+              canceledCategoryId: null,
+              canceledCategoryName: undefined,
+            },
+          },
+        }));
         actions._persistMyTasksState();
+        actions._persistTaskLedger();
         
         // Handle auto-start if enabled
         if (autoStartTask && !suppressAutoStart) {
@@ -497,18 +537,68 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     removeMyTask: (id: string) => {
-      const currentTasks = get().myTasks;
+      const { myTasks: currentTasks, categories } = get();
+      const taskToRemove = currentTasks.find(task => task.id === id);
+      if (!taskToRemove) {
+        return;
+      }
+
       const updatedTasks = removeTaskAndReorder(currentTasks, id);
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+      const removalTime = Date.now();
+      const category = categories.find(cat => cat.id === taskToRemove.categoryId);
+
+      set(state => ({
+        myTasks: updatedTasks,
+        taskLedger: {
+          ...state.taskLedger,
+          [id]: {
+            id,
+            name: taskToRemove.name,
+            createdAt: state.taskLedger[id]?.createdAt ?? taskToRemove.createdAt,
+            completedAt:
+              state.taskLedger[id]?.completedAt ??
+              (taskToRemove.isCompleted ? taskToRemove.completedAt ?? removalTime : null),
+            canceledAt: removalTime,
+            createdCategoryId: state.taskLedger[id]?.createdCategoryId ?? taskToRemove.categoryId ?? null,
+            createdCategoryName: state.taskLedger[id]?.createdCategoryName,
+            createdPlannedMinutes: state.taskLedger[id]?.createdPlannedMinutes ?? taskToRemove.planning?.plannedDurationMinutes ?? null,
+            createdDueAt: state.taskLedger[id]?.createdDueAt ?? taskToRemove.planning?.dueAt ?? null,
+            latestCategoryId: state.taskLedger[id]?.latestCategoryId ?? taskToRemove.categoryId ?? null,
+            latestCategoryName: state.taskLedger[id]?.latestCategoryName,
+            latestPlannedMinutes: state.taskLedger[id]?.latestPlannedMinutes ?? taskToRemove.planning?.plannedDurationMinutes ?? null,
+            latestDueAt: state.taskLedger[id]?.latestDueAt ?? taskToRemove.planning?.dueAt ?? null,
+            completedCategoryId: state.taskLedger[id]?.completedCategoryId ?? (taskToRemove.isCompleted ? taskToRemove.categoryId ?? null : null),
+            completedCategoryName: state.taskLedger[id]?.completedCategoryName,
+            completedPlannedMinutes: state.taskLedger[id]?.completedPlannedMinutes ?? (taskToRemove.isCompleted ? taskToRemove.planning?.plannedDurationMinutes ?? null : null),
+            completedDueAt: state.taskLedger[id]?.completedDueAt ?? (taskToRemove.isCompleted ? taskToRemove.planning?.dueAt ?? null : null),
+            canceledCategoryId: category?.id ?? taskToRemove.categoryId ?? null,
+            canceledCategoryName: category?.name,
+          },
+        },
+      }));
+
+      const { actions: innerActions } = get();
+      innerActions._persistMyTasksState();
+      innerActions._persistTaskLedger();
     },
     updateMyTask: (id: string, newName: string) => {
-      const currentTasks = get().myTasks;
+      const { myTasks: currentTasks, categories } = get();
       const updatedTasks = currentTasks.map(task =>
         task.id === id ? { ...task, name: newName } : task
       );
-      set({ myTasks: updatedTasks });
+      set(state => ({
+        myTasks: updatedTasks,
+        taskLedger: state.taskLedger[id]
+          ? {
+              ...state.taskLedger,
+              [id]: { ...state.taskLedger[id], name: newName },
+            }
+          : state.taskLedger,
+      }));
       get().actions._persistMyTasksState();
+      if (get().taskLedger[id]) {
+        get().actions._persistTaskLedger();
+      }
       
       // Also update the labels of related events in history
       const currentEvents = get().events;
@@ -523,6 +613,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => {
       const currentTasks = get().myTasks;
+      const hasPlanningUpdate = Object.prototype.hasOwnProperty.call(updates, 'planning');
       const normalizedPlanning = updates.planning === null ? undefined : updates.planning;
 
       const updatedTasks = currentTasks.map(task => {
@@ -532,12 +623,29 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
 
         return {
           ...task,
-          planning: updates.planning !== undefined ? normalizedPlanning : task.planning,
+          planning: hasPlanningUpdate ? normalizedPlanning : task.planning,
         };
       });
 
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+      set(state => {
+        const updatedLedger = { ...state.taskLedger };
+        if (updatedLedger[id] && hasPlanningUpdate) {
+          const plannedMinutes = normalizedPlanning?.plannedDurationMinutes ?? null;
+          const dueAt = normalizedPlanning?.dueAt ?? null;
+          updatedLedger[id] = {
+            ...updatedLedger[id],
+            latestPlannedMinutes: plannedMinutes,
+            latestDueAt: dueAt,
+          };
+        }
+        return {
+          myTasks: updatedTasks,
+          taskLedger: updatedLedger,
+        };
+      });
+      const { actions: storeActions } = get();
+      storeActions._persistMyTasksState();
+      storeActions._persistTaskLedger();
 
       const { events, currentEventId } = get();
       if (!currentEventId) {
@@ -560,29 +668,153 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       }
     },
     setMyTasks: (tasks: MyTask[]) => {
-      const sortedTasks = sortMyTasks(tasks.map((task, index) => ({
-        ...task,
-        isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
-        order: task.order === undefined ? index : task.order,
-      })));
-      set({ myTasks: sortedTasks });
-      get().actions._persistMyTasksState();
+      const baseNow = Date.now();
+      const categories = get().categories;
+      const normalizedTasks = tasks.map((task, index) => {
+        const createdAt = task.createdAt ?? baseNow;
+        return {
+          ...task,
+          isCompleted: task.isCompleted === undefined ? false : task.isCompleted,
+          order: task.order === undefined ? index : task.order,
+          planning: task.planning || undefined,
+          createdAt,
+          completedAt: task.completedAt ?? (task.isCompleted ? createdAt : null),
+          canceledAt: task.canceledAt ?? null,
+        };
+      });
+      const sortedTasks = sortMyTasks(normalizedTasks);
+      set(state => {
+        const updatedLedger = { ...state.taskLedger };
+        sortedTasks.forEach(task => {
+          const existing = updatedLedger[task.id];
+          const category = categories.find(cat => cat.id === task.categoryId);
+          updatedLedger[task.id] = {
+            id: task.id,
+            name: task.name,
+            createdAt: existing?.createdAt ?? task.createdAt,
+            createdCategoryId: existing?.createdCategoryId ?? task.categoryId ?? null,
+            createdCategoryName: existing?.createdCategoryName ?? category?.name,
+            createdPlannedMinutes: existing?.createdPlannedMinutes ?? task.planning?.plannedDurationMinutes ?? null,
+            createdDueAt: existing?.createdDueAt ?? task.planning?.dueAt ?? null,
+            latestCategoryId: task.categoryId ?? existing?.latestCategoryId ?? null,
+            latestCategoryName: category?.name ?? existing?.latestCategoryName,
+            latestPlannedMinutes: task.planning?.plannedDurationMinutes ?? existing?.latestPlannedMinutes ?? null,
+            latestDueAt: task.planning?.dueAt ?? existing?.latestDueAt ?? null,
+            completedAt: existing?.completedAt ?? task.completedAt ?? null,
+            completedCategoryId: existing?.completedCategoryId ?? (task.completedAt ? task.categoryId ?? null : null),
+            completedCategoryName: existing?.completedCategoryName,
+            completedPlannedMinutes: existing?.completedPlannedMinutes,
+            completedDueAt: existing?.completedDueAt,
+            canceledAt: existing?.canceledAt ?? task.canceledAt ?? null,
+            canceledCategoryId: existing?.canceledCategoryId ?? (task.canceledAt ? task.categoryId ?? null : null),
+            canceledCategoryName: existing?.canceledCategoryName,
+          };
+        });
+        return {
+          myTasks: sortedTasks,
+          taskLedger: updatedLedger,
+        };
+      });
+      const { actions: innerActions } = get();
+      innerActions._persistMyTasksState();
+      innerActions._persistTaskLedger();
     },
     toggleMyTaskCompletion: (taskId: string) => {
-      const currentTasks = get().myTasks;
-      const updatedTasks = currentTasks.map(task =>
-          task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
-      );
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+      const { myTasks: currentTasks, categories } = get();
+      const task = currentTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const now = Date.now();
+      const updatedTasks = currentTasks.map(item => {
+        if (item.id !== taskId) return item;
+        const nextCompleted = !item.isCompleted;
+        return {
+          ...item,
+          isCompleted: nextCompleted,
+          completedAt: nextCompleted ? item.completedAt ?? now : null,
+        };
+      });
+
+      set(state => {
+        const existingLedger = state.taskLedger[taskId] || {
+          id: taskId,
+          name: task.name,
+          createdAt: task.createdAt,
+        };
+        const category = categories.find(cat => cat.id === task.categoryId);
+        const newCompletedAt = updatedTasks.find(t => t.id === taskId)?.completedAt ?? null;
+        return {
+          myTasks: updatedTasks,
+          taskLedger: {
+            ...state.taskLedger,
+            [taskId]: {
+              ...existingLedger,
+              name: task.name,
+              latestCategoryId: task.categoryId ?? existingLedger.latestCategoryId ?? null,
+              latestCategoryName: category?.name ?? existingLedger.latestCategoryName,
+              latestPlannedMinutes: task.planning?.plannedDurationMinutes ?? existingLedger.latestPlannedMinutes ?? null,
+              latestDueAt: task.planning?.dueAt ?? existingLedger.latestDueAt ?? null,
+              completedAt: newCompletedAt,
+              completedCategoryId: newCompletedAt ? task.categoryId ?? existingLedger.completedCategoryId ?? null : null,
+              completedCategoryName: newCompletedAt ? category?.name ?? existingLedger.completedCategoryName : undefined,
+              completedPlannedMinutes: newCompletedAt ? task.planning?.plannedDurationMinutes ?? existingLedger.completedPlannedMinutes ?? null : null,
+              completedDueAt: newCompletedAt ? task.planning?.dueAt ?? existingLedger.completedDueAt ?? null : null,
+            },
+          },
+        };
+      });
+
+      const { actions: innerActions } = get();
+      innerActions._persistMyTasksState();
+      innerActions._persistTaskLedger();
     },
     setMyTaskCompletion: (taskId: string, completed: boolean) => {
-      const currentTasks = get().myTasks;
-      const updatedTasks = currentTasks.map(task =>
-        task.id === taskId ? { ...task, isCompleted: completed } : task
+      const { myTasks: currentTasks, categories } = get();
+      const task = currentTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const now = Date.now();
+      const updatedTasks = currentTasks.map(item =>
+        item.id === taskId
+          ? {
+              ...item,
+              isCompleted: completed,
+              completedAt: completed ? item.completedAt ?? now : null,
+            }
+          : item,
       );
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+
+      set(state => {
+        const existingLedger = state.taskLedger[taskId] || {
+          id: taskId,
+          name: task.name,
+          createdAt: task.createdAt,
+        };
+        const category = categories.find(cat => cat.id === task.categoryId);
+        return {
+          myTasks: updatedTasks,
+          taskLedger: {
+            ...state.taskLedger,
+            [taskId]: {
+              ...existingLedger,
+              name: task.name,
+              latestCategoryId: task.categoryId ?? existingLedger.latestCategoryId ?? null,
+              latestCategoryName: category?.name ?? existingLedger.latestCategoryName,
+              latestPlannedMinutes: task.planning?.plannedDurationMinutes ?? existingLedger.latestPlannedMinutes ?? null,
+              latestDueAt: task.planning?.dueAt ?? existingLedger.latestDueAt ?? null,
+              completedAt: completed ? (existingLedger.completedAt ?? now) : null,
+              completedCategoryId: completed ? task.categoryId ?? existingLedger.completedCategoryId ?? null : null,
+              completedCategoryName: completed ? category?.name ?? existingLedger.completedCategoryName : undefined,
+              completedPlannedMinutes: completed ? task.planning?.plannedDurationMinutes ?? existingLedger.completedPlannedMinutes ?? null : null,
+              completedDueAt: completed ? task.planning?.dueAt ?? existingLedger.completedDueAt ?? null : null,
+            },
+          },
+        };
+      });
+
+      const { actions: innerActions } = get();
+      innerActions._persistMyTasksState();
+      innerActions._persistTaskLedger();
     },
     reorderMyTasks: (taskId: string, newOrder: number) => {
       const currentTasks = get().myTasks;
@@ -633,12 +865,27 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       get().actions._persistEventsState();
     },
     updateMyTaskCategory: (id: string, categoryId: string | undefined) => {
-      const currentTasks = get().myTasks;
+      const { myTasks: currentTasks, categories } = get();
       const updatedTasks = currentTasks.map(task =>
         task.id === id ? { ...task, categoryId } : task
       );
-      set({ myTasks: updatedTasks });
-      get().actions._persistMyTasksState();
+      const category = categories.find(cat => cat.id === categoryId);
+      set(state => ({
+        myTasks: updatedTasks,
+        taskLedger: state.taskLedger[id]
+          ? {
+              ...state.taskLedger,
+              [id]: {
+                ...state.taskLedger[id],
+                latestCategoryId: categoryId ?? null,
+                latestCategoryName: category?.name ?? state.taskLedger[id].latestCategoryName,
+              },
+            }
+          : state.taskLedger,
+      }));
+      const actions = get().actions;
+      actions._persistMyTasksState();
+      actions._persistTaskLedger();
     },
     _persistCategoriesState: () => {
       const { categories, isCategoryEnabled } = get();

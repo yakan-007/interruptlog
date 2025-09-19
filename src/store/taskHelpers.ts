@@ -49,6 +49,9 @@ export function createTaskWithOrdering({
     order: newOrder,
     categoryId: categoryId,
     planning,
+    createdAt: Date.now(),
+    completedAt: null,
+    canceledAt: null,
   };
   
   const updatedTasks = sortMyTasks([...updatedTasksWithNewOrder, newTask]);

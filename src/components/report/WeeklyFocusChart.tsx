@@ -15,39 +15,39 @@ export default function WeeklyFocusChart({ data }: WeeklyFocusChartProps) {
   );
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-      <header className="mb-3">
-        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">週間トレンド</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400">集中時間と割り込み時間の推移</p>
+    <section className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-100/40 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+      <header className="mb-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">週間トレンド</h2>
+        <p className="text-xs text-slate-400 dark:text-slate-500">集中時間と割り込み時間の推移</p>
       </header>
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-3">
         {data.map(item => (
           <div key={item.dateKey} className="flex-1">
-            <div className="relative h-32 w-full overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
+            <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-100/80 dark:bg-slate-800">
               <div
-                className="absolute bottom-0 left-0 right-0 bg-blue-500/80 dark:bg-blue-400/80"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-sky-500/80 via-sky-400/80 to-sky-300/70 dark:from-sky-400/80 dark:via-sky-500/60"
                 style={{ height: `${(item.focusMinutes / maxValue) * 100}%` }}
                 title={`集中 ${Math.round(item.focusMinutes)}分`}
               />
               <div
-                className="absolute bottom-0 left-0 right-0 bg-red-400/80 dark:bg-red-500/80"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-rose-400/80 via-rose-300/70 to-rose-200/60 dark:from-rose-500/80 dark:via-rose-400/60"
                 style={{ height: `${(item.interruptMinutes / maxValue) * 100}%` }}
                 title={`割り込み ${Math.round(item.interruptMinutes)}分`}
               />
             </div>
-            <div className="mt-2 text-center text-[11px] text-gray-600 dark:text-gray-400">
-              <div className="font-medium">{formatShortDate(item.dateKey)}</div>
+            <div className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="font-medium text-slate-700 dark:text-slate-200">{formatShortDate(item.dateKey)}</div>
               <div>{weekdayLabel(item.dateKey)}</div>
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex justify-end gap-4 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-4 flex justify-end gap-4 text-xs text-slate-400 dark:text-slate-500">
         <span className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-sm bg-blue-500/80" />集中
+          <span className="h-2 w-2 rounded-sm bg-sky-400" />集中
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-sm bg-red-400/80" />割り込み
+          <span className="h-2 w-2 rounded-sm bg-rose-400" />割り込み
         </span>
       </div>
     </section>

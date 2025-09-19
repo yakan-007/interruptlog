@@ -104,10 +104,9 @@ export function sortTasksByName(tasks: MyTask[], ascending = true): MyTask[] {
 
 export function sortTasksByCreatedDate(tasks: MyTask[], ascending = true): MyTask[] {
   return [...tasks].sort((a, b) => {
-    // Use order as proxy for creation sequence (lower order = created earlier)
-    const orderA = a.order || 0;
-    const orderB = b.order || 0;
-    return ascending ? orderA - orderB : orderB - orderA;
+    const createdA = a.createdAt || 0;
+    const createdB = b.createdAt || 0;
+    return ascending ? createdA - createdB : createdB - createdA;
   });
 }
 
@@ -130,6 +129,10 @@ export function createTask(
     isCompleted: false,
     order: order || 0,
     categoryId,
+    planning: undefined,
+    createdAt: Date.now(),
+    completedAt: null,
+    canceledAt: null,
   };
 }
 
