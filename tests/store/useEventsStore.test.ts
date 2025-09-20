@@ -38,8 +38,6 @@ describe('useEventsStore', () => {
       },
       uiSettings: {
         sortTasksByDueDate: false,
-        highlightTimeline: true,
-        showCounters: true,
       },
     };
     useEventsStore.setState((state) => ({ ...state, ...initialState }));

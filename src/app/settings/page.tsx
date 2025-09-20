@@ -10,9 +10,7 @@ import CategoryManagementSection from '@/components/settings/CategoryManagementS
 import InterruptCategorySection from '@/components/settings/InterruptCategorySection';
 import TaskTransitionSection from '@/components/settings/TaskTransitionSection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
-import FeatureFlagsSection from '@/components/settings/FeatureFlagsSection';
 import DueAlertSettingsSection from '@/components/settings/DueAlertSettingsSection';
-import TimelineOptionsSection from '@/components/settings/TimelineOptionsSection';
 
 const SettingsPage = () => {
   const { isHydrated } = useEventsStore();
@@ -29,24 +27,52 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-4 pb-20">
-      <h1 className="mb-6 text-center text-2xl font-semibold">設定</h1>
+    <div className="px-4 pb-20 pt-6">
+      <header className="mx-auto mb-10 max-w-3xl text-center">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">設定</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          よく使う操作から順に並べました。稼働の記録スタイルに合わせてカスタマイズしてください。
+        </p>
+      </header>
 
-      <div className="mx-auto max-w-md space-y-6">
-        <ThemeSection />
-        <TaskManagementSection />
-        <TaskPlacementSection />
-        <AutoStartSection />
-        <CategoryManagementSection />
-        <InterruptCategorySection />
-        <TaskTransitionSection />
-        <FeatureFlagsSection />
-        <DueAlertSettingsSection />
-        <TimelineOptionsSection />
-        <DataManagementSection />
+      <div className="mx-auto max-w-3xl space-y-10">
+        <section className="space-y-4">
+          <SectionLabel>外観</SectionLabel>
+          <ThemeSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>タスクの扱い</SectionLabel>
+          <AutoStartSection />
+          <TaskPlacementSection />
+          <TaskManagementSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>分類とフォローアップ</SectionLabel>
+          <CategoryManagementSection />
+          <InterruptCategorySection />
+          <DueAlertSettingsSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>業務の〆処理</SectionLabel>
+          <TaskTransitionSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>データ管理</SectionLabel>
+          <DataManagementSection />
+        </section>
       </div>
     </div>
   );
 };
 
 export default SettingsPage; 
+
+const SectionLabel = ({ children }: { children: string }) => (
+  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+    {children}
+  </p>
+);

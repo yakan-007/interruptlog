@@ -99,7 +99,7 @@ export default function ActiveEventDisplay({ activeEvent, className }: ActiveEve
     if (activeEvent.urgency) details.push(`緊急度: ${activeEvent.urgency}`);
   }
 
-  if (activeEvent.type === 'break' && activeEvent.breakDurationMinutes) {
+  if (activeEvent.type === 'break' && activeEvent.breakDurationMinutes != null && activeEvent.breakDurationMinutes > 0) {
     details.push(`予定: ${activeEvent.breakDurationMinutes}分`);
   }
 

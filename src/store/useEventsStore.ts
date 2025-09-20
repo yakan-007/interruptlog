@@ -98,9 +98,6 @@ export interface EventsState {
     toggleSortTasksByDueDate: () => void;
     setSortTasksByDueDate: (value: boolean) => void;
     _persistUiSettings: () => void;
-    toggleHighlightTimeline: () => void;
-    toggleShowCounters: () => void;
-    toggleShowPersonalProgress: () => void;
   };
 }
 
@@ -129,9 +126,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   },
   uiSettings: {
     sortTasksByDueDate: false,
-    highlightTimeline: true,
-    showCounters: true,
-    showPersonalProgress: true,
   },
   actions: {
     hydrate: async () => {
@@ -178,9 +172,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           },
           uiSettings: {
             sortTasksByDueDate: false,
-            highlightTimeline: true,
-            showCounters: true,
-            showPersonalProgress: true,
           },
           isHydrated: false 
         });
@@ -1024,18 +1015,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings).catch(error => {
         console.error('[useEventsStore] Error persisting UI settings to IndexedDB:', error);
       });
-    },
-    toggleHighlightTimeline: () => {
-      set(state => ({ uiSettings: { ...state.uiSettings, highlightTimeline: !state.uiSettings.highlightTimeline } }));
-      get().actions._persistUiSettings();
-    },
-    toggleShowCounters: () => {
-      set(state => ({ uiSettings: { ...state.uiSettings, showCounters: !state.uiSettings.showCounters } }));
-      get().actions._persistUiSettings();
-    },
-    toggleShowPersonalProgress: () => {
-      set(state => ({ uiSettings: { ...state.uiSettings, showPersonalProgress: !state.uiSettings.showPersonalProgress } }));
-      get().actions._persistUiSettings();
     },
     toggleTaskPlacement: () => {
       set({ addTaskToTop: !get().addTaskToTop });

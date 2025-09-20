@@ -1,7 +1,6 @@
 'use client';
 
 import type { CategoryStats } from '@/app/report/utils/categoryMetrics';
-import { formatDurationCompact } from '@/lib/reportUtils';
 
 interface CategoryOverviewProps {
   stats: CategoryStats[];

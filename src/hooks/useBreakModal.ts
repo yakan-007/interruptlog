@@ -11,7 +11,7 @@ export interface BreakFormState {
 const DEFAULT_FORM: BreakFormState = {
   label: '',
   breakType: 'short',
-  breakDurationMinutes: 5,
+  breakDurationMinutes: null,
 };
 
 export default function useBreakModal() {
@@ -25,7 +25,6 @@ export default function useBreakModal() {
     startBreak({
       label: DEFAULT_FORM.label || undefined,
       breakType: DEFAULT_FORM.breakType,
-      breakDurationMinutes: DEFAULT_FORM.breakDurationMinutes,
     });
     setOpen(true);
   }, [startBreak]);

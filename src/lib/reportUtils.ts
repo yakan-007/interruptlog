@@ -41,15 +41,6 @@ export interface InterruptionStats {
   topTypes: InterruptionContributor[];
 }
 
-export interface TaskHighlight {
-  taskId: string;
-  taskName: string;
-  totalDuration: number;
-  sessions: number;
-  categoryName?: string;
-  categoryColor?: string;
-}
-
 export interface TrendDatum {
   dateKey: string;
   label: string;
@@ -198,40 +189,6 @@ const formatHourLabel = (hour: number): string => {
   if (hour === 0) return '0時 - 1時';
   if (hour === 23) return '23時 - 24時';
   return `${hour}時 - ${hour + 1}時`;
-};
-
-export const computeTaskHighlights = (
-  events: Event[],
-  myTasks: MyTask[],
-  limit = 4,
-): TaskHighlight[] => {
-  const taskTotals = new Map<string, { duration: number; sessions: number }>();
-
-  events.forEach(event => {
-    if (event.type !== 'task' || !event.meta?.myTaskId || !event.end) return;
-    const duration = getDuration(event);
-    const entry = taskTotals.get(event.meta.myTaskId) ?? { duration: 0, sessions: 0 };
-    entry.duration += duration;
-    entry.sessions += 1;
-    taskTotals.set(event.meta.myTaskId, entry);
-  });
-
-  const items: TaskHighlight[] = [];
-
-  taskTotals.forEach((value, taskId) => {
-    const task = myTasks.find(t => t.id === taskId);
-    if (!task) return;
-    items.push({
-      taskId,
-      taskName: task.name,
-      totalDuration: value.duration,
-      sessions: value.sessions,
-    });
-  });
-
-  return items
-    .sort((a, b) => b.totalDuration - a.totalDuration)
-    .slice(0, limit);
 };
 
 export const computeDailyTrend = (

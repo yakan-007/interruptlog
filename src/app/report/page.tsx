@@ -9,18 +9,19 @@ import { computeCategoryStats } from './utils/categoryMetrics';
 import { buildWeeklyCategorySeries } from './utils/categoryTimeSeries';
 import { buildTaskDailyChanges } from './utils/taskChanges';
 import { buildHighlights } from './utils/highlights';
-import { buildHourlyTrend, buildHeatmapData, buildWeeklyActivityPoints } from './utils/timeSeries';
+import { buildHourlyTrend, buildWeeklyActivityPoints } from './utils/timeSeries';
 import { formatRangeLabel } from './utils/formatters';
 import type { HighlightMetric } from './utils/types';
 import {
   computeSummaryMetrics,
   computeInterruptionStats,
   filterEventsByDateRange,
+  filterEventsByDateKey,
 } from '@/lib/reportUtils';
 import HighlightsGrid from '@/components/report/HighlightsGrid';
+import ExecutiveSummary from '@/components/report/ExecutiveSummary';
 import {
   DayTrendChart,
-  HourlyHeatmap,
   WeeklyActivityChart,
   WeeklyTaskFlowChart,
   MonthlyTaskFlowChart,
@@ -28,23 +29,31 @@ import {
   TaskAggregateSummary,
   WeeklyCategoryStackedChart,
 } from '@/components/report/ReportCharts';
-import InterruptionSummaryCompact from '@/components/report/InterruptionSummaryCompact';
 import CategoryOverview from '@/components/report/CategoryOverview';
 import TaskDailyChanges from '@/components/report/TaskDailyChanges';
+import SummaryCards from '@/components/report/SummaryCards';
+import InterruptionInsights from '@/components/report/InterruptionInsights';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
+
+const COMPARISON_LABELS: Record<Granularity, string> = {
+  day: '昨日',
+  week: '先週',
+  month: '先月',
+  year: '前年比',
+};
 
 const formatRangeDescription = (granularity: Granularity) => {
   switch (granularity) {
     case 'day':
-      return '今日を主役に、週・月・年をワンタップで俯瞰できるダッシュボード。';
+      return '今日の稼働状況をコンパクトに把握できます。';
     case 'week':
-      return '1週間の稼働と割り込みを俯瞰し、ペースを評価できます。';
+      return '1週間の集中・割り込み状況を俯瞰し、改善余地を把握できます。';
     case 'month':
-      return '日別の新規／完了フローから未完了タスクの変動を把握します。';
+      return '日別の新規／完了バランスと未完了推移を整理します。';
     case 'year':
     default:
-      return '月ごとの仕事量と未完了タスクの推移を年間でチェック。';
+      return '月ごとの仕事量と未完了推移を年間でレビューします。';
   }
 };
 
@@ -120,11 +129,6 @@ const ReportPage = () => {
     [granularity, currentEvents],
   );
 
-  const heatmapData = useMemo(
-    () => (granularity === 'day' ? buildHeatmapData(events, selectedDate) : []),
-    [granularity, events, selectedDate],
-  );
-
   const weeklyActivity = useMemo(
     () => (granularity === 'week' ? buildWeeklyActivityPoints(currentEvents, currentRange) : []),
     [granularity, currentEvents, currentRange],
@@ -154,19 +158,25 @@ const ReportPage = () => {
   );
 
   const rangeLabel = useMemo(() => formatRangeLabel(selectedDate, granularity), [selectedDate, granularity]);
+  const comparisonLabel = COMPARISON_LABELS[granularity];
+
+  const eventsForSelectedDay = useMemo(
+    () => (granularity === 'day' ? filterEventsByDateKey(events, currentRange.startKey) : []),
+    [granularity, events, currentRange.startKey],
+  );
 
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-sky-50 px-4 pb-16 pt-10 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 print:bg-white print:px-0 print:pb-0 print:pt-0">
+    <div className="min-h-screen bg-slate-50 px-4 pb-16 pt-10 dark:bg-slate-950 print:bg-white print:px-0 print:pt-0">
       <div className="mx-auto max-w-6xl space-y-8 print:max-w-none">
-        <header className="rounded-3xl border border-white/60 bg-white/80 px-6 py-8 shadow-lg shadow-rose-100/40 backdrop-blur-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none print:border-0 print:bg-white print:p-0 print:shadow-none">
+        <header className="rounded-3xl border border-slate-200 bg-white/95 px-6 py-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 print:border-0 print:bg-white print:p-0 print:shadow-none">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-600 dark:bg-rose-500/20 dark:text-rose-200 print:hidden">
-                Activity Studio Report
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold tracking-wide text-rose-600 dark:bg-rose-500/20 dark:text-rose-200 print:hidden">
+                報告ダイジェスト
               </span>
               <div className="space-y-1">
                 <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{rangeLabel}</h1>
@@ -175,32 +185,43 @@ const ReportPage = () => {
             </div>
             <div className="flex flex-col items-center gap-3 md:items-end">
               <div className="flex flex-wrap items-center gap-3 print:hidden">
-                <div className="inline-flex rounded-full bg-white/80 p-1 shadow-sm ring-1 ring-rose-100 dark:bg-slate-800 dark:ring-slate-700">
-                  {GRANULARITY_OPTIONS.map(option => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setGranularity(option)}
-                      className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                        granularity === option
-                          ? 'bg-rose-500 text-white shadow-md shadow-rose-200/60 dark:bg-rose-500'
-                          : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      {option === 'day' && '今日'}
-                      {option === 'week' && '週'}
-                      {option === 'month' && '月'}
-                      {option === 'year' && '年'}
-                    </button>
-                  ))}
+                <div className="inline-flex rounded-full bg-white p-1 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+                  {GRANULARITY_OPTIONS.map(option => {
+                    const isActive = granularity === option;
+                    const label =
+                      option === 'day'
+                        ? '日次'
+                        : option === 'week'
+                        ? '週次'
+                        : option === 'month'
+                        ? '月次'
+                        : '年次';
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setGranularity(option)}
+                        aria-pressed={isActive}
+                        aria-label={`${label}レポートを表示`}
+                        className={`rounded-full px-4 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 ${
+                          isActive
+                            ? 'bg-rose-500 text-white shadow-md shadow-rose-300/40 dark:bg-rose-500'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
                 <input
                   type="date"
+                  aria-label="参照日"
                   value={selectedDate}
                   onChange={event => setSelectedDate(event.target.value)}
                   min={earliestEventDate || undefined}
                   max={new Date().toISOString().split('T')[0]}
-                  className="rounded-lg border border-transparent bg-white/80 px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-rose-100 focus:border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
+                  className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
                 />
               </div>
               {earliestEventDate && (
@@ -212,19 +233,38 @@ const ReportPage = () => {
           </div>
         </header>
 
-        <HighlightsGrid metrics={highlightMetrics} />
+        <div className="space-y-6">
+          <ExecutiveSummary
+            rangeLabel={rangeLabel}
+            granularity={granularity}
+            comparisonLabel={comparisonLabel}
+            summaryMetrics={summaryMetrics}
+            taskTotals={taskRangeData.current.totals}
+            previousTaskTotals={taskRangeData.previous.totals}
+            categoryStats={categoryStats}
+            interruptionStats={interruptionStats}
+          />
+          <SummaryCards items={summaryMetrics.items} comparisonLabel={comparisonLabel} />
+          <HighlightsGrid metrics={highlightMetrics} />
+        </div>
 
         {granularity === 'day' && (
-          <div className="space-y-6">
-            <DayTrendChart data={hourlyTrend} />
-            <HourlyHeatmap data={heatmapData} />
-            {taskDailyChanges && (
-              <TaskDailyChanges
-                created={taskDailyChanges.created}
-                completed={taskDailyChanges.completed}
-                label={rangeLabel}
-              />
-            )}
+          <div className="grid gap-6 lg:grid-cols-[3fr,2fr]">
+            <div className="space-y-6">
+              {taskDailyChanges && (
+                <TaskDailyChanges
+                  created={taskDailyChanges.created}
+                  completed={taskDailyChanges.completed}
+                  label={rangeLabel}
+                />
+              )}
+              <DayTrendChart data={hourlyTrend} />
+            </div>
+            <InterruptionInsights
+              stats={interruptionStats}
+              eventsForSelectedDate={eventsForSelectedDay}
+              selectedDateKey={currentRange.startKey}
+            />
           </div>
         )}
 
@@ -240,6 +280,7 @@ const ReportPage = () => {
           <div className="space-y-6">
             <MonthlyTaskFlowChart data={monthlyTaskFlow} />
             <TaskAggregateSummary totals={taskRangeData.current.totals} label="月間" />
+            <CategoryOverview stats={categoryStats} />
           </div>
         )}
 
@@ -247,14 +288,9 @@ const ReportPage = () => {
           <div className="space-y-6">
             <YearlyTaskFlowChart data={yearlyTaskFlow} />
             <TaskAggregateSummary totals={taskRangeData.current.totals} label="年間" />
+            <CategoryOverview stats={categoryStats} />
           </div>
         )}
-
-        {granularity !== 'day' && granularity !== 'year' && (
-          <InterruptionSummaryCompact stats={interruptionStats} />
-        )}
-
-        <CategoryOverview stats={categoryStats} />
       </div>
     </div>
   );

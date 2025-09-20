@@ -12,7 +12,6 @@ import {
   ComposedChart,
   Bar,
   BarChart,
-  Cell,
 } from 'recharts';
 import type {
   HeatmapRow,

@@ -90,6 +90,7 @@ export async function hydrateTasksData(): Promise<HydratedTasksData> {
       const completedAt = task.completedAt ?? (task.isCompleted ? createdAt : null);
       const canceledAt = task.canceledAt ?? null;
       const createdCategoryId = task.categoryId ?? null;
+      const existingLedger = ledger[task.id];
 
       const normalizedLedger: TaskLifecycleRecord = {
         id: task.id,
@@ -209,9 +210,6 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
 
   const uiSettings: UiSettings = {
     sortTasksByDueDate: storedUiSettings?.sortTasksByDueDate ?? false,
-    highlightTimeline: storedUiSettings?.highlightTimeline ?? true,
-    showCounters: storedUiSettings?.showCounters ?? true,
-    showPersonalProgress: storedUiSettings?.showPersonalProgress ?? true,
   };
   await dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings);
 
