@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import ClientProviders from '@/app/(providers)/client-providers';
 import IconTabs from '@/components/IconTabs';
@@ -7,8 +6,6 @@ import React from 'react';
 import { GeistSans } from 'geist/font/sans';
 import FloatingActionControls from '@/components/FloatingActionControls';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'InterruptLog',

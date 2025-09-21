@@ -33,7 +33,7 @@ const buildChangeEntry = (
   categoryId: string | null | undefined,
   fallbackName?: string,
 ): { name: string; categoryName: string; categoryColor?: string } => {
-  const category = categories.find(cat => cat.id === categoryId ?? undefined);
+  const category = categoryId ? categories.find(cat => cat.id === categoryId) : undefined;
   return {
     name: record.name,
     categoryName: category?.name ?? fallbackName ?? '未分類',

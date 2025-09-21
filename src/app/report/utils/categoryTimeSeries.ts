@@ -29,7 +29,7 @@ const resolveCategory = (
   categories: Category[],
 ): CategorySeriesMeta => {
   const categoryId = event.categoryId ?? taskRecord?.latestCategoryId ?? taskRecord?.createdCategoryId ?? null;
-  const category = categories.find(cat => cat.id === categoryId ?? undefined);
+  const category = categoryId ? categories.find(cat => cat.id === categoryId) : undefined;
   return {
     id: categoryId,
     name: category?.name ?? taskRecord?.latestCategoryName ?? taskRecord?.createdCategoryName ?? '未分類',
