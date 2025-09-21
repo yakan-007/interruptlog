@@ -69,15 +69,17 @@ export const getDuration = (event: Event): number => {
 const formatDateKey = (date: Date): string => {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);
-  return copy.toISOString().split('T')[0];
+  const year = copy.getFullYear();
+  const month = String(copy.getMonth() + 1).padStart(2, '0');
+  const day = String(copy.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const createDateFromKey = (key: string): Date => {
   const [year, month, day] = key.split('-').map(Number);
-  const d = new Date();
-  d.setUTCFullYear(year, month - 1, day);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
+  // Interpret the stored date key in the user's local timezone so daily filters
+  // align with what they see in the UI.
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
 };
 
 const calculateTotalsByType = (events: Event[]): AggregatedTotals => {

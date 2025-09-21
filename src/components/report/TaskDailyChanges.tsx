@@ -72,12 +72,12 @@ const Section = ({ title, items }: { title: string; items: TaskChangeEntry[] }) 
 );
 
 const TaskDailyChanges = ({ created, completed, label }: TaskDailyChangesProps) => (
-  <section className="space-y-6 rounded-3xl border border-white/60 bg-white/85 p-6 shadow-lg shadow-rose-100/40 backdrop-blur-sm transition dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+  <section className="w-full space-y-6 rounded-3xl border border-white/60 bg-white/85 p-6 shadow-lg shadow-rose-100/40 backdrop-blur-sm transition dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
     <header className="space-y-1">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">{label}のタスク変化</h2>
       <p className="text-xs text-slate-400 dark:text-slate-500">当日に追加されたタスクと完了したタスクの一覧</p>
     </header>
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-2">
       <Section title="追加されたタスク" items={created} />
       <Section title="完了したタスク" items={completed} />
     </div>

@@ -249,17 +249,15 @@ const ReportPage = () => {
         </div>
 
         {granularity === 'day' && (
-          <div className="grid gap-6 lg:grid-cols-[3fr,2fr]">
-            <div className="space-y-6">
-              {taskDailyChanges && (
-                <TaskDailyChanges
-                  created={taskDailyChanges.created}
-                  completed={taskDailyChanges.completed}
-                  label={rangeLabel}
-                />
-              )}
-              <DayTrendChart data={hourlyTrend} />
-            </div>
+          <div className="space-y-6">
+            {taskDailyChanges && (
+              <TaskDailyChanges
+                created={taskDailyChanges.created}
+                completed={taskDailyChanges.completed}
+                label={rangeLabel}
+              />
+            )}
+            <DayTrendChart data={hourlyTrend} />
             <InterruptionInsights
               stats={interruptionStats}
               eventsForSelectedDate={eventsForSelectedDay}

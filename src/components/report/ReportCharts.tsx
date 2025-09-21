@@ -33,7 +33,7 @@ const trendColors = {
 } as const;
 
 export const DayTrendChart = ({ data }: { data: HourlyTrendPoint[] }) => (
-  <section className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-100/40 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
+  <section className="w-full rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-lg shadow-slate-100/40 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none">
     <header className="mb-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
         時間帯トレンド

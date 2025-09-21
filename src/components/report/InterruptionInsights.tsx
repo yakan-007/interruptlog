@@ -20,7 +20,7 @@ export default function InterruptionInsights({ stats, eventsForSelectedDate, sel
   const showTimeline = eventsForSelectedDate.some(event => event.type === 'interrupt');
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="mb-4 flex items-center justify-between">
           <div>

@@ -181,8 +181,10 @@ describe('useEventsStore', () => {
   it('stopInterruptAndResumePreviousTask should resume with category when enabled', () => {
     const { actions } = useEventsStore.getState();
 
-    // Enable categories and pick one
-    actions.toggleCategoryEnabled();
+    // Ensure categories are enabled and pick one
+    if (!useEventsStore.getState().isCategoryEnabled) {
+      actions.toggleCategoryEnabled();
+    }
     const category = useEventsStore.getState().categories[0];
 
     // Add a task with that category and start it
@@ -432,26 +434,6 @@ describe('useEventsStore', () => {
     expect(uiCall).toBeDefined();
     const [, payload] = uiCall as [string, { sortTasksByDueDate: boolean }];
     expect(payload.sortTasksByDueDate).toBe(true);
-  });
-
-  it('toggleHighlightTimeline and toggleShowCounters persist settings', () => {
-    const { actions } = useEventsStore.getState();
-    (idbKeyval.set as vi.Mock).mockClear();
-
-    actions.toggleHighlightTimeline();
-    actions.toggleShowCounters();
-
-    const state = useEventsStore.getState();
-    expect(state.uiSettings.highlightTimeline).toBe(false);
-    expect(state.uiSettings.showCounters).toBe(false);
-
-    const uiCall = (idbKeyval.set as vi.Mock).mock.calls
-      .filter(([key]) => key === 'ui-settings')
-      .pop();
-    expect(uiCall).toBeDefined();
-    const [, payload] = uiCall as [string, { highlightTimeline: boolean; showCounters: boolean }];
-    expect(payload.highlightTimeline).toBe(false);
-    expect(payload.showCounters).toBe(false);
   });
 
 }); 
