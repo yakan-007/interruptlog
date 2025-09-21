@@ -52,7 +52,7 @@ export default function AutoStartSection() {
           onClick={actions.toggleAutoStartTask}
           className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         >
-          切り替え
+          {autoStartTask ? 'OFFにする' : 'ONにする'}
         </button>
       </div>
     </div>

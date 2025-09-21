@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import ThemeSection from '@/components/settings/ThemeSection';
 import TaskManagementSection from '@/components/settings/TaskManagementSection';
-import TaskPlacementSection from '@/components/settings/TaskPlacementSection';
 import AutoStartSection from '@/components/settings/AutoStartSection';
+import TaskPlanningSection from '@/components/settings/TaskPlanningSection';
+import TaskPlacementSection from '@/components/settings/TaskPlacementSection';
 import CategoryManagementSection from '@/components/settings/CategoryManagementSection';
 import InterruptCategorySection from '@/components/settings/InterruptCategorySection';
 import TaskTransitionSection from '@/components/settings/TaskTransitionSection';
@@ -44,6 +45,7 @@ const SettingsPage = () => {
         <section className="space-y-4">
           <SectionLabel>タスクの扱い</SectionLabel>
           <AutoStartSection />
+          <TaskPlanningSection />
           <TaskPlacementSection />
           <TaskManagementSection />
         </section>

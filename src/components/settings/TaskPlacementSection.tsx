@@ -26,7 +26,7 @@ export default function TaskPlacementSection() {
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
             }`}
           >
-            {addTaskToTop ? '上に追加' : '下に追加'}
+            {addTaskToTop ? 'ON' : 'OFF'}
           </button>
         </div>
         <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
@@ -54,7 +54,7 @@ export default function TaskPlacementSection() {
             onClick={actions.toggleTaskPlacement}
             className="rounded-md bg-blue-500 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-600"
           >
-            切り替え
+            {addTaskToTop ? 'OFFにする' : 'ONにする'}
           </button>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function TaskPlacementSection() {
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
             }`}
           >
-            {uiSettings.sortTasksByDueDate ? '納期優先' : '従来の順番'}
+            {uiSettings.sortTasksByDueDate ? 'ON' : 'OFF'}
           </button>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400">
