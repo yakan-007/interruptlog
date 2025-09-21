@@ -133,7 +133,6 @@ export const STORAGE_KEYS = {
   CATEGORIES: 'categories-store',
   SETTINGS: 'app-settings',
   DATA_MANAGEMENT: 'data-management-config',
-  TASK_TRANSITION: 'task-transition-config',
   UI_STATE: 'ui-state',
 } as const;
 
