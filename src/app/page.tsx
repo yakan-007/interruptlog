@@ -59,6 +59,10 @@ export default function LogPage() {
   };
 
   const handleDeleteTask = (taskId: string) => {
+    const message = 'このタスクを削除しますか？';
+    if (typeof window !== 'undefined' && !window.confirm(message)) {
+      return;
+    }
     actions.removeMyTask(taskId);
   };
 

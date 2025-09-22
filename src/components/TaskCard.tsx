@@ -70,6 +70,8 @@ export default function TaskCard({
   const isActiveTask =
     activeEvent && activeEvent.type === 'task' && activeEvent.meta?.myTaskId === task.id && !activeEvent.end;
 
+  const hasRunningEvent = Boolean(activeEvent && !activeEvent.end);
+
   const isTaskDisabled =
     (activeEvent && !activeEvent.end && activeEvent.meta?.myTaskId === task.id) ||
     (activeEvent && !activeEvent.end && (activeEvent.type === 'interrupt' || activeEvent.type === 'break'));
@@ -118,8 +120,12 @@ export default function TaskCard({
           onChange={() => onToggleCompletion(task.id)}
           className="mr-1"
           id={`task-${task.id}`}
-          disabled={isActiveTask}
-          title={isActiveTask ? '進行中のタスクは完了できません。先に停止してください。' : undefined}
+          disabled={hasRunningEvent}
+          title={
+            hasRunningEvent
+              ? 'イベント実行中は完了にできません。先にイベントを停止してください。'
+              : undefined
+          }
         />
         <div className="min-w-[140px] flex-1">
           {editingTaskId === task.id ? (
@@ -184,7 +190,13 @@ export default function TaskCard({
               <Play className="h-4 w-4" />
             </Button>
           )}
-          <Button size="icon" variant="destructive" onClick={() => onDeleteTask(task.id)} title="タスクを削除">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => onDeleteTask(task.id)}
+            title="タスクを削除"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

@@ -711,7 +711,12 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       innerActions._persistTaskLedger();
     },
     toggleMyTaskCompletion: (taskId: string) => {
-      const { myTasks: currentTasks, categories } = get();
+      const currentState = get();
+      const { myTasks: currentTasks, categories, currentEventId, events } = currentState;
+      const activeEvent = currentEventId ? events.find(event => event.id === currentEventId) : undefined;
+      if (activeEvent && !activeEvent.end) {
+        return;
+      }
       const task = currentTasks.find(t => t.id === taskId);
       if (!task) return;
 
@@ -760,7 +765,12 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       innerActions._persistTaskLedger();
     },
     setMyTaskCompletion: (taskId: string, completed: boolean) => {
-      const { myTasks: currentTasks, categories } = get();
+      const currentState = get();
+      const { myTasks: currentTasks, categories, currentEventId, events } = currentState;
+      const activeEvent = currentEventId ? events.find(event => event.id === currentEventId) : undefined;
+      if (activeEvent && !activeEvent.end) {
+        return;
+      }
       const task = currentTasks.find(t => t.id === taskId);
       if (!task) return;
 
