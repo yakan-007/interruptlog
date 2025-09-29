@@ -97,8 +97,7 @@ export interface EventsState {
     _persistDueAlertSettings: () => void;
     toggleSortTasksByDueDate: () => void;
     setSortTasksByDueDate: (value: boolean) => void;
-    _persistUiSettings: () => void;
-  };
+    _persistUiSettings: () => void;  };
 }
 
 // Debounce timer for myTasks persistence (to reduce IndexedDB writes during reorder operations)
@@ -405,7 +404,10 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       });
     },
     addEvent: (event: Event) => {
-      set((state: EventsState) => ({ events: [...state.events, event] }));
+      set((state: EventsState) => {
+        const nextEvents = [...state.events, event].sort((a, b) => a.start - b.start);
+        return { events: nextEvents };
+      });
       get().actions._persistEventsState();
     },
     updateEvent: (eventToUpdate: Event) => {
@@ -1019,8 +1021,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     setSortTasksByDueDate: (value: boolean) => {
       set(state => ({ uiSettings: { ...state.uiSettings, sortTasksByDueDate: value } }));
       get().actions._persistUiSettings();
-    },
-    _persistUiSettings: () => {
+    },    _persistUiSettings: () => {
       const { uiSettings } = get();
       dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings).catch(error => {
         console.error('[useEventsStore] Error persisting UI settings to IndexedDB:', error);

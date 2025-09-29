@@ -9,10 +9,13 @@ import { formatEventTime } from '@/lib/timeUtils';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
+const DEFAULT_VISIBLE_COUNT = 10;
+
 interface EventHistorySectionProps {
   events: Event[];
   showAllHistory: boolean;
   setShowAllHistory: (show: boolean) => void;
+  onAddPastEvent: () => void;
   editingMemoEventId: string | null;
   memoText: string;
   onStartEditMemo: (eventId: string, currentMemo?: string) => void;
@@ -37,6 +40,7 @@ export default function EventHistorySection({
   onEditEventTime,
   categories,
   isCategoryEnabled,
+  onAddPastEvent,
 }: EventHistorySectionProps) {
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
 
@@ -83,6 +87,14 @@ export default function EventHistorySection({
     }
   }, [events, eventFilter]);
 
+  const sortedEvents = useMemo(
+    () => [...filteredEvents].sort((a, b) => b.start - a.start),
+    [filteredEvents],
+  );
+
+  const visibleEvents = showAllHistory ? sortedEvents : sortedEvents.slice(0, DEFAULT_VISIBLE_COUNT);
+  const hasHiddenEvents = sortedEvents.length > visibleEvents.length;
+
   const getFilterLabel = (filter: EventFilter) => {
     switch (filter) {
       case 'today': return '本日のみ';
@@ -95,48 +107,70 @@ export default function EventHistorySection({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold">イベント履歴</h2>
-        <Select value={eventFilter} onValueChange={(value: EventFilter) => setEventFilter(value)}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">本日のみ</SelectItem>
-            <SelectItem value="today-yesterday">本日+昨日</SelectItem>
-            <SelectItem value="week">過去1週間</SelectItem>
-            <SelectItem value="all">すべて</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button variant="outline" size="sm" onClick={onAddPastEvent}>
+            押し忘れを追加
+          </Button>
+          <Select
+            value={eventFilter}
+            onValueChange={(value: EventFilter) => {
+              setEventFilter(value);
+              setShowAllHistory(false);
+            }}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">本日のみ</SelectItem>
+              <SelectItem value="today-yesterday">本日+昨日</SelectItem>
+              <SelectItem value="week">過去1週間</SelectItem>
+              <SelectItem value="all">すべて</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      
-      {filteredEvents.length > 0 ? (
+
+      {sortedEvents.length > 0 ? (
         <>
           <div className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-            {getFilterLabel(eventFilter)} • {filteredEvents.length}件のイベント
+            {getFilterLabel(eventFilter)} • {sortedEvents.length}件のイベント
           </div>
           <ul className="space-y-2">
-            {filteredEvents
-              .slice()
-              .reverse()
-              .map((event) => (
-                <EventHistoryItem
-                  key={event.id}
-                  event={event}
-                  editingMemoEventId={editingMemoEventId}
-                  memoText={memoText}
-                  onStartEditMemo={onStartEditMemo}
-                  onSaveMemo={onSaveMemo}
-                  onCancelEditMemo={onCancelEditMemo}
-                  onSetMemoText={onSetMemoText}
-                  formatEventTime={formatEventTime}
-                  onEditEventTime={onEditEventTime}
-                  canEditTime={event.id === lastCompletedEvent?.id}
-                  categories={categories}
-                  isCategoryEnabled={isCategoryEnabled}
-                />
-              ))}
+            {visibleEvents.map(event => (
+              <EventHistoryItem
+                key={event.id}
+                event={event}
+                editingMemoEventId={editingMemoEventId}
+                memoText={memoText}
+                onStartEditMemo={onStartEditMemo}
+                onSaveMemo={onSaveMemo}
+                onCancelEditMemo={onCancelEditMemo}
+                onSetMemoText={onSetMemoText}
+                formatEventTime={formatEventTime}
+                onEditEventTime={onEditEventTime}
+                canEditTime={event.id === lastCompletedEvent?.id}
+                categories={categories}
+                isCategoryEnabled={isCategoryEnabled}
+              />
+            ))}
           </ul>
+          {hasHiddenEvents && (
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" size="sm" onClick={() => setShowAllHistory(true)}>
+                さらに表示（{sortedEvents.length - visibleEvents.length}件）
+              </Button>
+            </div>
+          )}
+          {showAllHistory && sortedEvents.length > DEFAULT_VISIBLE_COUNT && (
+            <div className="mt-2 flex justify-center">
+              <Button variant="ghost" size="sm" onClick={() => setShowAllHistory(false)}>
+                表示を折りたたむ
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <p className="text-gray-500">

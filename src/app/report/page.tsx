@@ -7,6 +7,7 @@ import { buildRangeInfo, toDateKey } from './utils/range';
 import { buildTaskRangeData, buildMonthlyTaskPoints, buildYearlyTaskPoints, buildWeeklyTaskPoints } from './utils/taskMetrics';
 import { computeCategoryStats } from './utils/categoryMetrics';
 import { buildWeeklyCategorySeries } from './utils/categoryTimeSeries';
+import { buildDailyTaskDetails, buildDailyInterruptionDetails } from './utils/dayDetails';
 import { buildTaskDailyChanges } from './utils/taskChanges';
 import { buildHighlights } from './utils/highlights';
 import { buildHourlyTrend, buildWeeklyActivityPoints } from './utils/timeSeries';
@@ -15,8 +16,9 @@ import type { HighlightMetric } from './utils/types';
 import {
   computeSummaryMetrics,
   computeInterruptionStats,
-  filterEventsByDateRange,
-  filterEventsByDateKey,
+  indexEventsByDate,
+  collectEventsFromIndex,
+  getEventsForDateKey,
 } from '@/lib/reportUtils';
 import HighlightsGrid from '@/components/report/HighlightsGrid';
 import ExecutiveSummary from '@/components/report/ExecutiveSummary';
@@ -33,6 +35,7 @@ import CategoryOverview from '@/components/report/CategoryOverview';
 import TaskDailyChanges from '@/components/report/TaskDailyChanges';
 import SummaryCards from '@/components/report/SummaryCards';
 import InterruptionInsights from '@/components/report/InterruptionInsights';
+import DailyDetailTables from '@/components/report/DailyDetailTables';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -78,14 +81,16 @@ const ReportPage = () => {
   const rangeInfo = useMemo(() => buildRangeInfo(selectedDate, granularity), [selectedDate, granularity]);
   const { current: currentRange, previous: previousRange } = rangeInfo;
 
+  const eventsIndex = useMemo(() => indexEventsByDate(events), [events]);
+
   const currentEvents = useMemo(
-    () => filterEventsByDateRange(events, currentRange.startKey, currentRange.endKey),
-    [events, currentRange.startKey, currentRange.endKey],
+    () => collectEventsFromIndex(eventsIndex, currentRange),
+    [eventsIndex, currentRange],
   );
 
   const previousEvents = useMemo(
-    () => filterEventsByDateRange(events, previousRange.startKey, previousRange.endKey),
-    [events, previousRange.startKey, previousRange.endKey],
+    () => collectEventsFromIndex(eventsIndex, previousRange),
+    [eventsIndex, previousRange],
   );
 
   const summaryMetrics = useMemo(
@@ -116,12 +121,27 @@ const ReportPage = () => {
     [taskLedger, categories, currentRange, currentEvents, taskRangeData],
   );
 
+  const eventsForSelectedDay = useMemo(
+    () => (granularity === 'day' ? getEventsForDateKey(eventsIndex, currentRange.startKey) : []),
+    [granularity, eventsIndex, currentRange.startKey],
+  );
+
   const taskDailyChanges = useMemo(
     () =>
       granularity === 'day'
-        ? buildTaskDailyChanges(taskLedger, categories, currentRange, events)
+        ? buildTaskDailyChanges(taskLedger, categories, currentRange, eventsForSelectedDay)
         : null,
-    [granularity, taskLedger, categories, currentRange, events],
+    [granularity, taskLedger, categories, currentRange, eventsForSelectedDay],
+  );
+
+  const dailyTaskDetails = useMemo(
+    () => (granularity === 'day' ? buildDailyTaskDetails(eventsForSelectedDay, taskLedger) : []),
+    [granularity, eventsForSelectedDay, taskLedger],
+  );
+
+  const dailyInterruptionDetails = useMemo(
+    () => (granularity === 'day' ? buildDailyInterruptionDetails(eventsForSelectedDay) : []),
+    [granularity, eventsForSelectedDay],
   );
 
   const hourlyTrend = useMemo(
@@ -140,8 +160,8 @@ const ReportPage = () => {
   );
 
   const weeklyCategorySeries = useMemo(
-    () => (granularity === 'week' ? buildWeeklyCategorySeries(events, taskLedger, categories, currentRange) : null),
-    [granularity, events, taskLedger, categories, currentRange],
+    () => (granularity === 'week' ? buildWeeklyCategorySeries(currentEvents, taskLedger, categories, currentRange) : null),
+    [granularity, currentEvents, taskLedger, categories, currentRange],
   );
 
   const monthlyTaskFlow = useMemo(
@@ -159,11 +179,6 @@ const ReportPage = () => {
 
   const rangeLabel = useMemo(() => formatRangeLabel(selectedDate, granularity), [selectedDate, granularity]);
   const comparisonLabel = COMPARISON_LABELS[granularity];
-
-  const eventsForSelectedDay = useMemo(
-    () => (granularity === 'day' ? filterEventsByDateKey(events, currentRange.startKey) : []),
-    [granularity, events, currentRange.startKey],
-  );
 
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
@@ -250,6 +265,10 @@ const ReportPage = () => {
 
         {granularity === 'day' && (
           <div className="space-y-6">
+            <DailyDetailTables
+              taskDetails={dailyTaskDetails}
+              interruptionDetails={dailyInterruptionDetails}
+            />
             {taskDailyChanges && (
               <TaskDailyChanges
                 created={taskDailyChanges.created}

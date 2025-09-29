@@ -14,6 +14,7 @@ export interface Event {
     myTaskId?: string;
     isUnknownActivity?: boolean; // For events created when editing past events
     planningSnapshot?: TaskPlanning;
+    splitRefId?: string;
   };
   // Interruptモーダル用の新しいフィールド
   who?: string;

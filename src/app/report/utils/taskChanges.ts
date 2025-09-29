@@ -79,7 +79,7 @@ export const buildTaskDailyChanges = (
         categoryName: info.categoryName,
         categoryColor: info.categoryColor,
         plannedMinutes: record.createdPlannedMinutes ?? record.latestPlannedMinutes ?? null,
-        dueAt: record.createdDueAt ?? record.latestDueAt ?? null,
+        dueAt: record.latestDueAt ?? record.createdDueAt ?? null,
         focusDurationMs: sumFocusDurationForTask(eventsInDay, record.id, dayRange),
       });
     }

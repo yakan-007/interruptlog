@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Event } from '@/types';
 import TaskManagementSection from '@/components/main/TaskManagementSection';
 import EventHistorySection from '@/components/main/EventHistorySection';
 import EventEditModal from '@/components/EventEditModal';
+import AddPastEventModal from '@/components/AddPastEventModal';
 // Nowカードや操作バーは従来どおりの構成に戻す
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import { 
-  useActiveEvent, 
-  useMyTasks, 
-  useCategories, 
-  useIsCategoryEnabled, 
+import {
+  useActiveEvent,
+  useMyTasks,
+  useCategories,
+  useIsCategoryEnabled,
   useIsHydrated,
   useStoreActions,
-  useEvents 
+  useEvents,
 } from '@/hooks/useStoreSelectors';
 
 export default function LogPage() {
@@ -34,6 +35,8 @@ export default function LogPage() {
   const [editingTaskName, setEditingTaskName] = useState('');
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddPastEventOpen, setIsAddPastEventOpen] = useState(false);
+  const [pendingAddRange, setPendingAddRange] = useState<{ start: number; end: number } | null>(null);
 
   // Use drag and drop hook
   const {
@@ -133,6 +136,38 @@ export default function LogPage() {
     setEditingEvent(null);
   };
 
+  const sortedEvents = useMemo(() => events.slice().sort((a, b) => a.start - b.start), [events]);
+
+  const lastCompletedEventEnd = useMemo(() => {
+    const completed = events.filter(event => event.end !== undefined);
+    if (completed.length === 0) {
+      return Date.now() - 60 * 60 * 1000;
+    }
+
+    const latest = completed.reduce((acc, event) => {
+      if (!event.end) return acc;
+      return event.end > acc ? event.end : acc;
+    }, completed[0].end ?? 0);
+
+    if (!latest || Number.isNaN(latest)) {
+      return Date.now() - 60 * 60 * 1000;
+    }
+    const now = Date.now();
+    return Math.min(latest, now - 60_000);
+  }, [events]);
+
+  const suggestedBackfillEnd = useMemo(() => {
+    const now = Date.now();
+    const candidate = activeEvent ? activeEvent.start : now;
+    return Math.min(candidate, now);
+  }, [activeEvent]);
+
+  useEffect(() => {
+    if (isAddPastEventOpen && !pendingAddRange) {
+      setPendingAddRange({ start: lastCompletedEventEnd, end: suggestedBackfillEnd });
+    }
+  }, [isAddPastEventOpen, pendingAddRange, lastCompletedEventEnd, suggestedBackfillEnd]);
+
   return (
     <div className="container mx-auto p-4 pb-16">
       <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
@@ -161,6 +196,10 @@ export default function LogPage() {
         events={events}
         showAllHistory={showAllHistory}
         setShowAllHistory={setShowAllHistory}
+        onAddPastEvent={() => {
+          setPendingAddRange({ start: lastCompletedEventEnd, end: suggestedBackfillEnd });
+          setIsAddPastEventOpen(true);
+        }}
         editingMemoEventId={editingMemoEventId}
         memoText={memoText}
         onStartEditMemo={handleStartEditMemo}
@@ -170,6 +209,17 @@ export default function LogPage() {
         onEditEventTime={handleEditEventTime}
         categories={categories}
         isCategoryEnabled={isCategoryEnabled}
+      />
+
+      <AddPastEventModal
+        open={isAddPastEventOpen}
+        onOpenChange={open => {
+          setIsAddPastEventOpen(open);
+          if (!open) {
+            setPendingAddRange(null);
+          }
+        }}
+        defaultRange={pendingAddRange ?? { start: lastCompletedEventEnd, end: suggestedBackfillEnd }}
       />
 
       <EventEditModal

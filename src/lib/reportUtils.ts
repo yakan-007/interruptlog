@@ -66,7 +66,7 @@ export const getDuration = (event: Event): number => {
   return Math.max(0, ensureEndTime(event) - event.start);
 };
 
-const formatDateKey = (date: Date): string => {
+export const formatDateKey = (date: Date): string => {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);
   const year = copy.getFullYear();
@@ -75,7 +75,7 @@ const formatDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const createDateFromKey = (key: string): Date => {
+export const createDateFromKey = (key: string): Date => {
   const [year, month, day] = key.split('-').map(Number);
   // Interpret the stored date key in the user's local timezone so daily filters
   // align with what they see in the UI.
@@ -89,10 +89,22 @@ const calculateTotalsByType = (events: Event[]): AggregatedTotals => {
     break: { duration: 0, count: 0 },
   };
 
+  const seenByType: Record<EventType, Set<string>> = {
+    task: new Set(),
+    interrupt: new Set(),
+    break: new Set(),
+  };
+
   events.forEach(event => {
     const duration = getDuration(event);
     totals[event.type].duration += duration;
-    totals[event.type].count += 1;
+
+    const identity = event.meta?.splitRefId ?? event.id;
+    const seen = seenByType[event.type];
+    if (!seen.has(identity)) {
+      seen.add(identity);
+      totals[event.type].count += 1;
+    }
   });
 
   return totals;
@@ -139,29 +151,54 @@ export const computeInterruptionStats = (events: Event[]): InterruptionStats => 
     };
   }
 
-  const totalDuration = interrupts.reduce((sum, event) => sum + getDuration(event), 0);
-
-  const contributorMap = new Map<string, { duration: number; count: number }>();
-  const typeMap = new Map<string, { duration: number; count: number }>();
+  const uniqueInterrupts = new Map<string, { duration: number; who: string; type: string }>();
   const hourBuckets: number[] = Array.from({ length: 24 }, () => 0);
 
   interrupts.forEach(event => {
     const duration = getDuration(event);
+    const identity = event.meta?.splitRefId ?? event.id;
+    const entry = uniqueInterrupts.get(identity);
 
-    const whoKey = toContributorLabel(event.who);
-    const whoEntry = contributorMap.get(whoKey) ?? { duration: 0, count: 0 };
+    if (entry) {
+      entry.duration += duration;
+    } else {
+      uniqueInterrupts.set(identity, {
+        duration,
+        who: toContributorLabel(event.who),
+        type: toContributorLabel(event.interruptType),
+      });
+    }
+
+    // Distribute duration into hour buckets for timeline insights
+    const eventEnd = Math.max(event.start, ensureEndTime(event));
+    let cursor = event.start;
+    while (cursor < eventEnd) {
+      const hourStart = new Date(cursor);
+      hourStart.setMinutes(0, 0, 0);
+      const nextHour = hourStart.getTime() + MS_IN_HOUR;
+      const segmentEnd = Math.min(eventEnd, nextHour);
+      const bucketDuration = Math.max(0, segmentEnd - cursor);
+      const hourIndex = hourStart.getHours();
+      hourBuckets[hourIndex] += bucketDuration;
+      cursor = segmentEnd;
+    }
+  });
+
+  const contributorMap = new Map<string, { duration: number; count: number }>();
+  const typeMap = new Map<string, { duration: number; count: number }>();
+  let totalDuration = 0;
+
+  uniqueInterrupts.forEach(({ duration, who, type }) => {
+    totalDuration += duration;
+    const whoEntry = contributorMap.get(who) ?? { duration: 0, count: 0 };
     whoEntry.duration += duration;
     whoEntry.count += 1;
-    contributorMap.set(whoKey, whoEntry);
+    contributorMap.set(who, whoEntry);
 
-    const typeKey = toContributorLabel(event.interruptType);
-    const typeEntry = typeMap.get(typeKey) ?? { duration: 0, count: 0 };
+    const typeEntry = typeMap.get(type) ?? { duration: 0, count: 0 };
     typeEntry.duration += duration;
     typeEntry.count += 1;
-    typeMap.set(typeKey, typeEntry);
-
-    const hour = new Date(event.start).getHours();
-    hourBuckets[hour] += duration;
+    typeMap.set(type, typeEntry);
   });
 
   const toContributorList = (map: Map<string, { duration: number; count: number }>): InterruptionContributor[] =>
@@ -179,8 +216,8 @@ export const computeInterruptionStats = (events: Event[]): InterruptionStats => 
 
   return {
     totalDuration,
-    totalCount: interrupts.length,
-    averageDuration: totalDuration / interrupts.length,
+    totalCount: uniqueInterrupts.size,
+    averageDuration: uniqueInterrupts.size > 0 ? totalDuration / uniqueInterrupts.size : 0,
     peakHourLabel,
     topContributors: toContributorList(contributorMap),
     topTypes: toContributorList(typeMap),
@@ -269,7 +306,32 @@ export const filterEventsByDateKey = (events: Event[], dateKey: string): Event[]
   const date = createDateFromKey(dateKey);
   const start = date.getTime();
   const end = start + MS_IN_DAY;
-  return events.filter(event => event.start >= start && event.start < end);
+
+  return events
+    .filter(event => {
+      const eventEnd = ensureEndTime(event);
+      return eventEnd > start && event.start < end;
+    })
+    .map(event => {
+      const eventEnd = ensureEndTime(event);
+      const clippedStart = Math.max(event.start, start);
+      const clippedEnd = Math.min(eventEnd, end);
+
+      if (clippedStart === event.start && clippedEnd === eventEnd) {
+        const meta = event.meta ? { ...event.meta, splitRefId: event.meta.splitRefId ?? event.id } : { splitRefId: event.id };
+        return { ...event, meta };
+      }
+
+      const meta = event.meta ? { ...event.meta, splitRefId: event.meta.splitRefId ?? event.id } : { splitRefId: event.id };
+      return {
+        ...event,
+        id: `${event.id}:${dateKey}`,
+        start: clippedStart,
+        end: clippedEnd,
+        meta,
+      };
+    })
+    .sort((a, b) => a.start - b.start);
 };
 
 export const filterEventsByDateRange = (events: Event[], startKey: string, endKey: string): Event[] => {
@@ -277,7 +339,115 @@ export const filterEventsByDateRange = (events: Event[], startKey: string, endKe
   const endDate = createDateFromKey(endKey);
   const start = startDate.getTime();
   const end = endDate.getTime() + MS_IN_DAY;
-  return events.filter(event => event.start >= start && event.start < end);
+  return events
+    .filter(event => {
+      const eventEnd = ensureEndTime(event);
+      return eventEnd > start && event.start < end;
+    })
+    .map(event => {
+      const eventEnd = ensureEndTime(event);
+      const clippedStart = Math.max(event.start, start);
+      const clippedEnd = Math.min(eventEnd, end);
+
+      if (clippedStart === event.start && clippedEnd === eventEnd) {
+        const meta = event.meta ? { ...event.meta, splitRefId: event.meta.splitRefId ?? event.id } : { splitRefId: event.id };
+        return { ...event, meta };
+      }
+
+      const meta = event.meta ? { ...event.meta, splitRefId: event.meta.splitRefId ?? event.id } : { splitRefId: event.id };
+      return {
+        ...event,
+        id: `${event.id}:${clippedStart}`,
+        start: clippedStart,
+        end: clippedEnd,
+        meta,
+      };
+    })
+    .sort((a, b) => a.start - b.start);
+};
+
+export type EventsByDateIndex = Map<string, Event[]>;
+
+const splitEventAcrossDays = (event: Event): Event[] => {
+  const end = ensureEndTime(event);
+  if (end <= event.start) {
+    const meta: Event['meta'] = event.meta
+      ? { ...event.meta, splitRefId: event.meta.splitRefId ?? event.id }
+      : { splitRefId: event.id };
+    return [{ ...event, meta }];
+  }
+
+  const segments: Event[] = [];
+  const baseMeta: Event['meta'] = event.meta ? { ...event.meta } : {};
+  const splitRefId = baseMeta.splitRefId ?? event.id;
+  baseMeta.splitRefId = splitRefId;
+
+  let segmentStart = event.start;
+  let isFirstSegment = true;
+
+  while (segmentStart < end) {
+    const dayStart = new Date(segmentStart);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = dayStart.getTime() + MS_IN_DAY;
+    const segmentEnd = Math.min(end, dayEnd);
+    if (segmentEnd <= segmentStart) {
+      break;
+    }
+
+    const dayKey = formatDateKey(dayStart);
+    const segmentId = isFirstSegment && segmentEnd === end ? event.id : `${event.id}:${dayKey}`;
+    const meta = { ...baseMeta };
+
+    segments.push({
+      ...event,
+      id: segmentId,
+      start: segmentStart,
+      end: segmentEnd,
+      meta,
+    });
+
+    segmentStart = segmentEnd;
+    isFirstSegment = false;
+  }
+
+  return segments;
+};
+
+export const indexEventsByDate = (events: Event[]): EventsByDateIndex => {
+  const index: EventsByDateIndex = new Map();
+
+  events.forEach(event => {
+    const segments = splitEventAcrossDays(event);
+    segments.forEach(segment => {
+      const key = formatDateKey(new Date(segment.start));
+      const bucket = index.get(key);
+      if (bucket) {
+        bucket.push(segment);
+      } else {
+        index.set(key, [segment]);
+      }
+    });
+  });
+
+  index.forEach(bucket => bucket.sort((a, b) => a.start - b.start));
+
+  return index;
+};
+
+export const collectEventsFromIndex = (index: EventsByDateIndex, range: { days: string[] }): Event[] => {
+  const results: Event[] = [];
+  range.days.forEach(dayKey => {
+    const bucket = index.get(dayKey);
+    if (bucket) {
+      results.push(...bucket);
+    }
+  });
+  return results.sort((a, b) => a.start - b.start);
+};
+
+export const getEventsForDateKey = (index: EventsByDateIndex, dateKey: string): Event[] => {
+  const bucket = index.get(dateKey);
+  return bucket ? [...bucket].sort((a, b) => a.start - b.start) : [];
 };
 
 export const formatDelta = (ms: number): { label: string; trend: 'up' | 'down' | 'flat' } => {
