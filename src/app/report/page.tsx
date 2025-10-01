@@ -281,6 +281,7 @@ const ReportPage = () => {
               stats={interruptionStats}
               eventsForSelectedDate={eventsForSelectedDay}
               selectedDateKey={currentRange.startKey}
+              showTimeline
             />
           </div>
         )}
@@ -290,6 +291,12 @@ const ReportPage = () => {
             <WeeklyActivityChart data={weeklyActivity} />
             <WeeklyTaskFlowChart data={weeklyTaskFlow} />
             {weeklyCategorySeries && <WeeklyCategoryStackedChart series={weeklyCategorySeries} />}
+            <InterruptionInsights
+              stats={interruptionStats}
+              eventsForSelectedDate={[]}
+              selectedDateKey={currentRange.startKey}
+              showTimeline={false}
+            />
           </div>
         )}
 
@@ -298,6 +305,12 @@ const ReportPage = () => {
             <MonthlyTaskFlowChart data={monthlyTaskFlow} />
             <TaskAggregateSummary totals={taskRangeData.current.totals} label="月間" />
             <CategoryOverview stats={categoryStats} />
+            <InterruptionInsights
+              stats={interruptionStats}
+              eventsForSelectedDate={[]}
+              selectedDateKey={currentRange.startKey}
+              showTimeline={false}
+            />
           </div>
         )}
 
@@ -306,6 +319,12 @@ const ReportPage = () => {
             <YearlyTaskFlowChart data={yearlyTaskFlow} />
             <TaskAggregateSummary totals={taskRangeData.current.totals} label="年間" />
             <CategoryOverview stats={categoryStats} />
+            <InterruptionInsights
+              stats={interruptionStats}
+              eventsForSelectedDate={[]}
+              selectedDateKey={currentRange.startKey}
+              showTimeline={false}
+            />
           </div>
         )}
       </div>

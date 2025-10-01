@@ -19,7 +19,7 @@ interface AddPastEventModalProps {
 }
 
 const EVENT_LABELS: Record<Event['type'], string> = {
-  task: '作業',
+  task: 'タスク',
   interrupt: '割り込み',
   break: '休憩',
 };
@@ -48,11 +48,13 @@ const clampTimestamp = (value: number): number => {
 };
 
 export default function AddPastEventModal({ open, onOpenChange, defaultRange }: AddPastEventModalProps) {
-  const { events, actions, categories, isCategoryEnabled } = useEventsStore(state => ({
+  const { events, actions, categories, isCategoryEnabled, interruptContacts, interruptSubjects } = useEventsStore(state => ({
     events: state.events,
     actions: state.actions,
     categories: state.categories,
     isCategoryEnabled: state.isCategoryEnabled,
+    interruptContacts: state.interruptContacts,
+    interruptSubjects: state.interruptSubjects,
   }));
 
   const [eventType, setEventType] = useState<Event['type']>('task');
@@ -154,8 +156,9 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
         end,
       };
 
+      const finalLabel = label.trim();
+
       if (eventType === 'task') {
-        const finalLabel = label.trim();
         const finalCategory = categoryId === 'none' ? undefined : categoryId;
         actions.addEvent({
           ...baseEvent,
@@ -164,13 +167,21 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
           memo: memo.trim() || undefined,
         });
       } else if (eventType === 'interrupt') {
+        const finalWho = who.trim();
+        const finalType = interruptType.trim();
         actions.addEvent({
           ...baseEvent,
-          label: label.trim() || undefined,
-          who: who.trim() || undefined,
-          interruptType: interruptType.trim() || undefined,
+          label: finalLabel || undefined,
+          who: finalWho || undefined,
+          interruptType: finalType || undefined,
           memo: memo.trim() || undefined,
         });
+        if (finalWho) {
+          actions.addInterruptContact(finalWho);
+        }
+        if (finalLabel && finalLabel !== 'Interrupt') {
+          actions.addInterruptSubject(finalLabel);
+        }
       } else {
         const durationMinutes = Math.round((end - start) / 60000);
         actions.addEvent({
@@ -210,7 +221,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
                 <SelectValue placeholder="種類を選択" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="task">作業</SelectItem>
+                <SelectItem value="task">タスク</SelectItem>
                 <SelectItem value="interrupt">割り込み</SelectItem>
                 <SelectItem value="break">休憩</SelectItem>
               </SelectContent>
@@ -247,6 +258,22 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
               value={label}
               onChange={event => setLabel(event.target.value)}
             />
+            {eventType === 'interrupt' && interruptSubjects.length > 0 && (
+              <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
+                {interruptSubjects.map(subject => (
+                  <button
+                    key={subject}
+                    type="button"
+                    className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs text-amber-700 transition hover:border-amber-300 hover:bg-amber-100 dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:border-amber-300/60 dark:hover:bg-amber-500/20"
+                    onClick={() => {
+                      setLabel(subject);
+                    }}
+                  >
+                    {subject}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {eventType === 'task' && isCategoryEnabled && (
@@ -269,21 +296,39 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
           )}
 
           {eventType === 'interrupt' && (
-            <div className="grid gap-2">
-              <Label htmlFor="who">発信者 (任意)</Label>
-              <Input
-                id="who"
-                placeholder="だれからの割り込みか"
-                value={who}
-                onChange={event => setWho(event.target.value)}
-              />
-              <Label htmlFor="interruptType">種類 (任意)</Label>
-              <Input
-                id="interruptType"
-                placeholder="内容の種類"
-                value={interruptType}
-                onChange={event => setInterruptType(event.target.value)}
-              />
+            <div className="space-y-3">
+              <div className="grid gap-2">
+                <Label htmlFor="who">発信者 (任意)</Label>
+                <Input
+                  id="who"
+                  placeholder="だれからの割り込みか"
+                  value={who}
+                  onChange={event => setWho(event.target.value)}
+                />
+                {interruptContacts.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {interruptContacts.map(contact => (
+                      <button
+                        key={contact}
+                        type="button"
+                        className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-600 transition hover:border-slate-300 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+                        onClick={() => setWho(contact)}
+                      >
+                        {contact}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="interruptType">種類 (任意)</Label>
+                <Input
+                  id="interruptType"
+                  placeholder="内容の種類"
+                  value={interruptType}
+                  onChange={event => setInterruptType(event.target.value)}
+                />
+              </div>
             </div>
           )}
 

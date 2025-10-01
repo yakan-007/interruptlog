@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import InterruptTimeline from '@/components/InterruptTimeline';
 import { InterruptionStats, formatDurationCompact } from '@/lib/reportUtils';
 import { Event } from '@/types';
@@ -8,6 +9,7 @@ interface InterruptionInsightsProps {
   stats: InterruptionStats;
   eventsForSelectedDate: Event[];
   selectedDateKey: string;
+  showTimeline?: boolean;
 }
 
 const EmptyState = () => (
@@ -16,8 +18,18 @@ const EmptyState = () => (
   </div>
 );
 
-export default function InterruptionInsights({ stats, eventsForSelectedDate, selectedDateKey }: InterruptionInsightsProps) {
-  const showTimeline = eventsForSelectedDate.some(event => event.type === 'interrupt');
+export default function InterruptionInsights({ stats, eventsForSelectedDate, selectedDateKey, showTimeline = true }: InterruptionInsightsProps) {
+  const hasTimelineData = showTimeline && eventsForSelectedDate.some(event => event.type === 'interrupt');
+  const [activeContributor, setActiveContributor] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActiveContributor(stats.topContributors[0]?.label ?? null);
+  }, [stats.topContributors]);
+
+  const activeContributorDetails = useMemo(
+    () => stats.topContributors.find(contributor => contributor.label === activeContributor) ?? null,
+    [stats.topContributors, activeContributor],
+  );
 
   return (
     <div className="w-full space-y-4">
@@ -42,16 +54,42 @@ export default function InterruptionInsights({ stats, eventsForSelectedDate, sel
             <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">トップ発信者</h4>
               <ul className="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                {stats.topContributors.map(item => (
-                  <li key={item.label} className="flex items-center justify-between">
-                    <span className="truncate">{item.label}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatDurationCompact(item.totalDuration)} / {item.count}件
-                    </span>
-                  </li>
-                ))}
+                {stats.topContributors.map(item => {
+                  const isActive = item.label === activeContributor;
+                  return (
+                    <li key={item.label}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveContributor(item.label)}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 transition ${
+                          isActive
+                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <span className="truncate text-left">{item.label}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDurationCompact(item.totalDuration)} / {item.count}件
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
                 {stats.topContributors.length === 0 && <li className="text-xs text-gray-500">データがありません</li>}
               </ul>
+              {activeContributorDetails && activeContributorDetails.types.length > 0 && (
+                <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                  <p className="mb-2 font-semibold text-gray-700 dark:text-gray-200">{activeContributorDetails.label} の内訳</p>
+                  <ul className="space-y-1">
+                    {activeContributorDetails.types.map(type => (
+                      <li key={type.label} className="flex items-center justify-between">
+                        <span className="truncate">{type.label}</span>
+                        <span>{formatDurationCompact(type.totalDuration)} / {type.count}件</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
@@ -86,7 +124,7 @@ export default function InterruptionInsights({ stats, eventsForSelectedDate, sel
         )}
       </div>
 
-      {showTimeline && (
+      {hasTimelineData && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
           <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">時間帯別の割り込みタイムライン</h3>
           <InterruptTimeline events={eventsForSelectedDate} targetDate={selectedDateKey} />

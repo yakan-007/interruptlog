@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EventHistoryItem from '@/components/EventHistoryItem';
-import { Event, Category } from '@/types';
+import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
+import { useCategories, useIsCategoryEnabled, useStoreActions } from '@/hooks/useStoreSelectors';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
@@ -16,33 +17,47 @@ interface EventHistorySectionProps {
   showAllHistory: boolean;
   setShowAllHistory: (show: boolean) => void;
   onAddPastEvent: () => void;
-  editingMemoEventId: string | null;
-  memoText: string;
-  onStartEditMemo: (eventId: string, currentMemo?: string) => void;
-  onSaveMemo: (eventId: string) => void;
-  onCancelEditMemo: () => void;
-  onSetMemoText: (text: string) => void;
   onEditEventTime: (event: Event) => void;
-  categories: Category[];
-  isCategoryEnabled: boolean;
 }
 
 export default function EventHistorySection({
   events,
   showAllHistory,
   setShowAllHistory,
-  editingMemoEventId,
-  memoText,
-  onStartEditMemo,
-  onSaveMemo,
-  onCancelEditMemo,
-  onSetMemoText,
   onEditEventTime,
-  categories,
-  isCategoryEnabled,
   onAddPastEvent,
 }: EventHistorySectionProps) {
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
+  const [editingMemoEventId, setEditingMemoEventId] = useState<string | null>(null);
+  const [memoText, setMemoText] = useState('');
+  const categories = useCategories();
+  const isCategoryEnabled = useIsCategoryEnabled();
+  const actions = useStoreActions();
+
+  const handleStartEditMemo = (eventId: string, currentMemo?: string) => {
+    setEditingMemoEventId(eventId);
+    setMemoText(currentMemo ?? '');
+  };
+
+  const handleCancelEditMemo = () => {
+    setEditingMemoEventId(null);
+    setMemoText('');
+  };
+
+  const handleSaveMemo = (eventId: string) => {
+    const targetEvent = events.find(event => event.id === eventId);
+    if (!targetEvent) {
+      handleCancelEditMemo();
+      return;
+    }
+
+    const trimmedMemo = memoText.trim();
+    actions.updateEvent({
+      ...targetEvent,
+      memo: trimmedMemo ? trimmedMemo : undefined,
+    });
+    handleCancelEditMemo();
+  };
 
   // Find the last completed event
   const lastCompletedEvent = useMemo(() => 
@@ -52,7 +67,6 @@ export default function EventHistorySection({
 
   // Filter events based on selected time period
   const filteredEvents = useMemo(() => {
-    const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -145,10 +159,10 @@ export default function EventHistorySection({
                 event={event}
                 editingMemoEventId={editingMemoEventId}
                 memoText={memoText}
-                onStartEditMemo={onStartEditMemo}
-                onSaveMemo={onSaveMemo}
-                onCancelEditMemo={onCancelEditMemo}
-                onSetMemoText={onSetMemoText}
+                onStartEditMemo={handleStartEditMemo}
+                onSaveMemo={handleSaveMemo}
+                onCancelEditMemo={handleCancelEditMemo}
+                onSetMemoText={setMemoText}
                 formatEventTime={formatEventTime}
                 onEditEventTime={onEditEventTime}
                 canEditTime={event.id === lastCompletedEvent?.id}

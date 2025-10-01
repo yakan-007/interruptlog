@@ -26,10 +26,14 @@ export interface SummaryMetrics {
   totalSessions: number;
 }
 
-export interface InterruptionContributor {
+export interface InterruptionTypeSummary {
   label: string;
   totalDuration: number;
   count: number;
+}
+
+export interface InterruptionContributorSummary extends InterruptionTypeSummary {
+  types: InterruptionTypeSummary[];
 }
 
 export interface InterruptionStats {
@@ -37,8 +41,8 @@ export interface InterruptionStats {
   totalCount: number;
   averageDuration: number;
   peakHourLabel: string | null;
-  topContributors: InterruptionContributor[];
-  topTypes: InterruptionContributor[];
+  topContributors: InterruptionContributorSummary[];
+  topTypes: InterruptionTypeSummary[];
 }
 
 export interface TrendDatum {
@@ -186,6 +190,7 @@ export const computeInterruptionStats = (events: Event[]): InterruptionStats => 
 
   const contributorMap = new Map<string, { duration: number; count: number }>();
   const typeMap = new Map<string, { duration: number; count: number }>();
+  const contributorTypeMap = new Map<string, Map<string, { duration: number; count: number }>>();
   let totalDuration = 0;
 
   uniqueInterrupts.forEach(({ duration, who, type }) => {
@@ -195,15 +200,41 @@ export const computeInterruptionStats = (events: Event[]): InterruptionStats => 
     whoEntry.count += 1;
     contributorMap.set(who, whoEntry);
 
-    const typeEntry = typeMap.get(type) ?? { duration: 0, count: 0 };
-    typeEntry.duration += duration;
-    typeEntry.count += 1;
-    typeMap.set(type, typeEntry);
+    const typeBreakdown = contributorTypeMap.get(who) ?? new Map();
+    const contributorTypeEntry = typeBreakdown.get(type) ?? { duration: 0, count: 0 };
+    contributorTypeEntry.duration += duration;
+    contributorTypeEntry.count += 1;
+    typeBreakdown.set(type, contributorTypeEntry);
+    contributorTypeMap.set(who, typeBreakdown);
+
+    const typeAggregateEntry = typeMap.get(type) ?? { duration: 0, count: 0 };
+    typeAggregateEntry.duration += duration;
+    typeAggregateEntry.count += 1;
+    typeMap.set(type, typeAggregateEntry);
   });
 
-  const toContributorList = (map: Map<string, { duration: number; count: number }>): InterruptionContributor[] =>
+  const toContributorList = (
+    map: Map<string, { duration: number; count: number }>,
+    detailMap: Map<string, Map<string, { duration: number; count: number }>>,
+  ): InterruptionContributorSummary[] =>
     Array.from(map.entries())
-      .map(([label, value]) => ({ label, totalDuration: value.duration, count: value.count }))
+      .map(([label, value]) => {
+        const detail = detailMap.get(label) ?? new Map();
+        const types: InterruptionTypeSummary[] = Array.from(detail.entries())
+          .map(([typeLabel, metrics]) => ({
+            label: typeLabel,
+            totalDuration: metrics.duration,
+            count: metrics.count,
+          }))
+          .sort((a, b) => b.totalDuration - a.totalDuration)
+          .slice(0, 5);
+        return {
+          label,
+          totalDuration: value.duration,
+          count: value.count,
+          types,
+        };
+      })
       .sort((a, b) => b.totalDuration - a.totalDuration)
       .slice(0, 3);
 
@@ -219,8 +250,11 @@ export const computeInterruptionStats = (events: Event[]): InterruptionStats => 
     totalCount: uniqueInterrupts.size,
     averageDuration: uniqueInterrupts.size > 0 ? totalDuration / uniqueInterrupts.size : 0,
     peakHourLabel,
-    topContributors: toContributorList(contributorMap),
-    topTypes: toContributorList(typeMap),
+    topContributors: toContributorList(contributorMap, contributorTypeMap),
+    topTypes: Array.from(typeMap.entries())
+      .map(([label, metrics]) => ({ label, totalDuration: metrics.duration, count: metrics.count }))
+      .sort((a, b) => b.totalDuration - a.totalDuration)
+      .slice(0, 5),
   };
 };
 

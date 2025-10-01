@@ -10,6 +10,8 @@ export const STORE_STORAGE_KEYS = {
   CATEGORIES: 'categories-store',
   CATEGORY_ENABLED: 'category-enabled',
   INTERRUPT_CATEGORY_SETTINGS: 'interrupt-category-settings-store',
+  INTERRUPT_CONTACTS: 'interrupt-contacts-store',
+  INTERRUPT_REASONS: 'interrupt-reasons-store',
   TASK_PLACEMENT_SETTING: 'task-placement-setting',
   AUTO_START_TASK_SETTING: 'auto-start-task-setting',
   FEATURE_FLAGS_SETTING: 'feature-flags-setting',
@@ -50,6 +52,8 @@ export interface HydratedSettingsData {
   featureFlags: FeatureFlags;
   dueAlertSettings: DueAlertSettings;
   uiSettings: UiSettings;
+  interruptContacts: string[];
+  interruptSubjects: string[];
 }
 
 export async function hydrateEventsData(): Promise<HydratedEventsData> {
@@ -172,15 +176,25 @@ export async function hydrateCategoriesData(): Promise<HydratedCategoriesData> {
 }
 
 export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
-  const [storedInterruptCategorySettings, storedTaskPlacement, storedAutoStartTask, storedFeatureFlags, storedDueAlertSettings, storedUiSettings] =
-    await Promise.all([
-      dbGet<InterruptCategorySettings>(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS),
-      dbGet<boolean>(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING),
-      dbGet<boolean>(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING),
-      dbGet<FeatureFlags>(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING),
-      dbGet<DueAlertSettings>(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS),
-      dbGet<UiSettings>(STORE_STORAGE_KEYS.UI_SETTINGS),
-    ]);
+  const [
+    storedInterruptCategorySettings,
+    storedTaskPlacement,
+    storedAutoStartTask,
+    storedFeatureFlags,
+    storedDueAlertSettings,
+    storedUiSettings,
+    storedInterruptContacts,
+    storedInterruptReasons,
+  ] = await Promise.all([
+    dbGet<InterruptCategorySettings>(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS),
+    dbGet<boolean>(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING),
+    dbGet<boolean>(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING),
+    dbGet<FeatureFlags>(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING),
+    dbGet<DueAlertSettings>(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS),
+    dbGet<UiSettings>(STORE_STORAGE_KEYS.UI_SETTINGS),
+    dbGet<string[]>(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS),
+    dbGet<string[]>(STORE_STORAGE_KEYS.INTERRUPT_REASONS),
+  ]);
 
   let interruptCategorySettings: InterruptCategorySettings;
 
@@ -201,6 +215,20 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
   };
   await dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags);
 
+  const sanitizeEntries = (values: string[] | undefined | null) =>
+    (values ?? [])
+      .map(value => value.trim())
+      .filter((value, index, array) => value.length > 0 && array.findIndex(candidate => candidate.toLowerCase() === value.toLowerCase()) === index)
+      .slice(0, 10);
+
+  const interruptContacts = sanitizeEntries(storedInterruptContacts);
+  const interruptSubjects = sanitizeEntries(storedInterruptReasons);
+
+  await Promise.all([
+    dbSet(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS, interruptContacts),
+    dbSet(STORE_STORAGE_KEYS.INTERRUPT_REASONS, interruptSubjects),
+  ]);
+
   const dueAlertSettings: DueAlertSettings = storedDueAlertSettings ?? {
     warningMinutes: 6 * 60,
     dangerMinutes: 60,
@@ -220,5 +248,7 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     featureFlags,
     dueAlertSettings,
     uiSettings,
+    interruptContacts,
+    interruptSubjects,
   };
 }

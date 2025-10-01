@@ -27,6 +27,10 @@ import {
   reorderCategories 
 } from './categoryHelpers';
 
+const MAX_INTERRUPT_DIRECTORY_ENTRIES = 10;
+
+const normalizeDirectoryValue = (value: string) => value.trim();
+
 export interface EventsState {
   events: Event[];
   currentEventId: string | null;
@@ -36,6 +40,8 @@ export interface EventsState {
   categories: Category[];
   isCategoryEnabled: boolean;
   interruptCategorySettings: InterruptCategorySettings;
+  interruptContacts: string[];
+  interruptSubjects: string[];
   addTaskToTop: boolean; // true: 上に追加, false: 下に追加
   autoStartTask: boolean; // true: タスク追加後即座開始, false: 手動で開始
   isHydrated: boolean;
@@ -80,6 +86,11 @@ export interface EventsState {
     removeCategory: (id: string) => void;
     setCategories: (categories: Category[]) => void;
     toggleCategoryEnabled: () => void;
+    addInterruptContact: (value: string) => void;
+    removeInterruptContact: (value: string) => void;
+    addInterruptSubject: (value: string) => void;
+    removeInterruptSubject: (value: string) => void;
+    _persistInterruptDirectory: () => void;
     updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => void;
     updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => void;
     resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => void;
@@ -112,6 +123,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
   categories: [],
   isCategoryEnabled: true,
   interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES },
+  interruptContacts: [],
+  interruptSubjects: [],
   addTaskToTop: false, // デフォルトは下に追加
   autoStartTask: false, // デフォルトは手動開始
   isHydrated: false,
@@ -159,6 +172,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           categories: [],
           isCategoryEnabled: true,
           interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES }, 
+          interruptContacts: [],
+          interruptSubjects: [],
           addTaskToTop: false, 
           autoStartTask: false, 
           featureFlags: {
@@ -249,6 +264,16 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       // Support both string label and object payload
       const payload = typeof data === 'string' ? { label: data } : (data || {});
 
+      if (payload.who) {
+        get().actions.addInterruptContact(payload.who);
+      }
+      if (payload.label) {
+        const normalizedLabel = payload.label.trim();
+        if (normalizedLabel && normalizedLabel !== 'Interrupt') {
+          get().actions.addInterruptSubject(normalizedLabel);
+        }
+      }
+
       const newEvent: Event = {
         id: uuidv4(),
         type: 'interrupt',
@@ -274,6 +299,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
             interruptType: data.interruptType !== undefined ? data.interruptType : interruptEvent.interruptType,
             urgency: data.urgency !== undefined ? data.urgency : interruptEvent.urgency,
           };
+          if (data.who) {
+            get().actions.addInterruptContact(data.who);
+          }
+          if (data.label) {
+            const normalizedLabel = data.label.trim();
+            if (normalizedLabel && normalizedLabel !== 'Interrupt') {
+              get().actions.addInterruptSubject(normalizedLabel);
+            }
+          }
           get().actions.updateEvent(updatedEvent);
         } else {
           console.warn('[useEventsStore] updateInterruptDetails: No active interrupt event found to update.');
@@ -939,6 +973,55 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     toggleCategoryEnabled: () => {
       set({ isCategoryEnabled: !get().isCategoryEnabled });
       get().actions._persistCategoriesState();
+    },
+    addInterruptContact: (value: string) => {
+      const normalized = normalizeDirectoryValue(value);
+      if (!normalized) {
+        return;
+      }
+
+      set(state => {
+        const existsIndex = state.interruptContacts.findIndex(entry => entry.toLowerCase() === normalized.toLowerCase());
+        const filtered = existsIndex >= 0 ? state.interruptContacts.filter((_, index) => index !== existsIndex) : state.interruptContacts;
+        const updated = [normalized, ...filtered].slice(0, MAX_INTERRUPT_DIRECTORY_ENTRIES);
+        return { interruptContacts: updated };
+      });
+      get().actions._persistInterruptDirectory();
+    },
+    removeInterruptContact: (value: string) => {
+      set(state => ({
+        interruptContacts: state.interruptContacts.filter(entry => entry.toLowerCase() !== value.toLowerCase()),
+      }));
+      get().actions._persistInterruptDirectory();
+    },
+    addInterruptSubject: (value: string) => {
+      const normalized = normalizeDirectoryValue(value);
+      if (!normalized) {
+        return;
+      }
+
+      set(state => {
+        const existsIndex = state.interruptSubjects.findIndex(entry => entry.toLowerCase() === normalized.toLowerCase());
+        const filtered = existsIndex >= 0 ? state.interruptSubjects.filter((_, index) => index !== existsIndex) : state.interruptSubjects;
+        const updated = [normalized, ...filtered].slice(0, MAX_INTERRUPT_DIRECTORY_ENTRIES);
+        return { interruptSubjects: updated };
+      });
+      get().actions._persistInterruptDirectory();
+    },
+    removeInterruptSubject: (value: string) => {
+      set(state => ({
+        interruptSubjects: state.interruptSubjects.filter(entry => entry.toLowerCase() !== value.toLowerCase()),
+      }));
+      get().actions._persistInterruptDirectory();
+    },
+    _persistInterruptDirectory: () => {
+      const { interruptContacts, interruptSubjects } = get();
+      Promise.all([
+        dbSet(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS, interruptContacts),
+        dbSet(STORE_STORAGE_KEYS.INTERRUPT_REASONS, interruptSubjects),
+      ]).catch(error => {
+        console.error('[useEventsStore] Error persisting interrupt directory:', error);
+      });
     },
     _persistInterruptCategorySettings: () => {
       const { interruptCategorySettings } = get();

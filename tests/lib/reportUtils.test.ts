@@ -97,6 +97,8 @@ describe('computeInterruptionStats with split events', () => {
 
     expect(stats.totalCount).toBe(1);
     expect(stats.topContributors[0]?.count).toBe(1);
+    expect(stats.topContributors[0]?.types[0]?.label).toBe('未記入');
+    expect(stats.topTypes[0]?.label).toBe('未記入');
     expect(stats.totalDuration).toBe(60 * 60 * 1000);
   });
 });

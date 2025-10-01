@@ -9,6 +9,7 @@ import TaskPlanningSection from '@/components/settings/TaskPlanningSection';
 import TaskPlacementSection from '@/components/settings/TaskPlacementSection';
 import CategoryManagementSection from '@/components/settings/CategoryManagementSection';
 import InterruptCategorySection from '@/components/settings/InterruptCategorySection';
+import InterruptDirectorySection from '@/components/settings/InterruptDirectorySection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
 import DueAlertSettingsSection from '@/components/settings/DueAlertSettingsSection';
 
@@ -53,6 +54,7 @@ const SettingsPage = () => {
           <SectionLabel>分類とフォローアップ</SectionLabel>
           <CategoryManagementSection />
           <InterruptCategorySection />
+          <InterruptDirectorySection />
           <DueAlertSettingsSection />
         </section>
 

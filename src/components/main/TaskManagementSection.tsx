@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -10,46 +10,13 @@ import { Event, MyTask, TaskPlanning } from '@/types';
 import useEventsStore from '@/store/useEventsStore';
 import { useFeatureFlags, useTaskManagement } from '@/hooks/useStoreSelectors';
 import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 
 interface TaskManagementSectionProps {
   activeEvent?: Event;
-  editingTaskId: string | null;
-  editingTaskName: string;
-  draggingTaskId: string | null;
-  dragOverTaskId: string | null;
-  onStartEditTask: (taskId: string, currentName: string) => void;
-  onSaveTaskName: (taskId: string) => void;
-  onCancelEditTask: () => void;
-  onSetEditingTaskName: (name: string) => void;
-  onToggleCompletion: (taskId: string) => void;
-  onStartEvent: (label: string, taskId?: string) => void;
-  onDeleteTask: (taskId: string) => void;
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
-  onDragOver: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
-  onDragLeave: () => void;
-  onDrop: (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
-  onDragEnd: () => void;
 }
 
-export default function TaskManagementSection({
-  activeEvent,
-  editingTaskId,
-  editingTaskName,
-  draggingTaskId,
-  dragOverTaskId,
-  onStartEditTask,
-  onSaveTaskName,
-  onCancelEditTask,
-  onSetEditingTaskName,
-  onToggleCompletion,
-  onStartEvent,
-  onDeleteTask,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onDragEnd,
-}: TaskManagementSectionProps) {
+export default function TaskManagementSection({ activeEvent }: TaskManagementSectionProps) {
   const { myTasks, categories, isCategoryEnabled, autoStartTask, actions } = useTaskManagement();
   const featureFlags = useFeatureFlags();
   const planningEnabled = featureFlags.enableTaskPlanning;
@@ -61,6 +28,18 @@ export default function TaskManagementSection({
   const [newTaskPlannedDuration, setNewTaskPlannedDuration] = useState<string>('');
   const [newTaskDueAt, setNewTaskDueAt] = useState<string>('');
   const [planningEditorTaskId, setPlanningEditorTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskName, setEditingTaskName] = useState('');
+
+  const {
+    draggingItemId: draggingTaskId,
+    dragOverItemId: dragOverTaskId,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDragEnd,
+    handleDrop,
+  } = useDragAndDrop(myTasks, actions.reorderMyTasks);
 
   const resetAdvancedInputs = () => {
     setNewTaskPlannedDuration('');
@@ -86,6 +65,56 @@ export default function TaskManagementSection({
     }
   };
 
+  const handleStartEditTask = (taskId: string, currentName: string) => {
+    setEditingTaskId(taskId);
+    setEditingTaskName(currentName);
+  };
+
+  const handleSetEditingTaskName = (name: string) => {
+    setEditingTaskName(name);
+  };
+
+  const handleCancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditingTaskName('');
+  };
+
+  const handleSaveTaskName = (taskId: string) => {
+    const trimmedName = editingTaskName.trim();
+    if (!trimmedName) {
+      handleCancelEditTask();
+      return;
+    }
+
+    const targetTask = myTasks.find(task => task.id === taskId);
+    if (!targetTask) {
+      handleCancelEditTask();
+      return;
+    }
+
+    if (targetTask.name !== trimmedName) {
+      actions.updateMyTask(taskId, trimmedName);
+    }
+
+    handleCancelEditTask();
+  };
+
+  const handleToggleCompletion = (taskId: string) => {
+    actions.toggleMyTaskCompletion(taskId);
+  };
+
+  const handleStartEvent = (label: string, taskId?: string) => {
+    actions.startTask(label, taskId);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    const message = 'このタスクを削除しますか？';
+    if (typeof window !== 'undefined' && !window.confirm(message)) {
+      return;
+    }
+    actions.removeMyTask(taskId);
+  };
+
   // Separate tasks by completion status
   const { activeTasks, completedTasks } = useMemo(() => {
     const active = myTasks.filter(task => !task.isCompleted);
@@ -104,6 +133,17 @@ export default function TaskManagementSection({
       resetAdvancedInputs();
     }
   }, [planningEnabled]);
+
+  useEffect(() => {
+    if (!editingTaskId) {
+      return;
+    }
+
+    const stillExists = myTasks.some(task => task.id === editingTaskId);
+    if (!stillExists) {
+      handleCancelEditTask();
+    }
+  }, [editingTaskId, myTasks]);
 
   const handleOpenPlanningEditor = (taskId: string) => {
     setPlanningEditorTaskId(taskId);
@@ -243,18 +283,18 @@ export default function TaskManagementSection({
             editingTaskName={editingTaskName}
             draggingTaskId={draggingTaskId}
             dragOverTaskId={dragOverTaskId}
-            onStartEditTask={onStartEditTask}
-            onSaveTaskName={onSaveTaskName}
-            onCancelEditTask={onCancelEditTask}
-            onSetEditingTaskName={onSetEditingTaskName}
-            onToggleCompletion={onToggleCompletion}
-            onStartEvent={onStartEvent}
-            onDeleteTask={onDeleteTask}
-            onDragStart={sortByDueDate ? undefined : onDragStart}
-            onDragOver={sortByDueDate ? undefined : onDragOver}
-            onDragLeave={sortByDueDate ? undefined : onDragLeave}
-            onDrop={sortByDueDate ? undefined : onDrop}
-            onDragEnd={sortByDueDate ? undefined : onDragEnd}
+            onStartEditTask={handleStartEditTask}
+            onSaveTaskName={handleSaveTaskName}
+            onCancelEditTask={handleCancelEditTask}
+            onSetEditingTaskName={handleSetEditingTaskName}
+            onToggleCompletion={handleToggleCompletion}
+            onStartEvent={handleStartEvent}
+            onDeleteTask={handleDeleteTask}
+            onDragStart={sortByDueDate ? undefined : handleDragStart}
+            onDragOver={sortByDueDate ? undefined : handleDragOver}
+            onDragLeave={sortByDueDate ? undefined : handleDragLeave}
+            onDrop={sortByDueDate ? undefined : handleDrop}
+            onDragEnd={sortByDueDate ? undefined : handleDragEnd}
             onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
             isDragDisabled={sortByDueDate}
           />
@@ -294,18 +334,18 @@ export default function TaskManagementSection({
                   editingTaskName={editingTaskName}
                   draggingTaskId={draggingTaskId}
                   dragOverTaskId={dragOverTaskId}
-                  onStartEditTask={onStartEditTask}
-                  onSaveTaskName={onSaveTaskName}
-                  onCancelEditTask={onCancelEditTask}
-                  onSetEditingTaskName={onSetEditingTaskName}
-                  onToggleCompletion={onToggleCompletion}
-                  onStartEvent={onStartEvent}
-                  onDeleteTask={onDeleteTask}
-                  onDragStart={sortByDueDate ? undefined : onDragStart}
-                  onDragOver={sortByDueDate ? undefined : onDragOver}
-                  onDragLeave={sortByDueDate ? undefined : onDragLeave}
-                  onDrop={sortByDueDate ? undefined : onDrop}
-                  onDragEnd={sortByDueDate ? undefined : onDragEnd}
+                  onStartEditTask={handleStartEditTask}
+                  onSaveTaskName={handleSaveTaskName}
+                  onCancelEditTask={handleCancelEditTask}
+                  onSetEditingTaskName={handleSetEditingTaskName}
+                  onToggleCompletion={handleToggleCompletion}
+                  onStartEvent={handleStartEvent}
+                  onDeleteTask={handleDeleteTask}
+                  onDragStart={sortByDueDate ? undefined : handleDragStart}
+                  onDragOver={sortByDueDate ? undefined : handleDragOver}
+                  onDragLeave={sortByDueDate ? undefined : handleDragLeave}
+                  onDrop={sortByDueDate ? undefined : handleDrop}
+                  onDragEnd={sortByDueDate ? undefined : handleDragEnd}
                   onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
                   isDragDisabled={sortByDueDate}
                 />
