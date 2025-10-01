@@ -30,6 +30,8 @@ export default function EventHistorySection({
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
   const [editingMemoEventId, setEditingMemoEventId] = useState<string | null>(null);
   const [memoText, setMemoText] = useState('');
+  const [editingLabelEventId, setEditingLabelEventId] = useState<string | null>(null);
+  const [labelText, setLabelText] = useState('');
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
   const actions = useStoreActions();
@@ -57,6 +59,54 @@ export default function EventHistorySection({
       memo: trimmedMemo ? trimmedMemo : undefined,
     });
     handleCancelEditMemo();
+  };
+
+  const handleStartEditLabel = (eventId: string, currentLabel?: string) => {
+    setEditingLabelEventId(eventId);
+    setLabelText(currentLabel ?? '');
+  };
+
+  const handleCancelEditLabel = () => {
+    setEditingLabelEventId(null);
+    setLabelText('');
+  };
+
+  const handleSaveLabel = (eventId: string) => {
+    const targetEvent = events.find(event => event.id === eventId);
+    if (!targetEvent) {
+      handleCancelEditLabel();
+      return;
+    }
+
+    const trimmed = labelText.trim();
+    const nextLabel = trimmed.length > 0 ? trimmed : undefined;
+    if (targetEvent.label === nextLabel) {
+      handleCancelEditLabel();
+      return;
+    }
+
+    actions.updateEvent({
+      ...targetEvent,
+      label: nextLabel,
+    });
+    handleCancelEditLabel();
+  };
+
+  const handleUpdateCategory = (eventId: string, categoryId: string | null) => {
+    const targetEvent = events.find(event => event.id === eventId);
+    if (!targetEvent) {
+      return;
+    }
+
+    const nextCategoryId = categoryId ?? undefined;
+    if (targetEvent.categoryId === nextCategoryId) {
+      return;
+    }
+
+    actions.updateEvent({
+      ...targetEvent,
+      categoryId: nextCategoryId,
+    });
   };
 
   // Find the last completed event
@@ -159,10 +209,17 @@ export default function EventHistorySection({
                 event={event}
                 editingMemoEventId={editingMemoEventId}
                 memoText={memoText}
+                editingLabelEventId={editingLabelEventId}
+                labelText={labelText}
                 onStartEditMemo={handleStartEditMemo}
                 onSaveMemo={handleSaveMemo}
                 onCancelEditMemo={handleCancelEditMemo}
                 onSetMemoText={setMemoText}
+                onStartEditLabel={handleStartEditLabel}
+                onSaveLabel={handleSaveLabel}
+                onCancelEditLabel={handleCancelEditLabel}
+                onSetLabelText={setLabelText}
+                onChangeCategory={handleUpdateCategory}
                 formatEventTime={formatEventTime}
                 onEditEventTime={onEditEventTime}
                 canEditTime={event.id === lastCompletedEvent?.id}
