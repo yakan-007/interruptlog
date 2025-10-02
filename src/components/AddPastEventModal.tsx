@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import useEventsStore from '@/store/useEventsStore';
-import type { Event, Category } from '@/types';
+import type { Event } from '@/types';
+import { createEventFromDraft, EventDraft } from '@/store/eventDraftUtils';
+import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 interface AddPastEventModalProps {
   open: boolean;
@@ -48,21 +50,35 @@ const clampTimestamp = (value: number): number => {
 };
 
 export default function AddPastEventModal({ open, onOpenChange, defaultRange }: AddPastEventModalProps) {
-  const { events, actions, categories, isCategoryEnabled, interruptContacts, interruptSubjects } = useEventsStore(state => ({
+  const { events, actions, categories, myTasks, isCategoryEnabled, interruptContacts, interruptSubjects, interruptCategorySettings } = useEventsStore(state => ({
     events: state.events,
     actions: state.actions,
     categories: state.categories,
+    myTasks: state.myTasks,
     isCategoryEnabled: state.isCategoryEnabled,
     interruptContacts: state.interruptContacts,
     interruptSubjects: state.interruptSubjects,
+    interruptCategorySettings: state.interruptCategorySettings,
   }));
+
+  const interruptCategories = [
+    { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
+    { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
+    { name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
+    { name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
+    { name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
+    { name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
+  ];
+  const defaultInterruptCategory = interruptCategories[0]?.name ?? '';
 
   const [eventType, setEventType] = useState<Event['type']>('task');
   const [label, setLabel] = useState('');
   const [who, setWho] = useState('');
-  const [interruptType, setInterruptType] = useState('');
+  const [interruptType, setInterruptType] = useState(defaultInterruptCategory);
   const [breakType, setBreakType] = useState<NonNullable<Event['breakType']>>('short');
   const [categoryId, setCategoryId] = useState<string>('none');
+  const [urgency, setUrgency] = useState<NonNullable<Event['urgency']>>('Medium');
+  const [myTaskId, setMyTaskId] = useState<string>('none');
   const [startInput, setStartInput] = useState('');
   const [endInput, setEndInput] = useState('');
   const [memo, setMemo] = useState('');
@@ -82,19 +98,52 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
     setEventType('task');
     setLabel('');
     setWho('');
-    setInterruptType('');
+    setInterruptType(defaultInterruptCategory);
     setBreakType('short');
     setCategoryId('none');
+    setMyTaskId('none');
+    setUrgency('Medium');
     setStartInput(formatDateTimeLocal(start));
     setEndInput(formatDateTimeLocal(safeEnd));
     setMemo('');
     setError(null);
     setSuccessMessage(null);
-  }, [open, defaultRange]);
+  }, [open, defaultRange, defaultInterruptCategory]);
 
   const handleClose = () => {
     onOpenChange(false);
   };
+
+  const handleChangeEventType = (nextType: Event['type']) => {
+    setEventType(nextType);
+    if (nextType === 'task') {
+      setCategoryId('none');
+      setWho('');
+      setInterruptType(defaultInterruptCategory);
+      setBreakType('short');
+      setUrgency('Medium');
+      setMyTaskId('none');
+    } else if (nextType === 'interrupt') {
+      setCategoryId('none');
+      setBreakType('short');
+      setUrgency('Medium');
+      setInterruptType(defaultInterruptCategory);
+      setMyTaskId('none');
+    } else if (nextType === 'break') {
+      setCategoryId('none');
+      setWho('');
+      setInterruptType(defaultInterruptCategory);
+      setBreakType('short');
+      setUrgency('Medium');
+      setMyTaskId('none');
+    }
+  };
+
+  useEffect(() => {
+    if (eventType === 'interrupt' && !interruptType) {
+      setInterruptType(defaultInterruptCategory);
+    }
+  }, [eventType, interruptType, defaultInterruptCategory]);
 
   const parseDateTime = (value: string): number | null => {
     if (!value) return null;
@@ -156,38 +205,31 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
         end,
       };
 
-      const finalLabel = label.trim();
+      const draft: EventDraft = {
+        type: eventType,
+        label: label.trim(),
+        memo: memo.trim(),
+        categoryId: categoryId === 'none' ? null : categoryId,
+        who: who.trim(),
+        interruptType: interruptType.trim(),
+        breakType,
+        urgency,
+        myTaskId: eventType === 'task' && myTaskId !== 'none' ? myTaskId : null,
+      };
 
-      if (eventType === 'task') {
-        const finalCategory = categoryId === 'none' ? undefined : categoryId;
-        actions.addEvent({
-          ...baseEvent,
-          label: finalLabel || undefined,
-          categoryId: finalCategory,
-          memo: memo.trim() || undefined,
-        });
-      } else if (eventType === 'interrupt') {
-        const finalWho = who.trim();
-        const finalType = interruptType.trim();
-        actions.addEvent({
-          ...baseEvent,
-          label: finalLabel || undefined,
-          who: finalWho || undefined,
-          interruptType: finalType || undefined,
-          memo: memo.trim() || undefined,
-        });
-        if (finalWho) {
-          actions.addInterruptContact(finalWho);
-        }
-      } else {
+      const newEvent = createEventFromDraft(baseEvent, draft, myTasks);
+
+      if (eventType === 'break') {
         const durationMinutes = Math.round((end - start) / 60000);
-        actions.addEvent({
-          ...baseEvent,
-          label: label.trim() || undefined,
-          breakType,
-          breakDurationMinutes: durationMinutes,
-          memo: memo.trim() || undefined,
-        });
+        newEvent.breakDurationMinutes = durationMinutes;
+      }
+
+      actions.addEvent(newEvent);
+
+      if (eventType === 'interrupt') {
+        if (draft.who) {
+          actions.addInterruptContact(draft.who);
+        }
       }
 
       setSuccessMessage('イベントを追加しました。');
@@ -213,7 +255,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>イベント種類</Label>
-            <Select value={eventType} onValueChange={value => setEventType(value as Event['type'])}>
+          <Select value={eventType} onValueChange={value => handleChangeEventType(value as Event['type'])}>
               <SelectTrigger>
                 <SelectValue placeholder="種類を選択" />
               </SelectTrigger>
@@ -292,6 +334,25 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
             </div>
           )}
 
+          {eventType === 'task' && (
+            <div className="grid gap-2">
+              <Label>紐付けタスク</Label>
+              <Select value={myTaskId} onValueChange={value => setMyTaskId(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="タスクを選択" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  <SelectItem value="none">紐付け無し</SelectItem>
+                  {myTasks.map(task => (
+                    <SelectItem key={task.id} value={task.id}>
+                      {task.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {eventType === 'interrupt' && (
             <div className="space-y-3">
               <div className="grid gap-2">
@@ -305,26 +366,55 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
                 {interruptContacts.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {interruptContacts.map(contact => (
-                      <button
+                      <Button
                         key={contact}
                         type="button"
-                        className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs text-slate-600 transition hover:border-slate-300 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 rounded-full border px-3 text-xs"
                         onClick={() => setWho(contact)}
                       >
                         {contact}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-slate-500 dark:text-slate-300">要件カテゴリ</Label>
+                <div className="flex flex-wrap gap-2">
+                  {interruptCategories.map(item => (
+                    <Button
+                      key={item.name}
+                      type="button"
+                      size="sm"
+                      variant={interruptType === item.name ? 'default' : 'outline'}
+                      className={interruptType === item.name ? 'text-white' : ''}
+                      style={interruptType === item.name ? { backgroundColor: item.color, borderColor: item.color } : {}}
+                      onClick={() => setInterruptType(item.name)}
+                    >
+                      {item.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="interruptType">種類 (任意)</Label>
-                <Input
-                  id="interruptType"
-                  placeholder="内容の種類"
-                  value={interruptType}
-                  onChange={event => setInterruptType(event.target.value)}
-                />
+                <Label className="text-xs font-medium text-slate-500 dark:text-slate-300">緊急度</Label>
+                <Select
+                  value={urgency}
+                  onValueChange={value => setUrgency(value as NonNullable<Event['urgency']>)}
+                >
+                  <SelectTrigger className="w-[160px] text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">低</SelectItem>
+                    <SelectItem value="Medium">中</SelectItem>
+                    <SelectItem value="High">高</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

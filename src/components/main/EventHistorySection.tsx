@@ -3,11 +3,13 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import EventHistoryItem, { EventEditDraft } from '@/components/EventHistoryItem';
+import EventHistoryItem from '@/components/EventHistoryItem';
 import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
 import { useCategories, useIsCategoryEnabled, useStoreActions } from '@/hooks/useStoreSelectors';
 import useEventsStore from '@/store/useEventsStore';
+import { EventDraft, createDraftFromEvent, applyDraftToEvent } from '@/store/eventDraftUtils';
+import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
@@ -30,7 +32,7 @@ export default function EventHistorySection({
 }: EventHistorySectionProps) {
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [editingDraft, setEditingDraft] = useState<EventEditDraft | null>(null);
+  const [editingDraft, setEditingDraft] = useState<EventDraft | null>(null);
 
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
@@ -38,29 +40,19 @@ export default function EventHistorySection({
   const interruptContacts = useEventsStore(state => state.interruptContacts);
   const interruptSubjects = useEventsStore(state => state.interruptSubjects);
   const interruptCategorySettings = useEventsStore(state => state.interruptCategorySettings);
-  const interruptCategoryLabels = [
-    interruptCategorySettings.category1,
-    interruptCategorySettings.category2,
-    interruptCategorySettings.category3,
-    interruptCategorySettings.category4,
-    interruptCategorySettings.category5,
-    interruptCategorySettings.category6,
+  const myTasks = useEventsStore(state => state.myTasks);
+  const interruptCategories = [
+    { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
+    { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
+    { name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
+    { name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
+    { name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
+    { name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
   ];
-
-  const buildDraftFromEvent = (event: Event): EventEditDraft => ({
-    type: event.type,
-    label: event.label ?? '',
-    memo: event.memo ?? '',
-    categoryId: event.categoryId ?? null,
-    who: event.who ?? '',
-    interruptType: event.interruptType ?? '',
-    breakType: (event.breakType ?? 'short') as NonNullable<Event['breakType']>,
-    urgency: event.urgency ?? 'Medium',
-  });
 
   const handleStartEdit = (event: Event) => {
     setEditingEventId(event.id);
-    setEditingDraft(buildDraftFromEvent(event));
+    setEditingDraft(createDraftFromEvent(event));
   };
 
   const handleCancelEdit = () => {
@@ -68,7 +60,7 @@ export default function EventHistorySection({
     setEditingDraft(null);
   };
 
-  const handleDraftChange = <K extends keyof EventEditDraft>(field: K, value: EventEditDraft[K]) => {
+  const handleDraftChange = <K extends keyof EventDraft>(field: K, value: EventDraft[K]) => {
     setEditingDraft(prev => {
       if (!prev) return prev;
       if (field === 'type') {
@@ -80,7 +72,9 @@ export default function EventHistorySection({
             categoryId: prev.categoryId ?? null,
             who: '',
             interruptType: '',
-          } as EventEditDraft;
+            urgency: 'Medium',
+            myTaskId: prev.myTaskId ?? null,
+          } as EventDraft;
         }
         if (nextType === 'interrupt') {
           return {
@@ -89,7 +83,9 @@ export default function EventHistorySection({
             categoryId: null,
             who: prev.who,
             interruptType: prev.interruptType,
-          } as EventEditDraft;
+            urgency: prev.urgency,
+            myTaskId: null,
+          } as EventDraft;
         }
         return {
           ...prev,
@@ -97,28 +93,30 @@ export default function EventHistorySection({
           categoryId: null,
           who: '',
           interruptType: '',
-          breakType: (prev.breakType || 'short') as NonNullable<Event['breakType']>,
-        } as EventEditDraft;
+          urgency: 'Medium',
+          breakType: prev.breakType || 'short',
+          myTaskId: null,
+        } as EventDraft;
       }
 
       if (field === 'breakType') {
         return {
           ...prev,
           breakType: (value || 'short') as NonNullable<Event['breakType']>,
-        } as EventEditDraft;
+        } as EventDraft;
       }
 
       if (field === 'categoryId') {
         return {
           ...prev,
           categoryId: value,
-        } as EventEditDraft;
+        } as EventDraft;
       }
 
       return {
         ...prev,
         [field]: value,
-      } as EventEditDraft;
+      } as EventDraft;
     });
   };
 
@@ -133,59 +131,7 @@ export default function EventHistorySection({
       return;
     }
 
-    const trimmedLabel = editingDraft.label.trim();
-    const trimmedMemo = editingDraft.memo.trim();
-
-    let nextEvent: Event = {
-      ...targetEvent,
-      type: editingDraft.type,
-      label: trimmedLabel ? trimmedLabel : undefined,
-      memo: trimmedMemo ? trimmedMemo : undefined,
-      urgency: editingDraft.type === 'interrupt' ? editingDraft.urgency : undefined,
-    };
-
-    if (editingDraft.type === 'task') {
-      nextEvent = {
-        ...nextEvent,
-        categoryId: editingDraft.categoryId ?? undefined,
-        who: undefined,
-        interruptType: undefined,
-        breakType: undefined,
-        urgency: undefined,
-      };
-    }
-
-    if (editingDraft.type === 'interrupt') {
-      const trimmedWho = editingDraft.who.trim();
-      const trimmedInterrupt = editingDraft.interruptType.trim();
-      nextEvent = {
-        ...nextEvent,
-        categoryId: undefined,
-        who: trimmedWho ? trimmedWho : undefined,
-        interruptType: trimmedInterrupt ? trimmedInterrupt : undefined,
-        breakType: undefined,
-      };
-    }
-
-    if (editingDraft.type === 'break') {
-      nextEvent = {
-        ...nextEvent,
-        categoryId: undefined,
-        who: undefined,
-        interruptType: undefined,
-        breakType: editingDraft.breakType || undefined,
-        urgency: undefined,
-      };
-    }
-
-    if (nextEvent.type !== 'task' && nextEvent.meta?.myTaskId) {
-      const { myTaskId, ...rest } = nextEvent.meta;
-      nextEvent = {
-        ...nextEvent,
-        meta: Object.keys(rest).length > 0 ? rest : undefined,
-      };
-    }
-
+    const nextEvent = applyDraftToEvent(targetEvent, editingDraft, myTasks);
     actions.updateEvent(nextEvent);
     handleCancelEdit();
   };
@@ -290,7 +236,8 @@ export default function EventHistorySection({
                 isCategoryEnabled={isCategoryEnabled}
                 interruptContacts={interruptContacts}
                 interruptSubjects={interruptSubjects}
-                interruptCategoryLabels={interruptCategoryLabels}
+                interruptCategories={interruptCategories}
+                tasks={myTasks}
               />
             ))}
           </ul>

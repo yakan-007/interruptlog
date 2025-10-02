@@ -862,9 +862,25 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       let resumedEvent: Event | null = null;
 
       if (currentEventId) {
-        const interruptToRemove = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
-        if (interruptToRemove) {
-          updatedEvents = events.filter(event => event.id !== interruptToRemove.id);
+        const interruptToCancel = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
+        if (interruptToCancel) {
+          const now = Date.now();
+          const duration = now - interruptToCancel.start;
+          const placeholderEvent: Event | null = duration > 0
+            ? {
+                id: uuidv4(),
+                type: 'task',
+                label: '未分類の時間',
+                start: interruptToCancel.start,
+                end: now,
+                meta: { isUnknownActivity: true },
+              }
+            : null;
+
+          updatedEvents = events.filter(event => event.id !== interruptToCancel.id);
+          if (placeholderEvent) {
+            updatedEvents = [...updatedEvents, placeholderEvent].sort((a, b) => a.start - b.start);
+          }
         }
       }
 
