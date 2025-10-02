@@ -3,10 +3,11 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import EventHistoryItem from '@/components/EventHistoryItem';
+import EventHistoryItem, { EventEditDraft } from '@/components/EventHistoryItem';
 import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
 import { useCategories, useIsCategoryEnabled, useStoreActions } from '@/hooks/useStoreSelectors';
+import useEventsStore from '@/store/useEventsStore';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
@@ -28,123 +29,188 @@ export default function EventHistorySection({
   onAddPastEvent,
 }: EventHistorySectionProps) {
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
-  const [editingMemoEventId, setEditingMemoEventId] = useState<string | null>(null);
-  const [memoText, setMemoText] = useState('');
-  const [editingLabelEventId, setEditingLabelEventId] = useState<string | null>(null);
-  const [labelText, setLabelText] = useState('');
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState<EventEditDraft | null>(null);
+
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
   const actions = useStoreActions();
+  const interruptContacts = useEventsStore(state => state.interruptContacts);
+  const interruptSubjects = useEventsStore(state => state.interruptSubjects);
+  const interruptCategorySettings = useEventsStore(state => state.interruptCategorySettings);
+  const interruptCategoryLabels = [
+    interruptCategorySettings.category1,
+    interruptCategorySettings.category2,
+    interruptCategorySettings.category3,
+    interruptCategorySettings.category4,
+    interruptCategorySettings.category5,
+    interruptCategorySettings.category6,
+  ];
 
-  const handleStartEditMemo = (eventId: string, currentMemo?: string) => {
-    setEditingMemoEventId(eventId);
-    setMemoText(currentMemo ?? '');
+  const buildDraftFromEvent = (event: Event): EventEditDraft => ({
+    type: event.type,
+    label: event.label ?? '',
+    memo: event.memo ?? '',
+    categoryId: event.categoryId ?? null,
+    who: event.who ?? '',
+    interruptType: event.interruptType ?? '',
+    breakType: (event.breakType ?? 'short') as NonNullable<Event['breakType']>,
+    urgency: event.urgency ?? 'Medium',
+  });
+
+  const handleStartEdit = (event: Event) => {
+    setEditingEventId(event.id);
+    setEditingDraft(buildDraftFromEvent(event));
   };
 
-  const handleCancelEditMemo = () => {
-    setEditingMemoEventId(null);
-    setMemoText('');
+  const handleCancelEdit = () => {
+    setEditingEventId(null);
+    setEditingDraft(null);
   };
 
-  const handleSaveMemo = (eventId: string) => {
-    const targetEvent = events.find(event => event.id === eventId);
-    if (!targetEvent) {
-      handleCancelEditMemo();
+  const handleDraftChange = <K extends keyof EventEditDraft>(field: K, value: EventEditDraft[K]) => {
+    setEditingDraft(prev => {
+      if (!prev) return prev;
+      if (field === 'type') {
+        const nextType = value as Event['type'];
+        if (nextType === 'task') {
+          return {
+            ...prev,
+            type: 'task',
+            categoryId: prev.categoryId ?? null,
+            who: '',
+            interruptType: '',
+          } as EventEditDraft;
+        }
+        if (nextType === 'interrupt') {
+          return {
+            ...prev,
+            type: 'interrupt',
+            categoryId: null,
+            who: prev.who,
+            interruptType: prev.interruptType,
+          } as EventEditDraft;
+        }
+        return {
+          ...prev,
+          type: 'break',
+          categoryId: null,
+          who: '',
+          interruptType: '',
+          breakType: (prev.breakType || 'short') as NonNullable<Event['breakType']>,
+        } as EventEditDraft;
+      }
+
+      if (field === 'breakType') {
+        return {
+          ...prev,
+          breakType: (value || 'short') as NonNullable<Event['breakType']>,
+        } as EventEditDraft;
+      }
+
+      if (field === 'categoryId') {
+        return {
+          ...prev,
+          categoryId: value,
+        } as EventEditDraft;
+      }
+
+      return {
+        ...prev,
+        [field]: value,
+      } as EventEditDraft;
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingEventId || !editingDraft) {
       return;
     }
 
-    const trimmedMemo = memoText.trim();
-    actions.updateEvent({
+    const targetEvent = events.find(event => event.id === editingEventId);
+    if (!targetEvent) {
+      handleCancelEdit();
+      return;
+    }
+
+    const trimmedLabel = editingDraft.label.trim();
+    const trimmedMemo = editingDraft.memo.trim();
+
+    let nextEvent: Event = {
       ...targetEvent,
+      type: editingDraft.type,
+      label: trimmedLabel ? trimmedLabel : undefined,
       memo: trimmedMemo ? trimmedMemo : undefined,
-    });
-    handleCancelEditMemo();
-  };
+      urgency: editingDraft.type === 'interrupt' ? editingDraft.urgency : undefined,
+    };
 
-  const handleStartEditLabel = (eventId: string, currentLabel?: string) => {
-    setEditingLabelEventId(eventId);
-    setLabelText(currentLabel ?? '');
-  };
-
-  const handleCancelEditLabel = () => {
-    setEditingLabelEventId(null);
-    setLabelText('');
-  };
-
-  const handleSaveLabel = (eventId: string) => {
-    const targetEvent = events.find(event => event.id === eventId);
-    if (!targetEvent) {
-      handleCancelEditLabel();
-      return;
+    if (editingDraft.type === 'task') {
+      nextEvent = {
+        ...nextEvent,
+        categoryId: editingDraft.categoryId ?? undefined,
+        who: undefined,
+        interruptType: undefined,
+        breakType: undefined,
+        urgency: undefined,
+      };
     }
 
-    const trimmed = labelText.trim();
-    const nextLabel = trimmed.length > 0 ? trimmed : undefined;
-    if (targetEvent.label === nextLabel) {
-      handleCancelEditLabel();
-      return;
+    if (editingDraft.type === 'interrupt') {
+      const trimmedWho = editingDraft.who.trim();
+      const trimmedInterrupt = editingDraft.interruptType.trim();
+      nextEvent = {
+        ...nextEvent,
+        categoryId: undefined,
+        who: trimmedWho ? trimmedWho : undefined,
+        interruptType: trimmedInterrupt ? trimmedInterrupt : undefined,
+        breakType: undefined,
+      };
     }
 
-    actions.updateEvent({
-      ...targetEvent,
-      label: nextLabel,
-    });
-    handleCancelEditLabel();
+    if (editingDraft.type === 'break') {
+      nextEvent = {
+        ...nextEvent,
+        categoryId: undefined,
+        who: undefined,
+        interruptType: undefined,
+        breakType: editingDraft.breakType || undefined,
+        urgency: undefined,
+      };
+    }
+
+    if (nextEvent.type !== 'task' && nextEvent.meta?.myTaskId) {
+      const { myTaskId, ...rest } = nextEvent.meta;
+      nextEvent = {
+        ...nextEvent,
+        meta: Object.keys(rest).length > 0 ? rest : undefined,
+      };
+    }
+
+    actions.updateEvent(nextEvent);
+    handleCancelEdit();
   };
 
-  const handleUpdateCategory = (eventId: string, categoryId: string | null) => {
-    const targetEvent = events.find(event => event.id === eventId);
-    if (!targetEvent) {
-      return;
-    }
-
-    const nextCategoryId = categoryId ?? undefined;
-    if (targetEvent.categoryId === nextCategoryId) {
-      return;
-    }
-
-    actions.updateEvent({
-      ...targetEvent,
-      categoryId: nextCategoryId,
-    });
-  };
-
-  // Find the last completed event
-  const lastCompletedEvent = useMemo(() => 
-    [...events].reverse().find(event => event.end !== undefined),
-    [events]
+  // Last completed event for time editing guard
+  const lastCompletedEvent = useMemo(
+    () => [...events].reverse().find(event => event.end !== undefined),
+    [events],
   );
 
-  // Filter events based on selected time period
   const filteredEvents = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     switch (eventFilter) {
       case 'today':
-        return events.filter(event => {
-          const eventDate = new Date(event.start);
-          return eventDate >= today;
-        });
-        
+        return events.filter(event => new Date(event.start) >= today);
       case 'today-yesterday':
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
-        
-        return events.filter(event => {
-          const eventDate = new Date(event.start);
-          return eventDate >= yesterday;
-        });
-        
+        return events.filter(event => new Date(event.start) >= yesterday);
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
-        return events.filter(event => {
-          const eventDate = new Date(event.start);
-          return eventDate >= weekAgo;
-        });
-        
+        return events.filter(event => new Date(event.start) >= weekAgo);
       case 'all':
       default:
         return events;
@@ -161,11 +227,15 @@ export default function EventHistorySection({
 
   const getFilterLabel = (filter: EventFilter) => {
     switch (filter) {
-      case 'today': return '本日のみ';
-      case 'today-yesterday': return '本日+昨日';
-      case 'week': return '過去1週間';
-      case 'all': return 'すべて';
-      default: return '';
+      case 'today':
+        return '本日のみ';
+      case 'today-yesterday':
+        return '本日+昨日';
+      case 'week':
+        return '過去1週間';
+      case 'all':
+      default:
+        return 'すべて';
     }
   };
 
@@ -207,24 +277,20 @@ export default function EventHistorySection({
               <EventHistoryItem
                 key={event.id}
                 event={event}
-                editingMemoEventId={editingMemoEventId}
-                memoText={memoText}
-                editingLabelEventId={editingLabelEventId}
-                labelText={labelText}
-                onStartEditMemo={handleStartEditMemo}
-                onSaveMemo={handleSaveMemo}
-                onCancelEditMemo={handleCancelEditMemo}
-                onSetMemoText={setMemoText}
-                onStartEditLabel={handleStartEditLabel}
-                onSaveLabel={handleSaveLabel}
-                onCancelEditLabel={handleCancelEditLabel}
-                onSetLabelText={setLabelText}
-                onChangeCategory={handleUpdateCategory}
+                isEditing={editingEventId === event.id}
+                draft={editingEventId === event.id ? editingDraft : null}
+                onStartEdit={handleStartEdit}
+                onChangeDraft={handleDraftChange}
+                onCancelEdit={handleCancelEdit}
+                onSaveEdit={handleSaveEdit}
                 formatEventTime={formatEventTime}
                 onEditEventTime={onEditEventTime}
                 canEditTime={event.id === lastCompletedEvent?.id}
                 categories={categories}
                 isCategoryEnabled={isCategoryEnabled}
+                interruptContacts={interruptContacts}
+                interruptSubjects={interruptSubjects}
+                interruptCategoryLabels={interruptCategoryLabels}
               />
             ))}
           </ul>
@@ -245,7 +311,7 @@ export default function EventHistorySection({
         </>
       ) : (
         <p className="text-gray-500">
-          {eventFilter === 'today' ? '本日' : 
+          {eventFilter === 'today' ? '本日' :
            eventFilter === 'today-yesterday' ? '本日・昨日' :
            eventFilter === 'week' ? '過去1週間' : ''}
           のイベントが記録されていません。

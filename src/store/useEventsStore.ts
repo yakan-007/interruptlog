@@ -267,13 +267,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       if (payload.who) {
         get().actions.addInterruptContact(payload.who);
       }
-      if (payload.label) {
-        const normalizedLabel = payload.label.trim();
-        if (normalizedLabel && normalizedLabel !== 'Interrupt') {
-          get().actions.addInterruptSubject(normalizedLabel);
-        }
-      }
-
       const newEvent: Event = {
         id: uuidv4(),
         type: 'interrupt',
@@ -301,12 +294,6 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           };
           if (data.who) {
             get().actions.addInterruptContact(data.who);
-          }
-          if (data.label) {
-            const normalizedLabel = data.label.trim();
-            if (normalizedLabel && normalizedLabel !== 'Interrupt') {
-              get().actions.addInterruptSubject(normalizedLabel);
-            }
           }
           get().actions.updateEvent(updatedEvent);
         } else {
@@ -871,10 +858,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
     },
     cancelCurrentInterruptAndResumeTask: () => {
       const { events, currentEventId, previousTaskIdBeforeInterrupt, myTasks, isCategoryEnabled } = get();
+      let updatedEvents = events;
+      let resumedEvent: Event | null = null;
+
       if (currentEventId) {
-        const interruptToEnd = events.find(e => e.id === currentEventId && e.type === 'interrupt');
-        if (interruptToEnd && !interruptToEnd.end) {
-          get().actions.updateEvent({ ...interruptToEnd, end: Date.now() });
+        const interruptToRemove = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
+        if (interruptToRemove) {
+          updatedEvents = events.filter(event => event.id !== interruptToRemove.id);
         }
       }
 
@@ -882,23 +872,27 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const taskEventToResume = events.find(e => e.id === previousTaskIdBeforeInterrupt && e.type === 'task');
         if (taskEventToResume) {
           const myTaskDetails = myTasks.find(mt => mt.id === taskEventToResume.meta?.myTaskId);
-          const categoryId = taskEventToResume.categoryId || getCategoryFromTask(taskEventToResume.meta?.myTaskId, myTasks, isCategoryEnabled);
-          const newResumedTaskEvent: Event = {
+          const derivedCategoryId = taskEventToResume.categoryId
+            || getCategoryFromTask(taskEventToResume.meta?.myTaskId, myTasks, isCategoryEnabled);
+
+          resumedEvent = {
             id: uuidv4(),
             type: 'task',
             label: taskEventToResume.label || myTaskDetails?.name || 'Resumed Task',
             start: Date.now(),
-            categoryId,
+            categoryId: derivedCategoryId,
             meta: taskEventToResume.meta,
           };
-          get().actions.addEvent(newResumedTaskEvent);
-          set({ currentEventId: newResumedTaskEvent.id, previousTaskIdBeforeInterrupt: null });
-        } else {
-           set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
+
+          updatedEvents = [...updatedEvents, resumedEvent].sort((a, b) => a.start - b.start);
         }
-      } else {
-        set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
       }
+
+      set({
+        events: updatedEvents,
+        currentEventId: resumedEvent ? resumedEvent.id : null,
+        previousTaskIdBeforeInterrupt: null,
+      });
       get().actions._persistEventsState();
     },
     updateMyTaskCategory: (id: string, categoryId: string | undefined) => {

@@ -179,9 +179,6 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
         if (finalWho) {
           actions.addInterruptContact(finalWho);
         }
-        if (finalLabel && finalLabel !== 'Interrupt') {
-          actions.addInterruptSubject(finalLabel);
-        }
       } else {
         const durationMinutes = Math.round((end - start) / 60000);
         actions.addEvent({
