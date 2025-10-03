@@ -318,7 +318,11 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
           {eventType === 'task' && isCategoryEnabled && (
             <div className="grid gap-2">
               <Label>カテゴリ</Label>
-              <Select value={categoryId} onValueChange={value => setCategoryId(value)}>
+              <Select
+                value={categoryId}
+                onValueChange={value => setCategoryId(value)}
+                disabled={myTaskId !== 'none'}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="カテゴリを選択" />
                 </SelectTrigger>

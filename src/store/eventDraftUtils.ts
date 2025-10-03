@@ -27,14 +27,17 @@ export const createDraftFromEvent = (event: Event): EventDraft => ({
 
 const sanitizeMeta = (event: Event, targetType: Event['type']): Event => {
   const base: Event = { ...event };
-  if (targetType === 'task') {
-    return base;
+  const meta = base.meta ? { ...base.meta } : undefined;
+
+  if (meta && 'isUnknownActivity' in meta) {
+    delete meta.isUnknownActivity;
   }
 
-  if (base.meta?.myTaskId) {
-    const { myTaskId, ...rest } = base.meta;
-    base.meta = Object.keys(rest).length > 0 ? rest : undefined;
+  if (targetType !== 'task' && meta && 'myTaskId' in meta) {
+    delete meta.myTaskId;
   }
+
+  base.meta = meta && Object.keys(meta).length > 0 ? meta : undefined;
 
   if (targetType === 'interrupt') {
     delete (base as any).breakType;
@@ -70,10 +73,15 @@ export const applyDraftToEvent = (
         interruptType: undefined,
         urgency: undefined,
         breakType: undefined,
-        meta: {
-          ...nextEvent.meta,
-          ...(assignedTask ? { myTaskId: assignedTask.id } : {}),
-        },
+        meta: (() => {
+          const meta = nextEvent.meta ? { ...nextEvent.meta } : {};
+          if (assignedTask) {
+            meta.myTaskId = assignedTask.id;
+          } else if ('myTaskId' in meta) {
+            delete meta.myTaskId;
+          }
+          return Object.keys(meta).length > 0 ? meta : undefined;
+        })(),
       };
       if (!draft.label.trim() && assignedTask) {
         nextEvent.label = assignedTask.name;
