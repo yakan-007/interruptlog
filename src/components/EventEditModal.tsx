@@ -7,17 +7,27 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Clock } from 'lucide-react';
-import { Event, Category } from '@/types';
+import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import useEventsStore from '@/store/useEventsStore';
 import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useCategories, useInterruptCategorySettings, useIsCategoryEnabled } from '@/hooks/useStoreSelectors';
 
 interface EventEditModalProps {
   event: Event | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => void;
+  onSave: (
+    eventId: string,
+    newEndTime: number,
+    gapActivityName?: string,
+    newEventType?: Event['type'],
+    newLabel?: string,
+    newCategoryId?: string,
+    interruptType?: string,
+    createGapEvent?: boolean
+  ) => void;
   nextEvent?: Event;
 }
 
@@ -28,8 +38,10 @@ export default function EventEditModal({
   onSave,
   nextEvent
 }: EventEditModalProps) {
-  const { categories, isCategoryEnabled, interruptCategorySettings } = useEventsStore();
-  const [endTimeInput, setEndTimeInput] = useState('');
+  const categories = useCategories();
+  const isCategoryEnabled = useIsCategoryEnabled();
+  const interruptCategorySettings = useInterruptCategorySettings();
+  const [endDateTimeInput, setEndDateTimeInput] = useState('');
   const [validationError, setValidationError] = useState('');
   const [previewGap, setPreviewGap] = useState<{ start: number; end: number } | null>(null);
   const [gapActivityName, setGapActivityName] = useState('不明なアクティビティ');
@@ -38,18 +50,22 @@ export default function EventEditModal({
   const [eventCategoryId, setEventCategoryId] = useState<string>('none');
   const [interruptType, setInterruptType] = useState<string>('');
   const [showSmallGapNotice, setShowSmallGapNotice] = useState(false);
+  const [shouldCreateGap, setShouldCreateGap] = useState(true);
+
+  const toDateTimeLocalValue = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(timestamp - tzOffset).toISOString().slice(0, 16);
+  };
 
   useEffect(() => {
     if (event && event.end) {
       try {
-        const endDate = new Date(event.end);
-        if (isNaN(endDate.getTime())) {
+        if (Number.isNaN(new Date(event.end).getTime())) {
           console.error('[EventEditModal] Invalid date:', event.end);
           return;
         }
-        const hours = endDate.getHours().toString().padStart(2, '0');
-        const minutes = endDate.getMinutes().toString().padStart(2, '0');
-        setEndTimeInput(`${hours}:${minutes}`);
+        setEndDateTimeInput(toDateTimeLocalValue(event.end));
         setEventType(event.type || 'task');
         setEventLabel(event.label || '');
         setEventCategoryId(event.categoryId || 'none');
@@ -57,12 +73,13 @@ export default function EventEditModal({
         setValidationError('');
         setPreviewGap(null);
         setShowSmallGapNotice(false);
+        setShouldCreateGap(true);
       } catch (error) {
         console.error('[EventEditModal] Error in useEffect:', error);
       }
     } else {
       // Reset state when event is null
-      setEndTimeInput('');
+      setEndDateTimeInput('');
       setEventType('task');
       setEventLabel('');
       setEventCategoryId('none');
@@ -70,12 +87,13 @@ export default function EventEditModal({
       setValidationError('');
       setPreviewGap(null);
       setShowSmallGapNotice(false);
+      setShouldCreateGap(true);
     }
   }, [event]);
 
-  const handleTimeChange = (value: string) => {
+  const handleDateTimeChange = (value: string) => {
     try {
-      setEndTimeInput(value);
+      setEndDateTimeInput(value);
       setValidationError('');
       setPreviewGap(null);
       setShowSmallGapNotice(false);
@@ -84,55 +102,53 @@ export default function EventEditModal({
         return;
       }
 
-    // Parse time input
-    const timeParts = value.split(':');
-    if (timeParts.length !== 2) {
-      setValidationError('時刻は HH:MM 形式で入力してください');
-      return;
-    }
-
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1], 10);
-
-    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-      setValidationError('有効な時刻を入力してください');
-      return;
-    }
-
-    // Create new end time
-    const newEndDate = new Date(event.end);
-    newEndDate.setHours(hours, minutes, 0, 0);
-    const newEndTime = newEndDate.getTime();
-
-    // Validate
-    if (newEndTime <= event.start) {
-      setValidationError('終了時刻は開始時刻より後である必要があります');
-      return;
-    }
-
-    if (newEndTime > Date.now()) {
-      setValidationError('終了時刻は現在時刻より前である必要があります');
-      return;
-    }
-
-    // Check for overlap with next event
-    if (nextEvent && newEndTime > nextEvent.start) {
-      setValidationError('次のイベントと重複します');
-      return;
-    }
-
-    // Show gap preview if reducing end time by at least 1 minute
-    if (newEndTime < event.end) {
-      if ((event.end - newEndTime) >= 60000) {
-        setPreviewGap({ start: newEndTime, end: event.end });
-      } else {
-        // Show notice for small gaps (less than 1 minute)
-        setShowSmallGapNotice(true);
+      if (!value) {
+        setValidationError('終了日時を入力してください');
+        return;
       }
-    }
+
+      const parsedDate = new Date(value);
+      const newEndTime = parsedDate.getTime();
+
+      if (Number.isNaN(newEndTime)) {
+        setValidationError('有効な日時を入力してください');
+        return;
+      }
+
+      if (newEndTime <= event.start) {
+        setValidationError('終了日時は開始時刻より後である必要があります');
+        return;
+      }
+
+      if (newEndTime > Date.now()) {
+        setValidationError('終了日時は現在より前である必要があります');
+        return;
+      }
+
+      // Check for overlap with next event
+      if (nextEvent && newEndTime > nextEvent.start) {
+        setValidationError('次のイベントと重複します');
+        return;
+      }
+
+      // Show gap preview if reducing end time by at least 1 minute
+      if (newEndTime < event.end) {
+        if ((event.end - newEndTime) >= 60000) {
+          setPreviewGap({ start: newEndTime, end: event.end });
+          setShouldCreateGap(true);
+        } else {
+          // Show notice for small gaps (less than 1 minute)
+          setShowSmallGapNotice(true);
+          setPreviewGap(null);
+          setShouldCreateGap(true);
+        }
+      } else {
+        setPreviewGap(null);
+        setShouldCreateGap(true);
+      }
     } catch (error) {
-      console.error('[EventEditModal] Error in handleTimeChange:', error);
-      setValidationError('時刻の処理中にエラーが発生しました');
+      console.error('[EventEditModal] Error in handleDateTimeChange:', error);
+      setValidationError('日時の処理中にエラーが発生しました');
     }
   };
 
@@ -142,21 +158,37 @@ export default function EventEditModal({
         return;
       }
 
-      const timeParts = endTimeInput.split(':');
-      const hours = parseInt(timeParts[0], 10);
-      const minutes = parseInt(timeParts[1], 10);
-
-      if (isNaN(hours) || isNaN(minutes)) {
-        setValidationError('有効な時刻を入力してください');
+      if (!endDateTimeInput) {
+        setValidationError('終了日時を入力してください');
         return;
       }
 
-      const newEndDate = new Date(event.end);
-      newEndDate.setHours(hours, minutes, 0, 0);
-      const newEndTime = newEndDate.getTime();
+      const parsedDateTime = new Date(endDateTimeInput);
+      const newEndTime = parsedDateTime.getTime();
 
+      if (Number.isNaN(newEndTime)) {
+        setValidationError('有効な日時を入力してください');
+        return;
+      }
+
+      if (newEndTime <= event.start) {
+        setValidationError('終了日時は開始時刻より後である必要があります');
+        return;
+      }
+
+      if (newEndTime > Date.now()) {
+        setValidationError('終了日時は現在より前である必要があります');
+        return;
+      }
+
+      if (nextEvent && newEndTime > nextEvent.start) {
+        setValidationError('次のイベントと重複します');
+        return;
+      }
+
+      const canCreateGap = newEndTime < event.end && (event.end - newEndTime) >= 60000;
       // Pass gap activity name only if we're reducing time by at least 1 minute
-      const gapName = newEndTime < event.end && (event.end - newEndTime) >= 60000 ? gapActivityName : undefined;
+      const gapName = canCreateGap && shouldCreateGap ? gapActivityName : undefined;
       // Pass new event type if it has changed
       const newType = eventType !== event.type ? eventType : undefined;
       // Pass new label if it has changed
@@ -168,7 +200,16 @@ export default function EventEditModal({
       // Pass interrupt type if event is interrupt type
       const newInterruptType = eventType === 'interrupt' ? interruptType : undefined;
       
-      onSave(event.id, newEndTime, gapName, newType, newLabel, newCategoryId, newInterruptType);
+      onSave(
+        event.id,
+        newEndTime,
+        gapName,
+        newType,
+        newLabel,
+        newCategoryId,
+        newInterruptType,
+        canCreateGap ? shouldCreateGap : undefined,
+      );
       onClose();
     } catch (error) {
       console.error('[EventEditModal] Error in handleSave:', error);
@@ -191,7 +232,7 @@ export default function EventEditModal({
         <DialogHeader>
           <DialogTitle>イベントを編集</DialogTitle>
           <DialogDescription>
-            イベント名、終了時刻、イベントタイプ{isCategoryEnabled ? '、カテゴリ' : ''}を修正できます。開始時刻は変更できません。
+            イベント名、終了日時、イベントタイプ{isCategoryEnabled ? '、カテゴリ' : ''}を修正できます。開始時刻は変更できません。
           </DialogDescription>
         </DialogHeader>
         
@@ -274,14 +315,15 @@ export default function EventEditModal({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="endTime">終了時刻</Label>
+            <Label htmlFor="endDateTime">終了日時</Label>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-500" />
               <Input
-                id="endTime"
-                type="time"
-                value={endTimeInput}
-                onChange={(e) => handleTimeChange(e.target.value)}
+                id="endDateTime"
+                type="datetime-local"
+                value={endDateTimeInput}
+                max={toDateTimeLocalValue(Date.now())}
+                onChange={(e) => handleDateTimeChange(e.target.value)}
                 className="flex-1"
               />
             </div>
@@ -315,17 +357,28 @@ export default function EventEditModal({
                   </p>
                 </AlertDescription>
               </Alert>
-              
-              <div className="space-y-2">
-                <Label htmlFor="gapActivityName">空き時間のアクティビティ名</Label>
-                <Input
-                  id="gapActivityName"
-                  type="text"
-                  value={gapActivityName}
-                  onChange={(e) => setGapActivityName(e.target.value)}
-                  placeholder="例：他のタスク、会議、電話対応など"
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="createGapEvent"
+                  checked={shouldCreateGap}
+                  onChange={event => setShouldCreateGap(event.target.checked)}
                 />
+                <Label htmlFor="createGapEvent" className="text-sm font-medium">
+                  空き時間イベントを作成する
+                </Label>
               </div>
+              {shouldCreateGap && (
+                <div className="space-y-2">
+                  <Label htmlFor="gapActivityName">空き時間のアクティビティ名</Label>
+                  <Input
+                    id="gapActivityName"
+                    type="text"
+                    value={gapActivityName}
+                    onChange={(e) => setGapActivityName(e.target.value)}
+                    placeholder="例：他のタスク、会議、電話対応など"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -336,7 +389,7 @@ export default function EventEditModal({
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!endTimeInput || !!validationError}
+            disabled={!endDateTimeInput || !!validationError}
           >
             保存
           </Button>

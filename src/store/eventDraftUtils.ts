@@ -13,6 +13,63 @@ export interface EventDraft {
   myTaskId: string | null;
 }
 
+export const UNKNOWN_ACTIVITY_LABEL = '不明なアクティビティ';
+
+export const shouldAutoSyncLabel = (
+  currentLabel: string,
+  previousTaskName: string | undefined,
+  baseEvent?: Event,
+) => {
+  const trimmed = currentLabel.trim();
+  if (!trimmed) {
+    return true;
+  }
+
+  const trimmedPreviousTaskName = previousTaskName?.trim();
+  if (trimmedPreviousTaskName && trimmed === trimmedPreviousTaskName) {
+    return true;
+  }
+
+  if (baseEvent?.meta?.isUnknownActivity) {
+    const baseLabel = (baseEvent.label ?? '').trim();
+    if (!trimmed || trimmed === baseLabel) {
+      return true;
+    }
+  }
+
+  if (trimmed === UNKNOWN_ACTIVITY_LABEL) {
+    return true;
+  }
+
+  return false;
+};
+
+export const shouldAutoSyncCategory = (
+  currentCategoryId: string | null,
+  previousTaskCategoryId: string | undefined | null,
+  baseEvent?: Event,
+) => {
+  const normalizedCurrent = currentCategoryId ?? null;
+  const normalizedPreviousTask = previousTaskCategoryId ?? null;
+
+  if (normalizedCurrent === null) {
+    return true;
+  }
+
+  if (normalizedPreviousTask && normalizedCurrent === normalizedPreviousTask) {
+    return true;
+  }
+
+  if (baseEvent?.meta?.isUnknownActivity) {
+    const baseCategory = baseEvent.categoryId ?? null;
+    if (normalizedCurrent === baseCategory) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export const createDraftFromEvent = (event: Event): EventDraft => ({
   type: event.type,
   label: event.label ?? '',

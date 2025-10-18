@@ -180,6 +180,14 @@ export function useDueAlertSettings(): DueAlertSettings {
   return useEventsStore(state => state.dueAlertSettings);
 }
 
+export function useInterruptContacts() {
+  return useEventsStore(state => state.interruptContacts);
+}
+
+export function useInterruptSubjects() {
+  return useEventsStore(state => state.interruptSubjects);
+}
+
 // Actions selector (stable reference)
 export function useStoreActions() {
   return useEventsStore(state => state.actions);

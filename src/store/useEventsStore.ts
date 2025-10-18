@@ -1,7 +1,7 @@
-import { create, StateCreator, StoreApi, UseBoundStore } from 'zustand';
+import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord } from '@/types';
-import { dbGet, dbSet } from '@/lib/db';
+import { dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES, TIME_THRESHOLDS } from '@/lib/constants';
 import { 
   hydrateEventsData, 
@@ -26,120 +26,138 @@ import {
   cleanupCategoryReferences, 
   reorderCategories 
 } from './categoryHelpers';
+import { EventsState, EventsStoreCreator } from './types';
 
 const MAX_INTERRUPT_DIRECTORY_ENTRIES = 10;
 
 const normalizeDirectoryValue = (value: string) => value.trim();
 
-export interface EventsState {
-  events: Event[];
-  currentEventId: string | null;
-  previousTaskIdBeforeInterrupt: string | null;
-  myTasks: MyTask[];
-  taskLedger: Record<string, TaskLifecycleRecord>;
-  categories: Category[];
-  isCategoryEnabled: boolean;
-  interruptCategorySettings: InterruptCategorySettings;
-  interruptContacts: string[];
-  interruptSubjects: string[];
-  addTaskToTop: boolean; // true: 上に追加, false: 下に追加
-  autoStartTask: boolean; // true: タスク追加後即座開始, false: 手動で開始
-  isHydrated: boolean;
-  featureFlags: FeatureFlags;
-  dueAlertSettings: DueAlertSettings;
-  uiSettings: UiSettings;
-  actions: {
-    startTask: (label?: string, myTaskId?: string) => void;
-    stopCurrentEvent: () => void;
-    startInterrupt: (data?: string | { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
-    updateInterruptDetails: (data: { label?: string; who?: string; interruptType?: string; urgency?: 'Low' | 'Medium' | 'High' }) => void;
-    stopInterruptAndResumePreviousTask: () => void;
-    startBreak: (data?: string | { label?: string; breakType?: Event['breakType']; breakDurationMinutes?: Event['breakDurationMinutes'] }) => void;
-    addEvent: (event: Event) => void;
-    updateEvent: (event: Event) => void;
-    setEvents: (events: Event[]) => void;
-    setCurrentEventId: (id: string | null) => void;
-    addMyTask: (
-      name: string,
-      categoryId?: string,
-      options?: { suppressAutoStart?: boolean; planning?: TaskPlanning }
-    ) => void;
-    removeMyTask: (id: string) => void;
-    updateMyTask: (id: string, newName: string) => void;
-    updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => void;
-    updateMyTaskCategory: (id: string, categoryId: string | undefined) => void;
-    setMyTasks: (tasks: MyTask[]) => void;
-    hydrate: () => Promise<void>;
-    toggleMyTaskCompletion: (taskId: string) => void;
-    setMyTaskCompletion: (taskId: string, completed: boolean) => void;
-    reorderMyTasks: (taskId: string, newOrder: number) => void;
-    getTaskTotalDuration: (taskId: string) => number;
-    cancelCurrentInterruptAndResumeTask: () => void;
-    _persistEventsState: () => void;
-    _persistMyTasksState: () => void;
-    _persistMyTasksStateDebounced: () => void;
-    _persistTaskLedger: () => void;
-    _persistCategoriesState: () => void;
-    stopBreakAndResumePreviousTask: () => void;
-    addCategory: (name: string, color: string) => void;
-    updateCategory: (id: string, name: string, color: string) => void;
-    removeCategory: (id: string) => void;
-    setCategories: (categories: Category[]) => void;
-    toggleCategoryEnabled: () => void;
-    addInterruptContact: (value: string) => void;
-    removeInterruptContact: (value: string) => void;
-    addInterruptSubject: (value: string) => void;
-    removeInterruptSubject: (value: string) => void;
-    _persistInterruptDirectory: () => void;
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => void;
-    updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => void;
-    resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => void;
-    resetAllInterruptCategoriesToDefault: () => void;
-    _persistInterruptCategorySettings: () => void;
-    toggleTaskPlacement: () => void;
-    _persistTaskPlacementSetting: () => void;
-    toggleAutoStartTask: () => void;
-    _persistAutoStartTaskSetting: () => void;
-    setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => void;
-    toggleFeatureFlag: (flag: keyof FeatureFlags) => void;
-    _persistFeatureFlags: () => void;
-    setDueAlertPreset: (preset: DueAlertSettings['preset']) => void;
-    setDueAlertSettings: (settings: DueAlertSettings) => void;
-    _persistDueAlertSettings: () => void;
-    toggleSortTasksByDueDate: () => void;
-    setSortTasksByDueDate: (value: boolean) => void;
-    _persistUiSettings: () => void;  };
-}
-
 // Debounce timer for myTasks persistence (to reduce IndexedDB writes during reorder operations)
-let _persistMyTasksDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let persistMyTasksDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
-  events: [],
-  currentEventId: null,
-  previousTaskIdBeforeInterrupt: null,
-  myTasks: [],
-  taskLedger: {},
-  categories: [],
-  isCategoryEnabled: true,
-  interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES },
-  interruptContacts: [],
-  interruptSubjects: [],
-  addTaskToTop: false, // デフォルトは下に追加
-  autoStartTask: false, // デフォルトは手動開始
-  isHydrated: false,
-  featureFlags: {
-    enableTaskPlanning: true,
-  },
-  dueAlertSettings: {
-    warningMinutes: 6 * 60,
-    dangerMinutes: 60,
-    preset: 'few-hours',
-  },
-  uiSettings: {
-    sortTasksByDueDate: false,
-  },
-  actions: {
+const storeCreator: EventsStoreCreator = (set, get) => {
+  const persistEventsState = () => {
+    const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
+    dbSet(STORE_STORAGE_KEYS.EVENTS, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
+      console.error('[useEventsStore] Error persisting events state to IndexedDB:', error);
+    });
+  };
+
+  const persistMyTasksState = () => {
+    const { myTasks } = get();
+    dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
+      console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
+    });
+  };
+
+  const persistMyTasksStateDebounced = () => {
+    if (persistMyTasksDebounceTimer) {
+      clearTimeout(persistMyTasksDebounceTimer);
+    }
+    persistMyTasksDebounceTimer = setTimeout(() => {
+      const { myTasks } = get();
+      dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
+        console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
+      });
+    }, TIME_THRESHOLDS.AUTO_SAVE_DEBOUNCE_MS);
+  };
+
+  const persistTaskLedger = () => {
+    const { taskLedger } = get();
+    dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, taskLedger).catch(error => {
+      console.error('[useEventsStore] Error persisting task ledger to IndexedDB:', error);
+    });
+  };
+
+  const persistCategoriesState = () => {
+    const { categories, isCategoryEnabled } = get();
+    dbSet(STORE_STORAGE_KEYS.CATEGORIES, categories).catch(error => {
+      console.error('[useEventsStore] Error persisting categories to IndexedDB:', error);
+    });
+    dbSet(STORE_STORAGE_KEYS.CATEGORY_ENABLED, isCategoryEnabled).catch(error => {
+      console.error('[useEventsStore] Error persisting category enabled state to IndexedDB:', error);
+    });
+  };
+
+  const persistInterruptDirectory = () => {
+    const { interruptContacts, interruptSubjects } = get();
+    Promise.all([
+      dbSet(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS, interruptContacts),
+      dbSet(STORE_STORAGE_KEYS.INTERRUPT_REASONS, interruptSubjects),
+    ]).catch(error => {
+      console.error('[useEventsStore] Error persisting interrupt directory:', error);
+    });
+  };
+
+  const persistInterruptCategorySettings = () => {
+    const { interruptCategorySettings } = get();
+    dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, interruptCategorySettings).catch(error => {
+      console.error('[useEventsStore] Error persisting interrupt category settings to IndexedDB:', error);
+    });
+  };
+
+  const persistFeatureFlags = () => {
+    const { featureFlags } = get();
+    dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags).catch(error => {
+      console.error('[useEventsStore] Error persisting feature flags to IndexedDB:', error);
+    });
+  };
+
+  const persistDueAlertSettings = () => {
+    const { dueAlertSettings } = get();
+    dbSet(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS, dueAlertSettings).catch(error => {
+      console.error('[useEventsStore] Error persisting due alert settings to IndexedDB:', error);
+    });
+  };
+
+  const persistUiSettings = () => {
+    const { uiSettings } = get();
+    dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings).catch(error => {
+      console.error('[useEventsStore] Error persisting UI settings to IndexedDB:', error);
+    });
+  };
+
+  const persistTaskPlacementSetting = () => {
+    const { addTaskToTop } = get();
+    dbSet(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING, addTaskToTop).catch(error => {
+      console.error('[useEventsStore] Error persisting task placement setting to IndexedDB:', error);
+    });
+  };
+
+  const persistAutoStartTaskSetting = () => {
+    const { autoStartTask } = get();
+    dbSet(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING, autoStartTask).catch(error => {
+      console.error('[useEventsStore] Error persisting auto-start task setting to IndexedDB:', error);
+    });
+  };
+
+  return {
+    events: [],
+    currentEventId: null,
+    previousTaskIdBeforeInterrupt: null,
+    myTasks: [],
+    taskLedger: {},
+    categories: [],
+    isCategoryEnabled: true,
+    interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES },
+    interruptContacts: [],
+    interruptSubjects: [],
+    addTaskToTop: false,
+    autoStartTask: false,
+    isHydrated: false,
+    featureFlags: {
+      enableTaskPlanning: true,
+    },
+    dueAlertSettings: {
+      warningMinutes: 6 * 60,
+      dangerMinutes: 60,
+      preset: 'few-hours',
+    },
+    uiSettings: {
+      sortTasksByDueDate: false,
+    },
+    actions: {
+
     hydrate: async () => {
       if (get().isHydrated || (typeof window !== 'undefined' && (window as any).__eventStoreHydrating)) {
         return;
@@ -393,57 +411,43 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       } else {
         set({ currentEventId: null, previousTaskIdBeforeInterrupt: null });
       }
-      get().actions._persistEventsState();
-    },
-    _persistEventsState: () => {
-      const { events, currentEventId, previousTaskIdBeforeInterrupt } = get();
-      dbSet(STORE_STORAGE_KEYS.EVENTS, { events, currentEventId, previousTaskIdBeforeInterrupt }).catch(error => {
-        console.error('[useEventsStore] Error persisting events state to IndexedDB:', error);
-      });
-    },
-    _persistMyTasksState: () => {
-      const { myTasks } = get();
-      dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
-        console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
-      });
-    },
-    _persistMyTasksStateDebounced: () => {
-      if (_persistMyTasksDebounceTimer) {
-        clearTimeout(_persistMyTasksDebounceTimer);
-      }
-      _persistMyTasksDebounceTimer = setTimeout(() => {
-        const { myTasks } = get();
-        dbSet(STORE_STORAGE_KEYS.MY_TASKS, myTasks).catch(error => {
-          console.error('[useEventsStore] Error persisting myTasks state to IndexedDB:', error);
-        });
-      }, TIME_THRESHOLDS.AUTO_SAVE_DEBOUNCE_MS);
-    },
-    _persistTaskLedger: () => {
-      const { taskLedger } = get();
-      dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, taskLedger).catch(error => {
-        console.error('[useEventsStore] Error persisting task ledger to IndexedDB:', error);
-      });
+      persistEventsState();
     },
     addEvent: (event: Event) => {
       set((state: EventsState) => {
         const nextEvents = [...state.events, event].sort((a, b) => a.start - b.start);
         return { events: nextEvents };
       });
-      get().actions._persistEventsState();
+      persistEventsState();
     },
     updateEvent: (eventToUpdate: Event) => {
       set((state: EventsState) => ({
         events: state.events.map((e: Event) => (e.id === eventToUpdate.id ? eventToUpdate : e)),
       }));
-      get().actions._persistEventsState();
+      persistEventsState();
     },
-    updateEventEndTime: (eventId: string, newEndTime: number, gapActivityName?: string, newEventType?: Event['type'], newLabel?: string, newCategoryId?: string, interruptType?: string) => {
+    updateEventEndTime: (
+      eventId: string,
+      newEndTime: number,
+      gapActivityName?: string,
+      newEventType?: Event['type'],
+      newLabel?: string,
+      newCategoryId?: string,
+      interruptType?: string,
+      createGapEvent?: boolean
+    ) => {
       const { events } = get();
       const eventIndex = events.findIndex(e => e.id === eventId);
       const event = events[eventIndex];
       
       if (!event) {
         console.error('[useEventsStore] Event not found');
+        return;
+      }
+
+      const nextEvent = events[eventIndex + 1];
+      if (nextEvent && newEndTime > nextEvent.start) {
+        console.error('[useEventsStore] New end time overlaps with the next event');
         return;
       }
       
@@ -461,28 +465,30 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           ? { ...updatedEvent, interruptType }
           : updatedEvent;
 
-        if (shouldCreateGap && gapEvent) {
+        const allowGapCreation = createGapEvent !== false;
+
+        if (shouldCreateGap && gapEvent && allowGapCreation) {
           const newEvents = insertEventWithGap(events, eventIndex, finalUpdatedEvent, gapEvent);
           set({ events: newEvents });
         } else {
           get().actions.updateEvent(finalUpdatedEvent);
         }
         
-        get().actions._persistEventsState();
+        persistEventsState();
       } catch (error) {
         console.error('[useEventsStore] Error updating event end time:', error);
       }
     },
     setEvents: (events: Event[]) => {
       set({ events });
-      get().actions._persistEventsState();
+      persistEventsState();
     },
     setCurrentEventId: (id: string | null) => {
       set({ currentEventId: id });
       if (id === null && !get().previousTaskIdBeforeInterrupt) {
          set({ previousTaskIdBeforeInterrupt: null });
       }
-      get().actions._persistEventsState();
+      persistEventsState();
     },
     addMyTask: (
       name: string,
@@ -533,8 +539,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
             },
           },
         }));
-        actions._persistMyTasksState();
-        actions._persistTaskLedger();
+        persistMyTasksState();
+        persistTaskLedger();
         
         // Handle auto-start if enabled
         if (autoStartTask && !suppressAutoStart) {
@@ -591,9 +597,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         },
       }));
 
-      const { actions: innerActions } = get();
-      innerActions._persistMyTasksState();
-      innerActions._persistTaskLedger();
+      persistMyTasksState();
+      persistTaskLedger();
     },
     updateMyTask: (id: string, newName: string) => {
       const { myTasks: currentTasks, categories } = get();
@@ -609,9 +614,9 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
             }
           : state.taskLedger,
       }));
-      get().actions._persistMyTasksState();
+      persistMyTasksState();
       if (get().taskLedger[id]) {
-        get().actions._persistTaskLedger();
+        persistTaskLedger();
       }
       
       // Also update the labels of related events in history
@@ -623,7 +628,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         return event;
       });
       set({ events: updatedEvents });
-      get().actions._persistEventsState();
+      persistEventsState();
     },
     updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => {
       const currentTasks = get().myTasks;
@@ -658,8 +663,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         };
       });
       const { actions: storeActions } = get();
-      storeActions._persistMyTasksState();
-      storeActions._persistTaskLedger();
+      persistMyTasksState();
+      persistTaskLedger();
 
       const { events, currentEventId } = get();
       if (!currentEventId) {
@@ -678,7 +683,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         set({
           events: events.map(event => (event.id === currentEventId ? updatedEvent : event)),
         });
-        get().actions._persistEventsState();
+        persistEventsState();
       }
     },
     setMyTasks: (tasks: MyTask[]) => {
@@ -729,9 +734,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           taskLedger: updatedLedger,
         };
       });
-      const { actions: innerActions } = get();
-      innerActions._persistMyTasksState();
-      innerActions._persistTaskLedger();
+      persistMyTasksState();
+      persistTaskLedger();
     },
     toggleMyTaskCompletion: (taskId: string) => {
       const currentState = get();
@@ -783,9 +787,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         };
       });
 
-      const { actions: innerActions } = get();
-      innerActions._persistMyTasksState();
-      innerActions._persistTaskLedger();
+      persistMyTasksState();
+      persistTaskLedger();
     },
     setMyTaskCompletion: (taskId: string, completed: boolean) => {
       const currentState = get();
@@ -836,16 +839,15 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         };
       });
 
-      const { actions: innerActions } = get();
-      innerActions._persistMyTasksState();
-      innerActions._persistTaskLedger();
+      persistMyTasksState();
+      persistTaskLedger();
     },
     reorderMyTasks: (taskId: string, newOrder: number) => {
       const currentTasks = get().myTasks;
       try {
         const updatedTasks = reorderTasks(currentTasks, taskId, newOrder);
         set({ myTasks: updatedTasks });
-        get().actions._persistMyTasksStateDebounced();
+        persistMyTasksStateDebounced();
       } catch (error) {
         console.error('[useEventsStore] Error reordering tasks:', error);
       }
@@ -909,7 +911,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         currentEventId: resumedEvent ? resumedEvent.id : null,
         previousTaskIdBeforeInterrupt: null,
       });
-      get().actions._persistEventsState();
+      persistEventsState();
     },
     updateMyTaskCategory: (id: string, categoryId: string | undefined) => {
       const { myTasks: currentTasks, categories } = get();
@@ -931,17 +933,8 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
           : state.taskLedger,
       }));
       const actions = get().actions;
-      actions._persistMyTasksState();
-      actions._persistTaskLedger();
-    },
-    _persistCategoriesState: () => {
-      const { categories, isCategoryEnabled } = get();
-      dbSet(STORE_STORAGE_KEYS.CATEGORIES, categories).catch(error => {
-        console.error('[useEventsStore] Error persisting categories to IndexedDB:', error);
-      });
-      dbSet(STORE_STORAGE_KEYS.CATEGORY_ENABLED, isCategoryEnabled).catch(error => {
-        console.error('[useEventsStore] Error persisting category enabled state to IndexedDB:', error);
-      });
+      persistMyTasksState();
+      persistTaskLedger();
     },
     addCategory: (name: string, color: string) => {
       const currentCategories = get().categories;
@@ -952,7 +945,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         order: currentCategories.length,
       };
       set({ categories: [...currentCategories, newCategory] });
-      get().actions._persistCategoriesState();
+      persistCategoriesState();
     },
     updateCategory: (id: string, name: string, color: string) => {
       const currentCategories = get().categories;
@@ -960,7 +953,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         cat.id === id ? { ...cat, name: name.trim(), color } : cat
       );
       set({ categories: updatedCategories });
-      get().actions._persistCategoriesState();
+      persistCategoriesState();
     },
     removeCategory: (id: string) => {
       const { categories: currentCategories, myTasks: currentTasks, events: currentEvents } = get();
@@ -968,21 +961,21 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
       const remainingCategories = currentCategories.filter(cat => cat.id !== id);
       const updatedCategories = reorderCategories(remainingCategories);
       set({ categories: updatedCategories });
-      get().actions._persistCategoriesState();
+      persistCategoriesState();
       
       // Clean up category references in tasks and events
       const { updatedTasks, updatedEvents } = cleanupCategoryReferences(id, currentTasks, currentEvents);
       set({ myTasks: updatedTasks, events: updatedEvents });
-      get().actions._persistMyTasksState();
-      get().actions._persistEventsState();
+      persistMyTasksState();
+      persistEventsState();
     },
     setCategories: (categories: Category[]) => {
       set({ categories });
-      get().actions._persistCategoriesState();
+      persistCategoriesState();
     },
     toggleCategoryEnabled: () => {
       set({ isCategoryEnabled: !get().isCategoryEnabled });
-      get().actions._persistCategoriesState();
+      persistCategoriesState();
     },
     addInterruptContact: (value: string) => {
       const normalized = normalizeDirectoryValue(value);
@@ -996,13 +989,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const updated = [normalized, ...filtered].slice(0, MAX_INTERRUPT_DIRECTORY_ENTRIES);
         return { interruptContacts: updated };
       });
-      get().actions._persistInterruptDirectory();
+      persistInterruptDirectory();
     },
     removeInterruptContact: (value: string) => {
       set(state => ({
         interruptContacts: state.interruptContacts.filter(entry => entry.toLowerCase() !== value.toLowerCase()),
       }));
-      get().actions._persistInterruptDirectory();
+      persistInterruptDirectory();
     },
     addInterruptSubject: (value: string) => {
       const normalized = normalizeDirectoryValue(value);
@@ -1016,28 +1009,13 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         const updated = [normalized, ...filtered].slice(0, MAX_INTERRUPT_DIRECTORY_ENTRIES);
         return { interruptSubjects: updated };
       });
-      get().actions._persistInterruptDirectory();
+      persistInterruptDirectory();
     },
     removeInterruptSubject: (value: string) => {
       set(state => ({
         interruptSubjects: state.interruptSubjects.filter(entry => entry.toLowerCase() !== value.toLowerCase()),
       }));
-      get().actions._persistInterruptDirectory();
-    },
-    _persistInterruptDirectory: () => {
-      const { interruptContacts, interruptSubjects } = get();
-      Promise.all([
-        dbSet(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS, interruptContacts),
-        dbSet(STORE_STORAGE_KEYS.INTERRUPT_REASONS, interruptSubjects),
-      ]).catch(error => {
-        console.error('[useEventsStore] Error persisting interrupt directory:', error);
-      });
-    },
-    _persistInterruptCategorySettings: () => {
-      const { interruptCategorySettings } = get();
-      dbSet(STORE_STORAGE_KEYS.INTERRUPT_CATEGORY_SETTINGS, interruptCategorySettings).catch(error => {
-        console.error('[useEventsStore] Error persisting interrupt category settings to IndexedDB:', error);
-      });
+      persistInterruptDirectory();
     },
     updateInterruptCategoryName: (categoryId: keyof InterruptCategorySettings, name: string) => {
       const currentSettings = get().interruptCategorySettings;
@@ -1046,7 +1024,7 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         [categoryId]: name.trim() || DEFAULT_INTERRUPT_CATEGORIES[categoryId]
       };
       set({ interruptCategorySettings: updatedSettings });
-      get().actions._persistInterruptCategorySettings();
+      persistInterruptCategorySettings();
     },
     resetInterruptCategoryToDefault: (categoryId: keyof InterruptCategorySettings) => {
       const currentSettings = get().interruptCategorySettings;
@@ -1055,26 +1033,20 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         [categoryId]: DEFAULT_INTERRUPT_CATEGORIES[categoryId]
       };
       set({ interruptCategorySettings: updatedSettings });
-      get().actions._persistInterruptCategorySettings();
+      persistInterruptCategorySettings();
     },
     resetAllInterruptCategoriesToDefault: () => {
       set({ interruptCategorySettings: { ...DEFAULT_INTERRUPT_CATEGORIES } });
-      get().actions._persistInterruptCategorySettings();
+      persistInterruptCategorySettings();
     },
     setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => {
       set({ featureFlags: { ...get().featureFlags, [flag]: value } });
-      get().actions._persistFeatureFlags();
+      persistFeatureFlags();
     },
     toggleFeatureFlag: (flag: keyof FeatureFlags) => {
       const current = get().featureFlags[flag];
       set({ featureFlags: { ...get().featureFlags, [flag]: !current } });
-      get().actions._persistFeatureFlags();
-    },
-    _persistFeatureFlags: () => {
-      const { featureFlags } = get();
-      dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags).catch(error => {
-        console.error('[useEventsStore] Error persisting feature flags to IndexedDB:', error);
-      });
+      persistFeatureFlags();
     },
     setDueAlertPreset: (preset: DueAlertSettings['preset']) => {
       const presetMap: Record<DueAlertSettings['preset'], DueAlertSettings> = {
@@ -1095,53 +1067,31 @@ const storeCreator: StateCreator<EventsState, [], []> = (set, get) => ({
         },
       };
       set({ dueAlertSettings: presetMap[preset] });
-      get().actions._persistDueAlertSettings();
+      persistDueAlertSettings();
     },
     setDueAlertSettings: (settings: DueAlertSettings) => {
       set({ dueAlertSettings: settings });
-      get().actions._persistDueAlertSettings();
-    },
-    _persistDueAlertSettings: () => {
-      const { dueAlertSettings } = get();
-      dbSet(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS, dueAlertSettings).catch(error => {
-        console.error('[useEventsStore] Error persisting due alert settings to IndexedDB:', error);
-      });
+      persistDueAlertSettings();
     },
     toggleSortTasksByDueDate: () => {
       set(state => ({ uiSettings: { ...state.uiSettings, sortTasksByDueDate: !state.uiSettings.sortTasksByDueDate } }));
-      get().actions._persistUiSettings();
+      persistUiSettings();
     },
     setSortTasksByDueDate: (value: boolean) => {
       set(state => ({ uiSettings: { ...state.uiSettings, sortTasksByDueDate: value } }));
-      get().actions._persistUiSettings();
-    },    _persistUiSettings: () => {
-      const { uiSettings } = get();
-      dbSet(STORE_STORAGE_KEYS.UI_SETTINGS, uiSettings).catch(error => {
-        console.error('[useEventsStore] Error persisting UI settings to IndexedDB:', error);
-      });
+      persistUiSettings();
     },
     toggleTaskPlacement: () => {
       set({ addTaskToTop: !get().addTaskToTop });
-      get().actions._persistTaskPlacementSetting();
-    },
-    _persistTaskPlacementSetting: () => {
-      const { addTaskToTop } = get();
-      dbSet(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING, addTaskToTop).catch(error => {
-        console.error('[useEventsStore] Error persisting task placement setting to IndexedDB:', error);
-      });
+      persistTaskPlacementSetting();
     },
     toggleAutoStartTask: () => {
       set({ autoStartTask: !get().autoStartTask });
-      get().actions._persistAutoStartTaskSetting();
-    },
-    _persistAutoStartTaskSetting: () => {
-      const { autoStartTask } = get();
-      dbSet(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING, autoStartTask).catch(error => {
-        console.error('[useEventsStore] Error persisting auto-start task setting to IndexedDB:', error);
-      });
+      persistAutoStartTaskSetting();
     },
   },
-});
+};
+};
 
 const useEventsStore = create<EventsState>(storeCreator);
 

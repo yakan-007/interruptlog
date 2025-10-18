@@ -6,15 +6,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EventHistoryItem from '@/components/EventHistoryItem';
 import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
-import { useCategories, useIsCategoryEnabled, useStoreActions } from '@/hooks/useStoreSelectors';
-import useEventsStore from '@/store/useEventsStore';
-import { EventDraft, createDraftFromEvent, applyDraftToEvent } from '@/store/eventDraftUtils';
+import {
+  useCategories,
+  useIsCategoryEnabled,
+  useStoreActions,
+  useMyTasks,
+  useInterruptContacts,
+  useInterruptSubjects,
+  useInterruptCategorySettings,
+} from '@/hooks/useStoreSelectors';
+import {
+  EventDraft,
+  createDraftFromEvent,
+  applyDraftToEvent,
+  shouldAutoSyncLabel,
+  shouldAutoSyncCategory,
+} from '@/store/eventDraftUtils';
 import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
 const DEFAULT_VISIBLE_COUNT = 10;
-
 interface EventHistorySectionProps {
   events: Event[];
   showAllHistory: boolean;
@@ -37,10 +49,10 @@ export default function EventHistorySection({
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
   const actions = useStoreActions();
-  const interruptContacts = useEventsStore(state => state.interruptContacts);
-  const interruptSubjects = useEventsStore(state => state.interruptSubjects);
-  const interruptCategorySettings = useEventsStore(state => state.interruptCategorySettings);
-  const myTasks = useEventsStore(state => state.myTasks);
+  const interruptContacts = useInterruptContacts();
+  const interruptSubjects = useInterruptSubjects();
+  const interruptCategorySettings = useInterruptCategorySettings();
+  const myTasks = useMyTasks();
   const interruptCategories = [
     { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
     { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
@@ -106,6 +118,45 @@ export default function EventHistorySection({
         } as EventDraft;
       }
 
+      if (field === 'myTaskId') {
+        const nextTaskId = value as EventDraft['myTaskId'];
+        const baseEvent = editingEventId ? events.find(event => event.id === editingEventId) : undefined;
+        const previousTask = prev.myTaskId ? myTasks.find(task => task.id === prev.myTaskId) : undefined;
+        const nextTask = nextTaskId ? myTasks.find(task => task.id === nextTaskId) : undefined;
+
+        const autoLabel = shouldAutoSyncLabel(prev.label, previousTask?.name, baseEvent);
+        const autoCategory = shouldAutoSyncCategory(prev.categoryId ?? null, previousTask?.categoryId, baseEvent);
+
+        let nextLabel = prev.label;
+        if (autoLabel) {
+          if (nextTask) {
+            nextLabel = nextTask.name;
+          } else if (!nextTaskId) {
+            if (baseEvent?.meta?.isUnknownActivity) {
+              nextLabel = baseEvent.label ?? '';
+            } else {
+              nextLabel = '';
+            }
+          }
+        }
+
+        let nextCategoryId = prev.categoryId;
+        if (autoCategory) {
+          if (nextTask) {
+            nextCategoryId = nextTask.categoryId ?? null;
+          } else {
+            nextCategoryId = baseEvent?.categoryId ?? null;
+          }
+        }
+
+        return {
+          ...prev,
+          myTaskId: nextTaskId,
+          label: nextLabel,
+          categoryId: nextCategoryId ?? null,
+        } as EventDraft;
+      }
+
       if (field === 'categoryId') {
         return {
           ...prev,
@@ -135,12 +186,6 @@ export default function EventHistorySection({
     actions.updateEvent(nextEvent);
     handleCancelEdit();
   };
-
-  // Last completed event for time editing guard
-  const lastCompletedEvent = useMemo(
-    () => [...events].reverse().find(event => event.end !== undefined),
-    [events],
-  );
 
   const filteredEvents = useMemo(() => {
     const today = new Date();
@@ -231,7 +276,7 @@ export default function EventHistorySection({
                 onSaveEdit={handleSaveEdit}
                 formatEventTime={formatEventTime}
                 onEditEventTime={onEditEventTime}
-                canEditTime={event.id === lastCompletedEvent?.id}
+                canEditTime={Boolean(event.end)}
                 categories={categories}
                 isCategoryEnabled={isCategoryEnabled}
                 interruptContacts={interruptContacts}

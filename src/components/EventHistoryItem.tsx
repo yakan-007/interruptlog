@@ -33,24 +33,6 @@ const EVENT_TYPE_LABELS: Record<Event['type'], string> = {
   break: '休憩',
 };
 
-const renderTaskMeta = (event: Event, categories: Category[] | undefined, tasks: MyTask[]) => {
-  if (event.type !== 'task') return null;
-  const linkedTaskId = event.meta && 'myTaskId' in event.meta ? event.meta.myTaskId : undefined;
-  const linkedTask = linkedTaskId ? tasks.find(task => task.id === linkedTaskId) : undefined;
-  const category = event.categoryId && categories ? categories.find(cat => cat.id === event.categoryId) : undefined;
-  return (
-    <span className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-      {category && (
-        <span className="inline-flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
-          {category.name}
-        </span>
-      )}
-      {linkedTask && <span>({linkedTask.name})</span>}
-    </span>
-  );
-};
-
 const InterruptEditor = ({
   draft,
   onChangeDraft,
@@ -163,6 +145,23 @@ export default function EventHistoryItem({
   tasks,
 }: EventHistoryItemProps) {
   const isUnknown = event.meta?.isUnknownActivity;
+  const linkedTaskId = event.meta && 'myTaskId' in event.meta ? event.meta.myTaskId : undefined;
+  const linkedTask = linkedTaskId ? tasks.find(task => task.id === linkedTaskId) : undefined;
+  const linkedTaskName = linkedTask?.name?.trim();
+  const rawLabel = event.label?.trim() ?? '';
+  const displayLabel =
+    event.type === 'task' && linkedTaskName && (!rawLabel || rawLabel === linkedTaskName)
+      ? linkedTaskName
+      : rawLabel || '無題のイベント';
+  const showLinkedTaskTag = Boolean(
+    event.type === 'task' &&
+      linkedTaskName &&
+      rawLabel &&
+      rawLabel.length > 0 &&
+      rawLabel !== linkedTaskName,
+  );
+  const category =
+    event.categoryId && categories ? categories.find(cat => cat.id === event.categoryId) : undefined;
 
   if (!draft || !isEditing) {
     return (
@@ -184,10 +183,18 @@ export default function EventHistoryItem({
                   未分類の時間
                 </span>
               )}
-              {renderTaskMeta(event, categories, tasks)}
-              <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>
-                {event.label ?? '無題のイベント'}
-              </span>
+              {category && (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
+                  {category.name}
+                </span>
+              )}
+              {showLinkedTaskTag && linkedTaskName && (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                  タスク: {linkedTaskName}
+                </span>
+              )}
+              <span className={`font-medium ${event.end ? '' : 'text-green-600 dark:text-green-400'}`}>{displayLabel}</span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 ({formatEventTime(event.start)}
                 {event.end ? ` - ${formatEventTime(event.end)}` : ' - 実行中'})
@@ -221,6 +228,13 @@ export default function EventHistoryItem({
     );
   }
 
+  const draftLinkedTask = draft.myTaskId ? tasks.find(task => task.id === draft.myTaskId) : undefined;
+  const draftLinkedTaskName = draftLinkedTask?.name?.trim() ?? '';
+  const draftLabelTrimmed = draft.label.trim();
+  const isLabelFollowingTaskName =
+    draft.type === 'task' && Boolean(draftLinkedTaskName) && (!draftLabelTrimmed || draftLabelTrimmed === draftLinkedTaskName);
+  const shouldShowEmptyLabelHint = draft.type === 'task' && !draft.myTaskId && !draftLabelTrimmed;
+
   return (
     <li className="rounded-md border p-3 text-sm">
       <div className="space-y-3">
@@ -239,7 +253,6 @@ export default function EventHistoryItem({
             <Select
               value={draft.categoryId ?? 'none'}
               onValueChange={value => onChangeDraft('categoryId', value === 'none' ? null : value)}
-              disabled={draft.myTaskId !== null}
             >
               <SelectTrigger className="h-9 w-[180px] justify-between text-sm">
                 <SelectValue placeholder="カテゴリなし" />
@@ -286,12 +299,23 @@ export default function EventHistoryItem({
             categories={interruptCategories}
           />
         ) : (
-          <Input
-            value={draft.label}
-            onChange={event => onChangeDraft('label', event.target.value)}
-            placeholder={draft.type === 'task' ? 'タスク名(空欄なら紐付けタスク名を使用)' : '休憩名'}
-            disabled={draft.type === 'task' && draft.myTaskId !== null}
-          />
+          <>
+            <Input
+              value={draft.label}
+              onChange={event => onChangeDraft('label', event.target.value)}
+              placeholder={draft.type === 'task' ? 'タスク名(空欄なら紐付けタスク名を使用)' : '休憩名'}
+            />
+            {isLabelFollowingTaskName && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                紐付けタスク名を初期値にしています。必要に応じて書き換えてください。
+              </p>
+            )}
+            {shouldShowEmptyLabelHint && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                タスク名を入力するか、紐付けタスクを選択してください。
+              </p>
+            )}
+          </>
         )}
 
         <textarea
