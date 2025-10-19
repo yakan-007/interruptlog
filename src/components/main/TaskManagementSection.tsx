@@ -8,9 +8,10 @@ import { PlusCircle, Zap, CheckCircle2, Circle, ChevronDown, ChevronRight } from
 import TaskCard from '@/components/TaskCard';
 import { Event, MyTask, TaskPlanning } from '@/types';
 import useEventsStore from '@/store/useEventsStore';
-import { useFeatureFlags, useTaskManagement } from '@/hooks/useStoreSelectors';
+import { useFeatureFlags, useTaskManagement, useArchivedTasks } from '@/hooks/useStoreSelectors';
 import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import ArchivedTasksDialog from '@/components/task/ArchivedTasksDialog';
 
 interface TaskManagementSectionProps {
   activeEvent?: Event;
@@ -30,6 +31,10 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
   const [planningEditorTaskId, setPlanningEditorTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskName, setEditingTaskName] = useState('');
+  const archivedTasks = useArchivedTasks();
+  const archivedCount = archivedTasks.length;
+  const recentArchivedTasks = useMemo(() => archivedTasks.slice(0, 5), [archivedTasks]);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   const {
     draggingItemId: draggingTaskId,
@@ -99,7 +104,33 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     handleCancelEditTask();
   };
 
+  const confirmAction = (message: string) => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    return window.confirm(message);
+  };
+
   const handleToggleCompletion = (taskId: string) => {
+    const targetTask = myTasks.find(task => task.id === taskId);
+    if (!targetTask) {
+      return;
+    }
+
+    const isActiveTask =
+      activeEvent &&
+      activeEvent.type === 'task' &&
+      activeEvent.meta?.myTaskId === taskId &&
+      !activeEvent.end;
+
+    if (isActiveTask) {
+      const confirmed = confirmAction('このタスクは現在実行中です。イベントを停止して完了にしますか？');
+      if (!confirmed) {
+        return;
+      }
+      actions.stopCurrentEvent();
+    }
+
     actions.toggleMyTaskCompletion(taskId);
   };
 
@@ -109,18 +140,29 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
 
   const handleDeleteTask = (taskId: string) => {
     const message = 'このタスクを削除しますか？';
-    if (typeof window !== 'undefined' && !window.confirm(message)) {
+    if (!confirmAction(message)) {
       return;
     }
     actions.removeMyTask(taskId);
   };
 
+  const handleRestoreArchivedTask = (taskId: string) => {
+    actions.restoreArchivedTask(taskId);
+  };
+
+  const handleDeleteArchivedTask = (taskId: string) => {
+    const message = 'アーカイブからこのタスクを削除しますか？';
+    if (!confirmAction(message)) {
+      return;
+    }
+    actions.deleteArchivedTask(taskId);
+  };
+
   // Separate tasks by completion status
-  const { activeTasks, completedTasks } = useMemo(() => {
-    const active = myTasks.filter(task => !task.isCompleted);
-    const completed = myTasks.filter(task => task.isCompleted);
-    return { activeTasks: active, completedTasks: completed };
-  }, [myTasks]);
+  const activeTasks = useMemo(
+    () => myTasks.filter(task => !task.isCompleted),
+    [myTasks],
+  );
 
   const planningEditorTask = useMemo(
     () => (planningEditorTaskId ? myTasks.find(task => task.id === planningEditorTaskId) ?? null : null),
@@ -169,7 +211,18 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
 
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-semibold mb-2">マイタスク</h2>
+      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-xl font-semibold">マイタスク</h2>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setIsArchiveDialogOpen(true)}
+          disabled={archivedCount === 0}
+        >
+          アーカイブを開く {archivedCount > 0 ? `(${archivedCount})` : ''}
+        </Button>
+      </div>
       <div className="flex gap-2 mb-4">
         <Input
           type="text"
@@ -305,8 +358,8 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
         )}
       </div>
 
-      {/* Completed Tasks Section */}
-      {completedTasks.length > 0 && (
+      {/* Archived Tasks Preview */}
+      {archivedCount > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setShowCompletedTasks(!showCompletedTasks)}
@@ -319,37 +372,43 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
             )}
             <CheckCircle2 className="w-4 h-4 text-green-500" />
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              完了済みタスク ({completedTasks.length})
+              アーカイブ済みタスク ({archivedCount})
             </h3>
           </button>
-          
+
           {showCompletedTasks && (
             <div className="space-y-2 ml-6">
-              {completedTasks.map((task: MyTask) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  activeEvent={activeEvent}
-                  editingTaskId={editingTaskId}
-                  editingTaskName={editingTaskName}
-                  draggingTaskId={draggingTaskId}
-                  dragOverTaskId={dragOverTaskId}
-                  onStartEditTask={handleStartEditTask}
-                  onSaveTaskName={handleSaveTaskName}
-                  onCancelEditTask={handleCancelEditTask}
-                  onSetEditingTaskName={handleSetEditingTaskName}
-                  onToggleCompletion={handleToggleCompletion}
-                  onStartEvent={handleStartEvent}
-                  onDeleteTask={handleDeleteTask}
-                  onDragStart={sortByDueDate ? undefined : handleDragStart}
-                  onDragOver={sortByDueDate ? undefined : handleDragOver}
-                  onDragLeave={sortByDueDate ? undefined : handleDragLeave}
-                  onDrop={sortByDueDate ? undefined : handleDrop}
-                  onDragEnd={sortByDueDate ? undefined : handleDragEnd}
-                  onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
-                  isDragDisabled={sortByDueDate}
-                />
+              {recentArchivedTasks.map(task => (
+                <div key={task.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-700">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-medium text-slate-700 dark:text-slate-200">{task.name}</p>
+                      <p className="text-xs text-slate-500">
+                        完了: {formatDateTime(task.completedAt)} / アーカイブ: {formatDateTime(task.archivedAt)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleRestoreArchivedTask(task.id)}>
+                        復元
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDeleteArchivedTask(task.id)}>
+                        削除
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ))}
+              {archivedCount > recentArchivedTasks.length && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  onClick={() => setIsArchiveDialogOpen(true)}
+                  className="px-0"
+                >
+                  すべて表示
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -364,8 +423,23 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
           onReset={handleResetPlanning}
         />
       )}
+
+      <ArchivedTasksDialog
+        open={isArchiveDialogOpen}
+        onOpenChange={setIsArchiveDialogOpen}
+        tasks={archivedTasks}
+        onRestore={handleRestoreArchivedTask}
+        onDelete={handleDeleteArchivedTask}
+      />
     </div>
   );
+}
+
+function formatDateTime(timestamp?: number | null) {
+  if (!timestamp) {
+    return '-';
+  }
+  return new Date(timestamp).toLocaleString();
 }
 
 function buildPlanningFromInputs({

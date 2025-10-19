@@ -2,14 +2,14 @@
 
 import { ThemeProvider } from 'next-themes';
 import React, { ReactNode, useEffect, useState } from 'react';
-import useEventsStore, { EventsState } from '@/store/useEventsStore';
+import useEventsStore from '@/store/useEventsStore';
 
 interface ClientProvidersProps {
   children: ReactNode;
 }
 
 const ClientProviders = ({ children }: ClientProvidersProps) => {
-  const storeIsHydrated = useEventsStore((state: EventsState) => state.isHydrated);
+  const storeIsHydrated = useEventsStore(state => state.isHydrated);
   const [clientMounted, setClientMounted] = useState(false);
 
   useEffect(() => {

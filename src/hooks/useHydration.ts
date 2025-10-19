@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import useEventsStore, { EventsState } from '@/store/useEventsStore';
+import useEventsStore from '@/store/useEventsStore';
 
 /**
  * Custom hook to determine if the Zustand store has been hydrated.
  * Useful for delaying render of client-only components until store is ready.
  */
 const useHydration = (): boolean => {
-  const isHydrated = useEventsStore((state: EventsState) => state.isHydrated);
+  const isHydrated = useEventsStore((state) => state.isHydrated);
   const [hasHydrated, setHasHydrated] = useState<boolean>(false);
 
   useEffect(() => {

@@ -72,9 +72,18 @@ export default function TaskCard({
 
   const hasRunningEvent = Boolean(activeEvent && !activeEvent.end);
 
-  const isTaskDisabled =
-    (activeEvent && !activeEvent.end && activeEvent.meta?.myTaskId === task.id) ||
-    (activeEvent && !activeEvent.end && (activeEvent.type === 'interrupt' || activeEvent.type === 'break'));
+  const canStartEvent = (() => {
+    if (!hasRunningEvent) {
+      return true;
+    }
+    if (!activeEvent) {
+      return true;
+    }
+    if (activeEvent.type === 'interrupt' || activeEvent.type === 'break') {
+      return false;
+    }
+    return activeEvent.meta?.myTaskId !== task.id;
+  })();
 
   const planning = task.planning;
   const hasPlanningDetails = featureFlags.enableTaskPlanning && planning && (planning.plannedDurationMinutes || planning.dueAt);
@@ -120,12 +129,7 @@ export default function TaskCard({
           onChange={() => onToggleCompletion(task.id)}
           className="mr-1"
           id={`task-${task.id}`}
-          disabled={hasRunningEvent}
-          title={
-            hasRunningEvent
-              ? 'イベント実行中は完了にできません。先にイベントを停止してください。'
-              : undefined
-          }
+              disabled={false}
         />
         <div className="min-w-[140px] flex-1">
           {editingTaskId === task.id ? (
@@ -184,7 +188,7 @@ export default function TaskCard({
               size="icon"
               variant="outline"
               onClick={() => onStartEvent(task.name, task.id)}
-              disabled={isTaskDisabled}
+              disabled={!canStartEvent}
               title="タスクを開始"
             >
               <Play className="h-4 w-4" />

@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, TaskPlanning, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord, ArchivedTask } from '@/types';
 
 export interface EventsActions {
   hydrate: () => Promise<void>;
@@ -34,6 +34,8 @@ export interface EventsActions {
   updateMyTaskPlanning: (id: string, updates: { planning?: TaskPlanning | null }) => void;
   updateMyTaskCategory: (id: string, categoryId: string | undefined) => void;
   setMyTasks: (tasks: MyTask[]) => void;
+  restoreArchivedTask: (taskId: string) => void;
+  deleteArchivedTask: (taskId: string) => void;
   toggleMyTaskCompletion: (taskId: string) => void;
   setMyTaskCompletion: (taskId: string, completed: boolean) => void;
   reorderMyTasks: (taskId: string, newOrder: number) => void;
@@ -68,6 +70,7 @@ export interface EventsState {
   myTasks: MyTask[];
   taskLedger: Record<string, TaskLifecycleRecord>;
   categories: Category[];
+  archivedTasks: ArchivedTask[];
   isCategoryEnabled: boolean;
   interruptCategorySettings: InterruptCategorySettings;
   interruptContacts: string[];

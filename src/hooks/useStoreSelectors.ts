@@ -188,6 +188,10 @@ export function useInterruptSubjects() {
   return useEventsStore(state => state.interruptSubjects);
 }
 
+export function useArchivedTasks() {
+  return useEventsStore(state => state.archivedTasks);
+}
+
 // Actions selector (stable reference)
 export function useStoreActions() {
   return useEventsStore(state => state.actions);

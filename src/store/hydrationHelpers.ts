@@ -1,4 +1,4 @@
-import { Event, MyTask, Category, InterruptCategorySettings, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord } from '@/types';
+import { Event, MyTask, Category, InterruptCategorySettings, FeatureFlags, DueAlertSettings, UiSettings, TaskLifecycleRecord, ArchivedTask } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { DEFAULT_INTERRUPT_CATEGORIES } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,6 +18,7 @@ export const STORE_STORAGE_KEYS = {
   DUE_ALERT_SETTINGS: 'due-alert-settings',
   UI_SETTINGS: 'ui-settings',
   TASK_LEDGER: 'task-ledger',
+  ARCHIVED_TASKS: 'archived-tasks',
 } as const;
 
 // Helper to sort tasks by order
@@ -38,6 +39,7 @@ export interface HydratedEventsData {
 export interface HydratedTasksData {
   myTasks: MyTask[];
   taskLedger: Record<string, TaskLifecycleRecord>;
+  archivedTasks: ArchivedTask[];
 }
 
 export interface HydratedCategoriesData {
@@ -79,13 +81,18 @@ export async function hydrateEventsData(): Promise<HydratedEventsData> {
 }
 
 export async function hydrateTasksData(): Promise<HydratedTasksData> {
-  const [storedMyTasks, storedLedger] = await Promise.all([
+  const [storedMyTasks, storedLedger, storedArchivedTasks] = await Promise.all([
     dbGet<MyTask[]>(STORE_STORAGE_KEYS.MY_TASKS),
     dbGet<Record<string, TaskLifecycleRecord>>(STORE_STORAGE_KEYS.TASK_LEDGER),
+    dbGet<ArchivedTask[]>(STORE_STORAGE_KEYS.ARCHIVED_TASKS),
   ]);
 
   const ledger: Record<string, TaskLifecycleRecord> = storedLedger ? { ...storedLedger } : {};
   const baseNow = Date.now();
+  const archivedTasks: ArchivedTask[] = storedArchivedTasks ? [...storedArchivedTasks] : [];
+  const archivedTaskIds = new Set(archivedTasks.map(task => task.id));
+  const activeTasks: MyTask[] = [];
+  const newlyArchivedTasks: ArchivedTask[] = [];
 
   if (storedMyTasks) {
     const hydratedTasks = storedMyTasks.map((task, index) => {
@@ -133,19 +140,42 @@ export async function hydrateTasksData(): Promise<HydratedTasksData> {
       return normalized;
     });
 
-    const sortedTasks = sortMyTasks(hydratedTasks);
+    hydratedTasks.forEach(task => {
+      if (task.isCompleted) {
+        const archivedAt = task.completedAt ?? baseNow;
+        if (!archivedTaskIds.has(task.id)) {
+          newlyArchivedTasks.push({
+            ...task,
+            archivedAt,
+          });
+          archivedTaskIds.add(task.id);
+        }
+      } else {
+        activeTasks.push(task);
+      }
+    });
+
+    const sortedActiveTasks = sortMyTasks(activeTasks);
 
     await Promise.all([
-      dbSet(STORE_STORAGE_KEYS.MY_TASKS, sortedTasks),
+      dbSet(STORE_STORAGE_KEYS.MY_TASKS, sortedActiveTasks),
       dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, ledger),
+      dbSet(STORE_STORAGE_KEYS.ARCHIVED_TASKS, [...newlyArchivedTasks, ...archivedTasks]),
     ]);
 
-    return { myTasks: sortedTasks, taskLedger: ledger };
+    return {
+      myTasks: sortedActiveTasks,
+      taskLedger: ledger,
+      archivedTasks: [...newlyArchivedTasks, ...archivedTasks],
+    };
   }
 
-  await dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, ledger);
+  await Promise.all([
+    dbSet(STORE_STORAGE_KEYS.TASK_LEDGER, ledger),
+    dbSet(STORE_STORAGE_KEYS.ARCHIVED_TASKS, archivedTasks),
+  ]);
 
-  return { myTasks: [], taskLedger: ledger };
+  return { myTasks: [], taskLedger: ledger, archivedTasks };
 }
 
 export async function hydrateCategoriesData(): Promise<HydratedCategoriesData> {

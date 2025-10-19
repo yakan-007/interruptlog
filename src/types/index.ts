@@ -40,6 +40,10 @@ export type MyTask = {
   canceledAt?: number | null;
 };
 
+export interface ArchivedTask extends MyTask {
+  archivedAt: number;
+}
+
 export interface TaskLifecycleRecord {
   id: string;
   name: string;
