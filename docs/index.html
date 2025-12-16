@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InterruptLog - 集中時間と割り込みを記録するアプリ</title>
+    <meta name="description" content="InterruptLogは、作業中の割り込みを記録し、集中時間を可視化する無料のWebアプリです。データは全てブラウザ内に保存され、外部に送信されません。">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8fafc;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a202c;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.2rem;
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        
+        .security {
+            background: #f0fff4;
+            border-left: 4px solid #38a169;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .feature {
+            padding: 1rem;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 3px solid #4299e1;
+        }
+        
+        .cta {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: #3182ce;
+        }
+        
+        .github-link {
+            background: #2d3748;
+            margin-left: 1rem;
+        }
+        
+        .github-link:hover {
+            background: #1a202c;
+        }
+        
+        ul {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>InterruptLog</h1>
+            <p class="subtitle">集中時間と割り込みを記録するシンプルなWebアプリ</p>
+        </header>
+
+        <div class="section security">
+            <h2><span class="emoji">🔒</span> 安心・安全なアプリです</h2>
+            <ul>
+                <li><strong>データは全てブラウザ内に保存</strong> - 外部サーバーへの送信は一切ありません</li>
+                <li><strong>オープンソース</strong> - コードは全て公開されており、誰でも確認できます</li>
+                <li><strong>開発者もデータにアクセス不可</strong> - あなたのデータはあなただけのものです</li>
+                <li><strong>無料で利用可能</strong> - 登録不要、課金なし</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">✨</span> 主な機能</h2>
+            <div class="features">
+                <div class="feature">
+                    <h3>⏱️ タスク時間計測</h3>
+                    <p>作業時間を正確に記録し、どのタスクにどれだけ時間をかけたか把握できます。</p>
+                </div>
+                <div class="feature">
+                    <h3>📞 割り込み記録</h3>
+                    <p>電話、メール、質問などの割り込みを記録し、集中を妨げる要因を分析できます。</p>
+                </div>
+                <div class="feature">
+                    <h3>📊 可視化レポート</h3>
+                    <p>時間配分や割り込みパターンをグラフで可視化し、生産性向上のヒントを得られます。</p>
+                </div>
+                <div class="feature">
+                    <h3>📱 どこでも利用</h3>
+                    <p>Webブラウザがあれば、PC・スマホ・タブレットどこでも利用できます。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">🚀</span> こんな方におすすめ</h2>
+            <ul>
+                <li>在宅ワークで時間管理を改善したい方</li>
+                <li>割り込みが多くて集中できない方</li>
+                <li>自分の作業パターンを知りたい方</li>
+                <li>シンプルで使いやすい時間記録ツールを探している方</li>
+                <li>データのプライバシーを重視する方</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">💡</span> 使い方</h2>
+            <ol>
+                <li><strong>タスクを作成</strong> - 「新しいタスク名」に作業内容を入力</li>
+                <li><strong>タスクを開始</strong> - 再生ボタンを押してタイマー開始</li>
+                <li><strong>割り込みを記録</strong> - 電話などが来たら「割り込み」ボタンで記録</li>
+                <li><strong>レポートで分析</strong> - 1日の終わりにレポート画面で振り返り</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2><span class="emoji">❓</span> よくある質問</h2>
+            <h3>Q: データが消えてしまうことはありますか？</h3>
+            <p>A: ブラウザのデータを削除しない限り、データは保持されます。設定画面からJSONファイルでエクスポートすることも可能です。</p>
+            
+            <h3>Q: 他の人にデータを見られる心配はありませんか？</h3>
+            <p>A: データは全てあなたのブラウザ内のみに保存されるため、他の人がアクセスすることはできません。</p>
+            
+            <h3>Q: スマホでも使えますか？</h3>
+            <p>A: はい、スマートフォンのブラウザでも快適に利用できます。</p>
+        </div>
+
+        <div class="cta">
+            <a href="https://interruptlog.vercel.app/" class="btn">アプリを使ってみる</a>
+            <a href="https://github.com/yakan-007/interruptlog" class="btn github-link">GitHubで詳細を見る</a>
+        </div>
+
+        <footer style="text-align: center; margin-top: 3rem; padding: 2rem; color: #718096;">
+            <p>InterruptLog - オープンソースの時間記録アプリ</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+                <a href="https://github.com/yakan-007/interruptlog" style="color: #4299e1;">GitHub</a> | 
+                <a href="https://github.com/yakan-007/interruptlog/issues" style="color: #4299e1;">バグ報告・要望</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
