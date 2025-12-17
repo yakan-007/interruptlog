@@ -19,6 +19,7 @@ import {
   indexEventsByDate,
   collectEventsFromIndex,
   getEventsForDateKey,
+  formatDurationCompact,
 } from '@/lib/reportUtils';
 import HighlightsGrid from '@/components/report/HighlightsGrid';
 import ExecutiveSummary from '@/components/report/ExecutiveSummary';
@@ -36,10 +37,26 @@ import TaskDailyChanges from '@/components/report/TaskDailyChanges';
 import SummaryCards from '@/components/report/SummaryCards';
 import InterruptionInsights from '@/components/report/InterruptionInsights';
 import DailyDetailTables from '@/components/report/DailyDetailTables';
-import { formatDurationCompact } from '@/lib/reportUtils';
 
 const ANOMALY_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 const ANOMALY_FUTURE_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+const MS_IN_DAY = 24 * 60 * 60 * 1000;
+
+const formatDateTimeLocal = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+const toCsvValue = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return '';
+  const text = String(value).replace(/"/g, '""');
+  return `"${text}"`;
+};
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -183,6 +200,99 @@ const ReportPage = () => {
       .slice(0, 5);
   }, [currentEvents]);
 
+  const exportEvents = useMemo(() => {
+    const rangeStart = currentRange.start.getTime();
+    const rangeEnd = currentRange.end.getTime() + MS_IN_DAY;
+    const now = Date.now();
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
+    const taskMap = new Map(Object.values(taskLedger).map(task => [task.id, task.name]));
+
+    return events
+      .filter(event => {
+        const eventEnd = typeof event.end === 'number' ? event.end : now;
+        return eventEnd > rangeStart && event.start < rangeEnd;
+      })
+      .map(event => {
+        const eventEnd = typeof event.end === 'number' ? event.end : now;
+        const effectiveStart = Math.max(event.start, rangeStart);
+        const effectiveEnd = Math.min(eventEnd, rangeEnd);
+        const durationMinutes = Math.max(0, (effectiveEnd - effectiveStart) / 60000);
+        const categoryName = event.categoryId ? categoryMap.get(event.categoryId) : '';
+        const taskName = event.meta?.myTaskId ? taskMap.get(event.meta.myTaskId) : '';
+
+        return {
+          id: event.id,
+          type: event.type,
+          label: event.label ?? '',
+          start: formatDateTimeLocal(effectiveStart),
+          end: formatDateTimeLocal(effectiveEnd),
+          durationMinutes: Math.round(durationMinutes * 10) / 10,
+          category: categoryName ?? '',
+          taskName: taskName ?? '',
+          who: event.who ?? '',
+          interruptType: event.interruptType ?? '',
+          urgency: event.urgency ?? '',
+          breakType: event.breakType ?? '',
+          breakDurationMinutes: event.breakDurationMinutes ?? '',
+          memo: event.memo ?? '',
+          originalStart: formatDateTimeLocal(event.start),
+          originalEnd: event.end ? formatDateTimeLocal(event.end) : '',
+        };
+      })
+      .sort((a, b) => (a.start > b.start ? 1 : -1));
+  }, [events, currentRange, categories, taskLedger]);
+
+  const handleExportCsv = () => {
+    if (exportEvents.length === 0) return;
+    const headers = [
+      'event_id',
+      'type',
+      'label',
+      'start',
+      'end',
+      'duration_minutes',
+      'category',
+      'task_name',
+      'who',
+      'interrupt_type',
+      'urgency',
+      'break_type',
+      'break_duration_minutes',
+      'memo',
+      'original_start',
+      'original_end',
+    ];
+    const rows = exportEvents.map(row => [
+      row.id,
+      row.type,
+      row.label,
+      row.start,
+      row.end,
+      row.durationMinutes,
+      row.category,
+      row.taskName,
+      row.who,
+      row.interruptType,
+      row.urgency,
+      row.breakType,
+      row.breakDurationMinutes,
+      row.memo,
+      row.originalStart,
+      row.originalEnd,
+    ]);
+
+    const csv = [headers.map(toCsvValue).join(','), ...rows.map(row => row.map(toCsvValue).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `interruptlog-report-${selectedDate}-${granularity}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const monthlyTaskFlow = useMemo(
     () => (granularity === 'month' ? buildMonthlyTaskPoints(taskRangeData.current.daily) : []),
     [granularity, taskRangeData],
@@ -277,6 +387,20 @@ const ReportPage = () => {
                   max={new Date().toISOString().split('T')[0]}
                   className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
                 />
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:ring-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
+                >
+                  CSVを保存
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:ring-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
+                >
+                  PDFで保存
+                </button>
               </div>
               {earliestEventDate && (
                 <p className="text-xs text-slate-400 dark:text-slate-500">
