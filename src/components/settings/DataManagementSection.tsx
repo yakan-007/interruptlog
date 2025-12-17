@@ -5,6 +5,8 @@ import { Download, Upload, AlertTriangle, Database, Trash2, Clock, Scissors, XCi
 import useEventsStore from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
+import { getEventDisplayLabel } from '@/utils/eventUtils';
+import { buildAnomalies } from '@/utils/anomalies';
 
 type DataRetentionPolicy = 'none' | '1week' | '1month' | '3months' | '6months' | '1year';
 
@@ -24,9 +26,30 @@ const RETENTION_OPTIONS = [
 ];
 
 const STORAGE_KEY_DATA_MANAGEMENT = 'data-management-config';
-const ANOMALY_FUTURE_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
-const ANOMALY_MAX_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 const MIN_DURATION_MS = 60 * 1000; // 1 minute
+
+const buildRetentionCandidates = (events: Event[], policy: DataRetentionPolicy) => {
+  if (policy === 'none') return [];
+  const retentionOption = RETENTION_OPTIONS.find(opt => opt.value === policy);
+  if (!retentionOption?.days) return [];
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionOption.days);
+  return events.filter(event => new Date(event.start) < cutoffDate);
+};
+
+const applyEventTrim = (event: Event, targetEnd: number, now: number) => {
+  let newStart = event.start;
+  let newEnd = Math.min(targetEnd, now);
+  if (newStart > now) {
+    newStart = now - MIN_DURATION_MS;
+  }
+  if (newEnd <= newStart) {
+    newStart = newEnd - MIN_DURATION_MS;
+  }
+  return { start: newStart, end: newEnd };
+};
+
 
 export default function DataManagementSection() {
   const { events, myTasks, isHydrated, actions } = useEventsStore();
@@ -56,24 +79,11 @@ export default function DataManagementSection() {
     setConfig(newConfig);
   };
 
-  // Calculate what would be deleted with current policy
-  const getEventsToDelete = (policy: DataRetentionPolicy) => {
-    if (policy === 'none') return [];
-    
-    const retentionOption = RETENTION_OPTIONS.find(opt => opt.value === policy);
-    if (!retentionOption?.days) return [];
-    
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - retentionOption.days);
-    
-    return events.filter(event => new Date(event.start) < cutoffDate);
-  };
-
   // Manual cleanup
   const performCleanup = async () => {
     setIsLoading(true);
     try {
-      const eventsToDelete = getEventsToDelete(config.retentionPolicy);
+      const eventsToDelete = retentionCandidates;
       
       if (eventsToDelete.length === 0) {
         setLastAction('クリーンアップ対象のデータがありません');
@@ -109,21 +119,11 @@ export default function DataManagementSection() {
     await saveConfig(newConfig);
   };
 
-  const eventsToDelete = getEventsToDelete(config.retentionPolicy);
-  const now = Date.now();
-
-  const anomalies = useMemo(() => {
-    return events
-      .map(event => {
-        const end = typeof event.end === 'number' ? event.end : now;
-        const duration = Math.max(0, end - event.start);
-        const isFuture = event.start > now + ANOMALY_FUTURE_BUFFER_MS || end > now + ANOMALY_FUTURE_BUFFER_MS;
-        const isLong = duration > ANOMALY_MAX_DURATION_MS;
-        return { event, duration, isFuture, isLong };
-      })
-      .filter(item => item.isFuture || item.isLong)
-      .sort((a, b) => b.duration - a.duration);
-  }, [events, now]);
+  const retentionCandidates = useMemo(
+    () => buildRetentionCandidates(events, config.retentionPolicy),
+    [events, config.retentionPolicy],
+  );
+  const anomalies = useMemo(() => buildAnomalies(events), [events]);
 
   useEffect(() => {
     if (anomalies.length === 0) {
@@ -143,22 +143,14 @@ export default function DataManagementSection() {
   const handleTrimEvent = (eventId: string) => {
     const target = events.find(e => e.id === eventId);
     if (!target) return;
-    let newStart = target.start;
-    let newEnd = typeof target.end === 'number' ? target.end : Date.now();
-
-    if (newStart > Date.now()) {
-      newStart = Date.now() - MIN_DURATION_MS;
-    }
-    newEnd = Math.min(newEnd, Date.now());
-    if (newEnd <= newStart) {
-      newStart = newEnd - MIN_DURATION_MS;
-    }
+    const now = Date.now();
+    const trimmed = applyEventTrim(target, target.end ?? now, now);
 
     const updated = events
-      .map(e => (e.id === eventId ? { ...e, start: newStart, end: newEnd } : e))
+      .map(e => (e.id === eventId ? { ...e, ...trimmed } : e))
       .sort((a, b) => a.start - b.start);
     actions.setEvents(updated);
-    setLastAction(`イベント「${target.label || target.type}」を現在時刻まで切り詰めました`);
+    setLastAction(`イベント「${getEventDisplayLabel(target)}」を現在時刻まで切り詰めました`);
   };
 
   const handleTrimEventToInput = (eventId: string) => {
@@ -175,16 +167,13 @@ export default function DataManagementSection() {
       setLastAction('無効な日時です');
       return;
     }
-    let newEnd = Math.min(parsedTime, Date.now());
-    let newStart = target.start;
-    if (newEnd <= newStart) {
-      newStart = newEnd - MIN_DURATION_MS;
-    }
+    const now = Date.now();
+    const trimmed = applyEventTrim(target, parsedTime, now);
     const updated = events
-      .map(e => (e.id === eventId ? { ...e, start: newStart, end: newEnd } : e))
+      .map(e => (e.id === eventId ? { ...e, ...trimmed } : e))
       .sort((a, b) => a.start - b.start);
     actions.setEvents(updated);
-    setLastAction(`イベント「${target.label || target.type}」を${parsed.toLocaleString()}まで短縮しました`);
+    setLastAction(`イベント「${getEventDisplayLabel(target)}」を${parsed.toLocaleString()}まで短縮しました`);
   };
 
   const handleDeleteEvent = (eventId: string) => {
@@ -192,7 +181,7 @@ export default function DataManagementSection() {
     if (!target) return;
     const updated = events.filter(e => e.id !== eventId).sort((a, b) => a.start - b.start);
     actions.setEvents(updated);
-    setLastAction(`イベント「${target.label || target.type}」を削除しました`);
+    setLastAction(`イベント「${getEventDisplayLabel(target)}」を削除しました`);
   };
 
   // Calculate data statistics
@@ -313,11 +302,11 @@ export default function DataManagementSection() {
                 </option>
               ))}
             </select>
-            {config.retentionPolicy !== 'none' && eventsToDelete.length > 0 && (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                現在の設定では、{eventsToDelete.length}件のイベントが削除対象です
-              </p>
-            )}
+          {config.retentionPolicy !== 'none' && retentionCandidates.length > 0 && (
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              現在の設定では、{retentionCandidates.length}件のイベントが削除対象です
+            </p>
+          )}
           </div>
 
           <div className="flex items-center justify-between p-3 border rounded-lg dark:border-gray-600">
@@ -382,7 +371,7 @@ export default function DataManagementSection() {
                   <li key={event.id} className="rounded-md border border-amber-200 bg-white/70 p-2 dark:border-amber-700 dark:bg-amber-900/40">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
-                        <div className="font-semibold truncate">{event.label || (event.type === 'task' ? 'タスク' : event.type === 'interrupt' ? '割り込み' : '休憩')}</div>
+                        <div className="font-semibold truncate">{getEventDisplayLabel(event)}</div>
                         <div className="text-amber-700 dark:text-amber-200">
                           {new Date(event.start).toLocaleString()} 〜 {event.end ? new Date(event.end).toLocaleString() : '実行中'}
                         </div>
@@ -432,7 +421,7 @@ export default function DataManagementSection() {
           {/* Manual Cleanup */}
           {config.retentionPolicy !== 'none' && (
             <div className="space-y-2">
-              {eventsToDelete.length === 0 ? (
+              {retentionCandidates.length === 0 ? (
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   現在削除対象となる古いデータはありません
                 </p>
@@ -444,7 +433,7 @@ export default function DataManagementSection() {
                     className="flex w-full items-center justify-center gap-2 rounded-md bg-orange-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {isLoading ? 'クリーンアップ中...' : `${eventsToDelete.length}件のデータを削除`}
+                    {isLoading ? 'クリーンアップ中...' : `${retentionCandidates.length}件のデータを削除`}
                   </button>
                   {lastAction && (
                     <p className="text-xs text-gray-600 dark:text-gray-400">{lastAction}</p>

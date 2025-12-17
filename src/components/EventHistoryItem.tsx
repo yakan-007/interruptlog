@@ -110,19 +110,6 @@ const InterruptEditor = ({
         </Button>
       ))}
     </div>
-    <Select
-      value={draft.urgency}
-      onValueChange={value => onChangeDraft('urgency', value as EventDraft['urgency'])}
-    >
-      <SelectTrigger className="w-[160px] text-sm">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="Low">低</SelectItem>
-        <SelectItem value="Medium">中</SelectItem>
-        <SelectItem value="High">高</SelectItem>
-      </SelectContent>
-    </Select>
   </div>
 );
 
@@ -204,7 +191,6 @@ export default function EventHistoryItem({
               <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
                 <div>発信: {event.who || '未入力'}</div>
                 <div>要件カテゴリ: {event.interruptType || '未入力'}</div>
-                <div>緊急度: {event.urgency ?? '未設定'}</div>
               </div>
             )}
             {event.memo && (

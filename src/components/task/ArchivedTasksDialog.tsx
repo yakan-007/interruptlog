@@ -5,6 +5,7 @@ import { ArchivedTask } from '@/types';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatDateTimeLabel } from '@/utils/dateTime';
 
 interface ArchivedTasksDialogProps {
   open: boolean;
@@ -14,13 +15,8 @@ interface ArchivedTasksDialogProps {
   onDelete: (taskId: string) => void;
 }
 
-const formatDateTime = (timestamp?: number | null) => {
-  if (!timestamp) {
-    return '-';
-  }
-  const date = new Date(timestamp);
-  return date.toLocaleString();
-};
+const formatDateTime = (timestamp?: number | null) =>
+  timestamp ? formatDateTimeLabel(timestamp) : '-';
 
 const downloadCsv = (tasks: ArchivedTask[]) => {
   if (typeof window === 'undefined' || tasks.length === 0) {

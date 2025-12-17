@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Zap, CheckCircle2, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import { Event, MyTask, TaskPlanning } from '@/types';
+import { formatDateTimeLabel } from '@/utils/dateTime';
 import useEventsStore from '@/store/useEventsStore';
 import { useFeatureFlags, useTaskManagement, useArchivedTasks } from '@/hooks/useStoreSelectors';
 import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
@@ -51,15 +52,18 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     setNewTaskDueAt('');
   };
 
+  const createPlanningData = () => {
+    if (!planningEnabled) return undefined;
+    return buildPlanningFromInputs({
+      plannedDuration: newTaskPlannedDuration,
+      dueAt: newTaskDueAt,
+    });
+  };
+
   const handleAddNewTask = () => {
     if (newTaskName.trim() !== '') {
       const categoryId = newTaskCategoryId && newTaskCategoryId !== 'none' ? newTaskCategoryId : undefined;
-      const planningData: TaskPlanning | undefined = planningEnabled
-        ? buildPlanningFromInputs({
-            plannedDuration: newTaskPlannedDuration,
-            dueAt: newTaskDueAt,
-          })
-        : undefined;
+      const planningData = createPlanningData();
 
       actions.addMyTask(newTaskName.trim(), categoryId, {
         planning: planningData,
@@ -84,6 +88,8 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     setEditingTaskName('');
   };
 
+  const resolveTaskById = (taskId: string) => myTasks.find(task => task.id === taskId);
+
   const handleSaveTaskName = (taskId: string) => {
     const trimmedName = editingTaskName.trim();
     if (!trimmedName) {
@@ -91,7 +97,7 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
       return;
     }
 
-    const targetTask = myTasks.find(task => task.id === taskId);
+    const targetTask = resolveTaskById(taskId);
     if (!targetTask) {
       handleCancelEditTask();
       return;
@@ -112,7 +118,7 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
   };
 
   const handleToggleCompletion = (taskId: string) => {
-    const targetTask = myTasks.find(task => task.id === taskId);
+    const targetTask = resolveTaskById(taskId);
     if (!targetTask) {
       return;
     }
@@ -213,15 +219,6 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     <div className="mb-8">
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold">マイタスク</h2>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setIsArchiveDialogOpen(true)}
-          disabled={archivedCount === 0}
-        >
-          アーカイブを開く {archivedCount > 0 ? `(${archivedCount})` : ''}
-        </Button>
       </div>
       <div className="flex gap-2 mb-4">
         <Input
@@ -439,7 +436,7 @@ function formatDateTime(timestamp?: number | null) {
   if (!timestamp) {
     return '-';
   }
-  return new Date(timestamp).toLocaleString();
+  return formatDateTimeLabel(timestamp);
 }
 
 function buildPlanningFromInputs({

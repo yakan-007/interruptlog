@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { InterruptFormState } from '@/hooks/useInterruptModal';
 import { Play, Zap } from 'lucide-react';
@@ -133,26 +132,6 @@ export default function InterruptModal({ open, onOpenChange, form, setForm, onSu
                 </Button>
               ))}
             </div>
-          </div>
-          <div>
-            <Label htmlFor="urgency-select" className="text-sm font-medium">
-              緊急度
-            </Label>
-            <Select
-              value={form.urgency}
-              onValueChange={(value: 'Low' | 'Medium' | 'High') =>
-                setForm({ ...form, urgency: value })
-              }
-            >
-              <SelectTrigger id="urgency-select" className="w-full mt-1">
-                <SelectValue placeholder="緊急度を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Low">低</SelectItem>
-                <SelectItem value="Medium">中</SelectItem>
-                <SelectItem value="High">高</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter className="flex flex-col gap-2 sm:flex-row">

@@ -51,6 +51,14 @@ export function getEventTypeLabel(eventType: Event['type']): string {
   }
 }
 
+export function getEventDisplayLabel(event: Event): string {
+  const trimmed = event.label?.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  return getEventTypeLabel(event.type);
+}
+
 // Event Filtering
 export function filterEventsByDate(events: Event[], date: Date): Event[] {
   const startOfDay = new Date(date);

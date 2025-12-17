@@ -96,7 +96,6 @@ export default function ActiveEventDisplay({ activeEvent, className }: ActiveEve
   if (activeEvent.type === 'interrupt') {
     if (activeEvent.who) details.push(`発信者: ${activeEvent.who}`);
     if (activeEvent.interruptType) details.push(`種類: ${activeEvent.interruptType}`);
-    if (activeEvent.urgency) details.push(`緊急度: ${activeEvent.urgency}`);
   }
 
   if (activeEvent.type === 'break' && activeEvent.breakDurationMinutes != null && activeEvent.breakDurationMinutes > 0) {

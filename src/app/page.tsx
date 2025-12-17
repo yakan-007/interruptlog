@@ -13,6 +13,9 @@ import {
   useEvents,
 } from '@/hooks/useStoreSelectors';
 import useDocumentTitle from '@/hooks/useDocumentTitle';
+import { buildAnomalies } from '@/utils/anomalies';
+import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LogPage() {
   const activeEvent = useActiveEvent();
@@ -63,6 +66,7 @@ export default function LogPage() {
   };
 
   const orderedEvents = useMemo(() => events.slice().sort((a, b) => a.start - b.start), [events]);
+  const anomalyCount = useMemo(() => buildAnomalies(events).length, [events]);
 
   const lastCompletedEventEnd = useMemo(() => {
     const completed = events.filter(event => event.end !== undefined);
@@ -97,6 +101,19 @@ export default function LogPage() {
   return (
     <div className="container mx-auto p-4 pb-16">
       <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
+      {anomalyCount > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>異常なイベントが {anomalyCount} 件あります。</span>
+            </div>
+            <Link href="/settings" className="text-xs font-semibold underline underline-offset-4">
+              設定で確認する
+            </Link>
+          </div>
+        </div>
+      )}
 
       <TaskManagementSection
         activeEvent={activeEvent}

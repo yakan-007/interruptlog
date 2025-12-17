@@ -152,7 +152,6 @@ const InterruptHeatmap: React.FC<InterruptHeatmapProps> = ({ events }) => {
                 <div className="text-gray-600 dark:text-gray-400 text-xs">
                   {event.who && `From: ${event.who} • `}
                   {event.interruptType && `Type: ${event.interruptType} • `}
-                  {event.urgency && `Urgency: ${event.urgency}`}
                 </div>
               </div>
             ))}

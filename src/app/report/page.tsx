@@ -13,6 +13,8 @@ import { buildHighlights } from './utils/highlights';
 import { buildHourlyTrend, buildWeeklyActivityPoints } from './utils/timeSeries';
 import { formatRangeLabel } from './utils/formatters';
 import type { HighlightMetric } from './utils/types';
+import { buildCsvContent, buildCsvFilename, buildExportRows } from './utils/export';
+import { buildReportAnomalies } from './utils/anomalies';
 import {
   computeSummaryMetrics,
   computeInterruptionStats,
@@ -21,6 +23,7 @@ import {
   getEventsForDateKey,
   formatDurationCompact,
 } from '@/lib/reportUtils';
+import { getEventDisplayLabel } from '@/utils/eventUtils';
 import HighlightsGrid from '@/components/report/HighlightsGrid';
 import ExecutiveSummary from '@/components/report/ExecutiveSummary';
 import {
@@ -37,26 +40,6 @@ import TaskDailyChanges from '@/components/report/TaskDailyChanges';
 import SummaryCards from '@/components/report/SummaryCards';
 import InterruptionInsights from '@/components/report/InterruptionInsights';
 import DailyDetailTables from '@/components/report/DailyDetailTables';
-
-const ANOMALY_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
-const ANOMALY_FUTURE_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
-const MS_IN_DAY = 24 * 60 * 60 * 1000;
-
-const formatDateTimeLocal = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
-
-const toCsvValue = (value: string | number | null | undefined) => {
-  if (value === null || value === undefined) return '';
-  const text = String(value).replace(/"/g, '""');
-  return `"${text}"`;
-};
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -185,108 +168,21 @@ const ReportPage = () => {
     [granularity, currentEvents, taskLedger, categories, currentRange],
   );
 
-  const anomalies = useMemo(() => {
-    const now = Date.now();
-    return currentEvents
-      .map(event => {
-        const end = typeof event.end === 'number' ? event.end : now;
-        const duration = Math.max(0, end - event.start);
-        const isFuture = event.start > now + ANOMALY_FUTURE_BUFFER_MS || end > now + ANOMALY_FUTURE_BUFFER_MS;
-        const isLong = duration > ANOMALY_DURATION_MS;
-        return { event, duration, isFuture, isLong };
-      })
-      .filter(item => item.isFuture || item.isLong)
-      .sort((a, b) => b.duration - a.duration)
-      .slice(0, 5);
-  }, [currentEvents]);
+  const anomalies = useMemo(() => buildReportAnomalies(currentEvents), [currentEvents]);
 
-  const exportEvents = useMemo(() => {
-    const rangeStart = currentRange.start.getTime();
-    const rangeEnd = currentRange.end.getTime() + MS_IN_DAY;
-    const now = Date.now();
-    const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
-    const taskMap = new Map(Object.values(taskLedger).map(task => [task.id, task.name]));
-
-    return events
-      .filter(event => {
-        const eventEnd = typeof event.end === 'number' ? event.end : now;
-        return eventEnd > rangeStart && event.start < rangeEnd;
-      })
-      .map(event => {
-        const eventEnd = typeof event.end === 'number' ? event.end : now;
-        const effectiveStart = Math.max(event.start, rangeStart);
-        const effectiveEnd = Math.min(eventEnd, rangeEnd);
-        const durationMinutes = Math.max(0, (effectiveEnd - effectiveStart) / 60000);
-        const categoryName = event.categoryId ? categoryMap.get(event.categoryId) : '';
-        const taskName = event.meta?.myTaskId ? taskMap.get(event.meta.myTaskId) : '';
-
-        return {
-          id: event.id,
-          type: event.type,
-          label: event.label ?? '',
-          start: formatDateTimeLocal(effectiveStart),
-          end: formatDateTimeLocal(effectiveEnd),
-          durationMinutes: Math.round(durationMinutes * 10) / 10,
-          category: categoryName ?? '',
-          taskName: taskName ?? '',
-          who: event.who ?? '',
-          interruptType: event.interruptType ?? '',
-          urgency: event.urgency ?? '',
-          breakType: event.breakType ?? '',
-          breakDurationMinutes: event.breakDurationMinutes ?? '',
-          memo: event.memo ?? '',
-          originalStart: formatDateTimeLocal(event.start),
-          originalEnd: event.end ? formatDateTimeLocal(event.end) : '',
-        };
-      })
-      .sort((a, b) => (a.start > b.start ? 1 : -1));
-  }, [events, currentRange, categories, taskLedger]);
+  const exportEvents = useMemo(
+    () => buildExportRows(events, currentRange, categories, taskLedger),
+    [events, currentRange, categories, taskLedger],
+  );
 
   const handleExportCsv = () => {
     if (exportEvents.length === 0) return;
-    const headers = [
-      'event_id',
-      'type',
-      'label',
-      'start',
-      'end',
-      'duration_minutes',
-      'category',
-      'task_name',
-      'who',
-      'interrupt_type',
-      'urgency',
-      'break_type',
-      'break_duration_minutes',
-      'memo',
-      'original_start',
-      'original_end',
-    ];
-    const rows = exportEvents.map(row => [
-      row.id,
-      row.type,
-      row.label,
-      row.start,
-      row.end,
-      row.durationMinutes,
-      row.category,
-      row.taskName,
-      row.who,
-      row.interruptType,
-      row.urgency,
-      row.breakType,
-      row.breakDurationMinutes,
-      row.memo,
-      row.originalStart,
-      row.originalEnd,
-    ]);
-
-    const csv = [headers.map(toCsvValue).join(','), ...rows.map(row => row.map(toCsvValue).join(','))].join('\n');
+    const csv = buildCsvContent(exportEvents);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `interruptlog-report-${selectedDate}-${granularity}.csv`;
+    a.download = buildCsvFilename(selectedDate, granularity);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -337,7 +233,7 @@ const ReportPage = () => {
                 {anomalies.map(item => (
                   <li key={item.event.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <span className="truncate">
-                      {item.event.label || (item.event.type === 'task' ? 'タスク' : item.event.type === 'interrupt' ? '割り込み' : '休憩')}
+                      {getEventDisplayLabel(item.event)}
                     </span>
                     <span className="text-amber-700 dark:text-amber-200">
                       {new Date(item.event.start).toLocaleString()} 〜 {item.event.end ? new Date(item.event.end).toLocaleString() : '実行中'} / {formatDurationCompact(item.duration)}

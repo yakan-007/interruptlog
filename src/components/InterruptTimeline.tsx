@@ -153,7 +153,6 @@ const InterruptTimeline: React.FC<InterruptTimelineProps> = ({ events, targetDat
                 <div className="text-gray-600 dark:text-gray-400 text-xs">
                   {event.who && `発信者: ${event.who} • `}
                   {event.interruptType && `種類: ${event.interruptType} • `}
-                  {event.urgency && `緊急度: ${event.urgency}`}
                 </div>
               </div>
             ))}

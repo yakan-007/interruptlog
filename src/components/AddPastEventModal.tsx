@@ -13,6 +13,7 @@ import useEventsStore from '@/store/useEventsStore';
 import type { Event } from '@/types';
 import { createEventFromDraft, EventDraft } from '@/store/eventDraftUtils';
 import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import { formatDateTimeLocal, formatDateTimeLabel } from '@/utils/dateTime';
 
 interface AddPastEventModalProps {
   open: boolean;
@@ -34,22 +35,12 @@ const BREAK_OPTIONS: Array<{ value: NonNullable<Event['breakType']>; label: stri
   { value: 'indefinite', label: '未設定' },
 ];
 
-const formatDateTimeLocal = (timestamp: number): string => {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
 const clampTimestamp = (value: number): number => {
   const now = Date.now();
   return Math.min(value, now);
 };
 
-const toReadable = (timestamp: number) => formatDateTimeLocal(timestamp).replace('T', ' ');
+const toReadable = (timestamp: number) => formatDateTimeLabel(timestamp);
 
 export default function AddPastEventModal({ open, onOpenChange, defaultRange }: AddPastEventModalProps) {
   const { events, actions, categories, myTasks, isCategoryEnabled, interruptContacts, interruptSubjects, interruptCategorySettings } = useEventsStore(state => ({
@@ -79,7 +70,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
   const [interruptType, setInterruptType] = useState(defaultInterruptCategory);
   const [breakType, setBreakType] = useState<NonNullable<Event['breakType']>>('short');
   const [categoryId, setCategoryId] = useState<string>('none');
-  const [urgency, setUrgency] = useState<NonNullable<Event['urgency']>>('Medium');
+  const defaultUrgency: NonNullable<Event['urgency']> = 'Medium';
   const [myTaskId, setMyTaskId] = useState<string>('none');
   const [startInput, setStartInput] = useState('');
   const [endInput, setEndInput] = useState('');
@@ -104,7 +95,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
     setBreakType('short');
     setCategoryId('none');
     setMyTaskId('none');
-    setUrgency('Medium');
+    // urgency stays default (hidden in UI)
     setStartInput(formatDateTimeLocal(start));
     setEndInput(formatDateTimeLocal(safeEnd));
     setMemo('');
@@ -123,12 +114,12 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
       setWho('');
       setInterruptType(defaultInterruptCategory);
       setBreakType('short');
-      setUrgency('Medium');
+      // urgency stays default (hidden in UI)
       setMyTaskId('none');
     } else if (nextType === 'interrupt') {
       setCategoryId('none');
       setBreakType('short');
-      setUrgency('Medium');
+      // urgency stays default (hidden in UI)
       setInterruptType(defaultInterruptCategory);
       setMyTaskId('none');
     } else if (nextType === 'break') {
@@ -136,7 +127,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
       setWho('');
       setInterruptType(defaultInterruptCategory);
       setBreakType('short');
-      setUrgency('Medium');
+    // urgency stays default (hidden in UI)
       setMyTaskId('none');
     }
   };
@@ -218,7 +209,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
         who: who.trim(),
         interruptType: interruptType.trim(),
         breakType,
-        urgency,
+        urgency: defaultUrgency,
         myTaskId: eventType === 'task' && myTaskId !== 'none' ? myTaskId : null,
       };
 
@@ -409,22 +400,6 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
                 </div>
               </div>
 
-              <div className="grid gap-2">
-                <Label className="text-xs font-medium text-slate-500 dark:text-slate-300">緊急度</Label>
-                <Select
-                  value={urgency}
-                  onValueChange={value => setUrgency(value as NonNullable<Event['urgency']>)}
-                >
-                  <SelectTrigger className="w-[160px] text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">低</SelectItem>
-                    <SelectItem value="Medium">中</SelectItem>
-                    <SelectItem value="High">高</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           )}
 

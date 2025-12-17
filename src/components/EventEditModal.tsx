@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCategories, useInterruptCategorySettings, useIsCategoryEnabled } from '@/hooks/useStoreSelectors';
 import { GAP_MIN_MS } from '@/store/eventHelpers';
+import { getEventDisplayLabel } from '@/utils/eventUtils';
 
 interface EventEditModalProps {
   event: Event | null;
@@ -63,6 +64,44 @@ export default function EventEditModal({
     return new Date(timestamp - tzOffset).toISOString().slice(0, 16);
   };
 
+  const parseDateTimeInput = (value: string) => {
+    if (!value) return null;
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
+  const buildOverlapMessage = (prefix: string, target: Event) =>
+    `${prefix}: ${getEventDisplayLabel(target)} (${formatEventTime(target.start)} - ${
+      target.end ? formatEventTime(target.end) : '実行中'
+    })`;
+
+  const resetFormState = useCallback(() => {
+    setStartDateTimeInput('');
+    setEndDateTimeInput('');
+    setEventType('task');
+    setEventLabel('');
+    setEventCategoryId('none');
+    setInterruptType('');
+    setValidationError('');
+    setPreviewGap(null);
+    setShowSmallGapNotice(false);
+    setShouldCreateGap(true);
+  }, []);
+
+  const syncFromEvent = useCallback((source: Event) => {
+    setStartDateTimeInput(toDateTimeLocalValue(source.start));
+    setEndDateTimeInput(toDateTimeLocalValue(source.end ?? source.start));
+    setEventType(source.type || 'task');
+    setEventLabel(source.label || '');
+    setEventCategoryId(source.categoryId || 'none');
+    setInterruptType(source.type === 'interrupt' && source.interruptType ? source.interruptType : '');
+    setValidationError('');
+    setPreviewGap(null);
+    setShowSmallGapNotice(false);
+    setGapActivityName(source.label ? `${source.label} の残り` : '未分類の時間');
+    setShouldCreateGap(false);
+  }, []);
+
   useEffect(() => {
     if (event && event.end) {
       try {
@@ -70,34 +109,14 @@ export default function EventEditModal({
           console.error('[EventEditModal] Invalid date:', event.end);
           return;
         }
-        setStartDateTimeInput(toDateTimeLocalValue(event.start));
-        setEndDateTimeInput(toDateTimeLocalValue(event.end));
-        setEventType(event.type || 'task');
-        setEventLabel(event.label || '');
-        setEventCategoryId(event.categoryId || 'none');
-        setInterruptType(event.type === 'interrupt' && event.interruptType ? event.interruptType : '');
-        setValidationError('');
-        setPreviewGap(null);
-        setShowSmallGapNotice(false);
-        setGapActivityName(event.label ? `${event.label} の残り` : '未分類の時間');
-        setShouldCreateGap(false);
+        syncFromEvent(event);
       } catch (error) {
         console.error('[EventEditModal] Error in useEffect:', error);
       }
     } else {
-      // Reset state when event is null
-      setStartDateTimeInput('');
-      setEndDateTimeInput('');
-      setEventType('task');
-      setEventLabel('');
-      setEventCategoryId('none');
-      setInterruptType('');
-      setValidationError('');
-      setPreviewGap(null);
-      setShowSmallGapNotice(false);
-      setShouldCreateGap(true);
+      resetFormState();
     }
-  }, [event]);
+  }, [event, resetFormState, syncFromEvent]);
 
   const handleDateTimeChange = (value: string, field: 'start' | 'end') => {
     try {
@@ -115,22 +134,14 @@ export default function EventEditModal({
       }
 
       if (!value) {
-        setValidationError('終了日時を入力してください');
+        setValidationError(field === 'start' ? '開始日時を入力してください' : '終了日時を入力してください');
         return;
       }
 
-      const parsedStart = new Date(field === 'start' ? value : startDateTimeInput);
-      const parsedEnd = new Date(field === 'end' ? value : endDateTimeInput);
+      const newStartTime = parseDateTimeInput(field === 'start' ? value : startDateTimeInput);
+      const newEndTime = parseDateTimeInput(field === 'end' ? value : endDateTimeInput);
 
-      const newStartTime = parsedStart.getTime();
-      const newEndTime = parsedEnd.getTime();
-
-      if (Number.isNaN(newEndTime)) {
-        setValidationError('有効な日時を入力してください');
-        return;
-      }
-
-      if (Number.isNaN(newStartTime) || Number.isNaN(newEndTime)) {
+      if (newStartTime === null || newEndTime === null) {
         setValidationError('有効な日時を入力してください');
         return;
       }
@@ -148,16 +159,14 @@ export default function EventEditModal({
       if (prevEvent) {
         const prevEnd = prevEvent.end ?? prevEvent.start;
         if (newStartTime < prevEnd) {
-          const label = prevEvent.label || (prevEvent.type === 'task' ? 'タスク' : prevEvent.type === 'interrupt' ? '割り込み' : '休憩');
-          setValidationError(`前のイベントと重なっています: ${label} (${formatEventTime(prevEvent.start)} - ${prevEvent.end ? formatEventTime(prevEvent.end) : '実行中'})`);
+          setValidationError(buildOverlapMessage('前のイベントと重なっています', prevEvent));
           return;
         }
       }
 
       // Check for overlap with next event
       if (nextEvent && newEndTime > nextEvent.start) {
-        const label = nextEvent.label || (nextEvent.type === 'task' ? 'タスク' : nextEvent.type === 'interrupt' ? '割り込み' : '休憩');
-        setValidationError(`次のイベントと重複します: ${label} (${formatEventTime(nextEvent.start)} - ${nextEvent.end ? formatEventTime(nextEvent.end) : '実行中'})`);
+        setValidationError(buildOverlapMessage('次のイベントと重複します', nextEvent));
         return;
       }
 
@@ -193,12 +202,10 @@ export default function EventEditModal({
         return;
       }
 
-      const parsedStart = new Date(startDateTimeInput);
-      const parsedEnd = new Date(endDateTimeInput);
-      const newStartTime = parsedStart.getTime();
-      const newEndTime = parsedEnd.getTime();
+      const newStartTime = parseDateTimeInput(startDateTimeInput);
+      const newEndTime = parseDateTimeInput(endDateTimeInput);
 
-      if (Number.isNaN(newStartTime) || Number.isNaN(newEndTime)) {
+      if (newStartTime === null || newEndTime === null) {
         setValidationError('有効な日時を入力してください');
         return;
       }
@@ -265,7 +272,7 @@ export default function EventEditModal({
         <DialogHeader>
           <DialogTitle>イベントを編集</DialogTitle>
           <DialogDescription>
-            イベント名、終了日時、イベントタイプ{isCategoryEnabled ? '、カテゴリ' : ''}を修正できます。開始時刻は変更できません。
+            イベント名、開始・終了日時、イベントタイプ{isCategoryEnabled ? '、カテゴリ' : ''}を修正できます。
           </DialogDescription>
         </DialogHeader>
         
