@@ -29,9 +29,16 @@ export interface EventsActions {
     gapActivityName?: string,
     newEventType?: Event['type'],
     newLabel?: string,
-    newCategoryId?: string,
+    newCategoryId?: string | null,
     interruptType?: string,
-    createGapEvent?: boolean
+    createGapEvent?: boolean,
+    extra?: {
+      who?: string;
+      memo?: string;
+      myTaskId?: string | null;
+      breakType?: Event['breakType'];
+      breakDurationMinutes?: Event['breakDurationMinutes'];
+    }
   ) => void;
   setEvents: (events: Event[]) => void;
   setCurrentEventId: (id: string | null) => void;

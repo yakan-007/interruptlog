@@ -13,6 +13,7 @@ import { useFeatureFlags, useTaskManagement, useArchivedTasks } from '@/hooks/us
 import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import ArchivedTasksDialog from '@/components/task/ArchivedTasksDialog';
+import TaskEditDialog from '@/components/task/TaskEditDialog';
 
 interface TaskManagementSectionProps {
   activeEvent?: Event;
@@ -32,6 +33,7 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
   const [planningEditorTaskId, setPlanningEditorTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskName, setEditingTaskName] = useState('');
+  const [editingTaskDialogId, setEditingTaskDialogId] = useState<string | null>(null);
   const archivedTasks = useArchivedTasks();
   const archivedCount = archivedTasks.length;
   const recentArchivedTasks = useMemo(() => archivedTasks.slice(0, 5), [archivedTasks]);
@@ -174,6 +176,10 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     () => (planningEditorTaskId ? myTasks.find(task => task.id === planningEditorTaskId) ?? null : null),
     [myTasks, planningEditorTaskId]
   );
+  const taskEditDialogTask = useMemo(
+    () => (editingTaskDialogId ? myTasks.find(task => task.id === editingTaskDialogId) ?? null : null),
+    [myTasks, editingTaskDialogId]
+  );
 
   useEffect(() => {
     if (!planningEnabled) {
@@ -193,12 +199,31 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     }
   }, [editingTaskId, myTasks]);
 
+  useEffect(() => {
+    if (!editingTaskDialogId) {
+      return;
+    }
+
+    const stillExists = myTasks.some(task => task.id === editingTaskDialogId);
+    if (!stillExists) {
+      setEditingTaskDialogId(null);
+    }
+  }, [editingTaskDialogId, myTasks]);
+
   const handleOpenPlanningEditor = (taskId: string) => {
     setPlanningEditorTaskId(taskId);
   };
 
+  const handleOpenTaskEditDialog = (taskId: string) => {
+    setEditingTaskDialogId(taskId);
+  };
+
   const handleClosePlanningEditor = () => {
     setPlanningEditorTaskId(null);
+  };
+
+  const handleCloseTaskEditDialog = () => {
+    setEditingTaskDialogId(null);
   };
 
   const handleSavePlanning = (updates: { planning?: TaskPlanning | null }) => {
@@ -213,6 +238,17 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
       planning: null,
     });
     handleClosePlanningEditor();
+  };
+
+  const handleSaveTaskEdits = (updates: { name: string; categoryId?: string }) => {
+    if (!taskEditDialogTask) return;
+    if (updates.name !== taskEditDialogTask.name) {
+      actions.updateMyTask(taskEditDialogTask.id, updates.name);
+    }
+    if (isCategoryEnabled && updates.categoryId !== taskEditDialogTask.categoryId) {
+      actions.updateMyTaskCategory(taskEditDialogTask.id, updates.categoryId);
+    }
+    handleCloseTaskEditDialog();
   };
 
   return (
@@ -346,6 +382,7 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
             onDrop={sortByDueDate ? undefined : handleDrop}
             onDragEnd={sortByDueDate ? undefined : handleDragEnd}
             onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
+            onEditTask={handleOpenTaskEditDialog}
             isDragDisabled={sortByDueDate}
           />
         ))}
@@ -420,6 +457,15 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
           onReset={handleResetPlanning}
         />
       )}
+
+      <TaskEditDialog
+        task={taskEditDialogTask}
+        categories={categories}
+        isCategoryEnabled={isCategoryEnabled}
+        isOpen={Boolean(taskEditDialogTask)}
+        onClose={handleCloseTaskEditDialog}
+        onSave={handleSaveTaskEdits}
+      />
 
       <ArchivedTasksDialog
         open={isArchiveDialogOpen}

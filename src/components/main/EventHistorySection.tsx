@@ -9,20 +9,8 @@ import { formatEventTime } from '@/lib/timeUtils';
 import {
   useCategories,
   useIsCategoryEnabled,
-  useStoreActions,
   useMyTasks,
-  useInterruptContacts,
-  useInterruptSubjects,
-  useInterruptCategorySettings,
 } from '@/hooks/useStoreSelectors';
-import {
-  EventDraft,
-  createDraftFromEvent,
-  applyDraftToEvent,
-  shouldAutoSyncLabel,
-  shouldAutoSyncCategory,
-} from '@/store/eventDraftUtils';
-import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
 
 type EventFilter = 'today' | 'today-yesterday' | 'week' | 'all';
 
@@ -32,160 +20,21 @@ interface EventHistorySectionProps {
   showAllHistory: boolean;
   setShowAllHistory: (show: boolean) => void;
   onAddPastEvent: () => void;
-  onEditEventTime: (event: Event) => void;
+  onEditEvent: (event: Event) => void;
 }
 
 export default function EventHistorySection({
   events,
   showAllHistory,
   setShowAllHistory,
-  onEditEventTime,
+  onEditEvent,
   onAddPastEvent,
 }: EventHistorySectionProps) {
   const [eventFilter, setEventFilter] = useState<EventFilter>('today-yesterday');
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [editingDraft, setEditingDraft] = useState<EventDraft | null>(null);
 
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
-  const actions = useStoreActions();
-  const interruptContacts = useInterruptContacts();
-  const interruptSubjects = useInterruptSubjects();
-  const interruptCategorySettings = useInterruptCategorySettings();
   const myTasks = useMyTasks();
-  const interruptCategories = [
-    { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
-    { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
-    { name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
-    { name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
-    { name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
-    { name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
-  ];
-
-  const handleStartEdit = (event: Event) => {
-    setEditingEventId(event.id);
-    setEditingDraft(createDraftFromEvent(event));
-  };
-
-  const handleCancelEdit = () => {
-    setEditingEventId(null);
-    setEditingDraft(null);
-  };
-
-  const handleDraftChange = <K extends keyof EventDraft>(field: K, value: EventDraft[K]) => {
-    setEditingDraft(prev => {
-      if (!prev) return prev;
-      if (field === 'type') {
-        const nextType = value as Event['type'];
-        if (nextType === 'task') {
-          return {
-            ...prev,
-            type: 'task',
-            categoryId: prev.categoryId ?? null,
-            who: '',
-            interruptType: '',
-            urgency: 'Medium',
-            myTaskId: prev.myTaskId ?? null,
-          } as EventDraft;
-        }
-        if (nextType === 'interrupt') {
-          return {
-            ...prev,
-            type: 'interrupt',
-            categoryId: null,
-            who: prev.who,
-            interruptType: prev.interruptType,
-            urgency: prev.urgency,
-            myTaskId: null,
-          } as EventDraft;
-        }
-        return {
-          ...prev,
-          type: 'break',
-          categoryId: null,
-          who: '',
-          interruptType: '',
-          urgency: 'Medium',
-          breakType: prev.breakType || 'short',
-          myTaskId: null,
-        } as EventDraft;
-      }
-
-      if (field === 'breakType') {
-        return {
-          ...prev,
-          breakType: (value || 'short') as NonNullable<Event['breakType']>,
-        } as EventDraft;
-      }
-
-      if (field === 'myTaskId') {
-        const nextTaskId = value as EventDraft['myTaskId'];
-        const baseEvent = editingEventId ? events.find(event => event.id === editingEventId) : undefined;
-        const previousTask = prev.myTaskId ? myTasks.find(task => task.id === prev.myTaskId) : undefined;
-        const nextTask = nextTaskId ? myTasks.find(task => task.id === nextTaskId) : undefined;
-
-        const autoLabel = shouldAutoSyncLabel(prev.label, previousTask?.name, baseEvent);
-        const autoCategory = shouldAutoSyncCategory(prev.categoryId ?? null, previousTask?.categoryId, baseEvent);
-
-        let nextLabel = prev.label;
-        if (autoLabel) {
-          if (nextTask) {
-            nextLabel = nextTask.name;
-          } else if (!nextTaskId) {
-            if (baseEvent?.meta?.isUnknownActivity) {
-              nextLabel = baseEvent.label ?? '';
-            } else {
-              nextLabel = '';
-            }
-          }
-        }
-
-        let nextCategoryId = prev.categoryId;
-        if (autoCategory) {
-          if (nextTask) {
-            nextCategoryId = nextTask.categoryId ?? null;
-          } else {
-            nextCategoryId = baseEvent?.categoryId ?? null;
-          }
-        }
-
-        return {
-          ...prev,
-          myTaskId: nextTaskId,
-          label: nextLabel,
-          categoryId: nextCategoryId ?? null,
-        } as EventDraft;
-      }
-
-      if (field === 'categoryId') {
-        return {
-          ...prev,
-          categoryId: value,
-        } as EventDraft;
-      }
-
-      return {
-        ...prev,
-        [field]: value,
-      } as EventDraft;
-    });
-  };
-
-  const handleSaveEdit = () => {
-    if (!editingEventId || !editingDraft) {
-      return;
-    }
-
-    const targetEvent = events.find(event => event.id === editingEventId);
-    if (!targetEvent) {
-      handleCancelEdit();
-      return;
-    }
-
-    const nextEvent = applyDraftToEvent(targetEvent, editingDraft, myTasks);
-    actions.updateEvent(nextEvent);
-    handleCancelEdit();
-  };
 
   const filteredEvents = useMemo(() => {
     const today = new Date();
@@ -268,20 +117,10 @@ export default function EventHistorySection({
               <EventHistoryItem
                 key={event.id}
                 event={event}
-                isEditing={editingEventId === event.id}
-                draft={editingEventId === event.id ? editingDraft : null}
-                onStartEdit={handleStartEdit}
-                onChangeDraft={handleDraftChange}
-                onCancelEdit={handleCancelEdit}
-                onSaveEdit={handleSaveEdit}
+                onEditEvent={onEditEvent}
                 formatEventTime={formatEventTime}
-                onEditEventTime={onEditEventTime}
-                canEditTime={Boolean(event.end)}
                 categories={categories}
                 isCategoryEnabled={isCategoryEnabled}
-                interruptContacts={interruptContacts}
-                interruptSubjects={interruptSubjects}
-                interruptCategories={interruptCategories}
                 tasks={myTasks}
               />
             ))}

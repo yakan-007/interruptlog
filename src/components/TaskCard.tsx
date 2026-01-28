@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Trash2, Play, GripVertical, NotebookPen, Clock, CalendarClock } from 'lucide-react';
+import { Trash2, Play, GripVertical, NotebookPen, Pencil } from 'lucide-react';
 import { MyTask, Event, Category, DueAlertSettings } from '@/types';
 import TaskCardTimer from './TaskCardTimer';
 import useEventsStore from '@/store/useEventsStore';
@@ -32,6 +32,7 @@ interface TaskCardProps {
   onDrop?: (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
   onDragEnd?: () => void;
   onEditPlanning?: (taskId: string) => void;
+  onEditTask?: (taskId: string) => void;
   isDragDisabled?: boolean;
 }
 
@@ -55,6 +56,7 @@ export default function TaskCard({
   onDrop,
   onDragEnd,
   onEditPlanning,
+  onEditTask,
   isDragDisabled,
 }: TaskCardProps) {
   const { categories, isCategoryEnabled } = useEventsStore(state => ({
@@ -171,6 +173,17 @@ export default function TaskCard({
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {onEditTask && !task.isCompleted && (
+            <Button
+              size="icon"
+              variant="ghost"
+              type="button"
+              onClick={() => onEditTask(task.id)}
+              title="タスクを編集"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
           {featureFlags.enableTaskPlanning && onEditPlanning && (
             <Button
               size="icon"

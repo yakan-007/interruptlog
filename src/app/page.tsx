@@ -39,7 +39,7 @@ export default function LogPage() {
   useDocumentTitle(pageTitle);
 
   // Handle event time editing
-  const handleEditEventTime = (event: Event) => {
+  const handleEditEvent = (event: Event) => {
     setEditingEvent(event);
     setIsEditModalOpen(true);
   };
@@ -54,8 +54,26 @@ export default function LogPage() {
     newCategoryId?: string,
     interruptType?: string,
     createGapEvent?: boolean,
+    extra?: {
+      who?: string;
+      memo?: string;
+      myTaskId?: string | null;
+      breakType?: Event['breakType'];
+      breakDurationMinutes?: Event['breakDurationMinutes'];
+    },
   ) => {
-    actions.updateEventTimeRange(eventId, newStartTime, newEndTime, gapActivityName, newEventType, newLabel, newCategoryId, interruptType, createGapEvent);
+    actions.updateEventTimeRange(
+      eventId,
+      newStartTime,
+      newEndTime,
+      gapActivityName,
+      newEventType,
+      newLabel,
+      newCategoryId,
+      interruptType,
+      createGapEvent,
+      extra
+    );
     setIsEditModalOpen(false);
     setEditingEvent(null);
   };
@@ -127,7 +145,7 @@ export default function LogPage() {
           setPendingAddRange({ start: lastCompletedEventEnd, end: suggestedBackfillEnd });
           setIsAddPastEventOpen(true);
         }}
-        onEditEventTime={handleEditEventTime}
+        onEditEvent={handleEditEvent}
       />
 
       <AddPastEventModal

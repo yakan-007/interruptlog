@@ -388,9 +388,16 @@ export const createEventActions = ({
       gapActivityName?: string,
       newEventType?: Event['type'],
       newLabel?: string,
-      newCategoryId?: string,
+      newCategoryId?: string | null,
       interruptType?: string,
       createGapEventOption?: boolean,
+      extra?: {
+        who?: string;
+        memo?: string;
+        myTaskId?: string | null;
+        breakType?: Event['breakType'];
+        breakDurationMinutes?: Event['breakDurationMinutes'];
+      },
     ) => {
       const { events } = get();
       const eventIndex = events.findIndex(event => event.id === eventId);
@@ -436,8 +443,8 @@ export const createEventActions = ({
         type: typeToApply,
         start: newStartTime,
         end: newEndTime,
-        ...(newLabel !== undefined && { label: newLabel }),
-        ...(newCategoryId !== undefined && { categoryId: newCategoryId }),
+        ...(newLabel !== undefined && { label: newLabel.trim() ? newLabel.trim() : undefined }),
+        ...(newCategoryId !== undefined && { categoryId: newCategoryId ?? undefined }),
       } as Event;
 
       if (typeToApply !== 'task') {
@@ -446,8 +453,38 @@ export const createEventActions = ({
 
       if (typeToApply === 'interrupt') {
         updatedEvent.interruptType = interruptType ?? updatedEvent.interruptType;
+        if (extra?.who !== undefined) {
+          updatedEvent.who = extra.who.trim() ? extra.who.trim() : undefined;
+        }
       } else {
         updatedEvent.interruptType = undefined;
+        updatedEvent.who = undefined;
+      }
+
+      if (extra?.memo !== undefined) {
+        updatedEvent.memo = extra.memo.trim() ? extra.memo.trim() : undefined;
+      }
+
+      if (typeToApply === 'task' && extra?.myTaskId !== undefined) {
+        const nextMeta = updatedEvent.meta ? { ...updatedEvent.meta } : {};
+        if (extra.myTaskId) {
+          nextMeta.myTaskId = extra.myTaskId;
+        } else {
+          delete nextMeta.myTaskId;
+        }
+        updatedEvent.meta = Object.keys(nextMeta).length > 0 ? nextMeta : undefined;
+      }
+
+      if (typeToApply === 'break') {
+        if (extra?.breakType !== undefined) {
+          updatedEvent.breakType = extra.breakType;
+        }
+        if (extra?.breakDurationMinutes !== undefined) {
+          updatedEvent.breakDurationMinutes = extra.breakDurationMinutes;
+        }
+      } else {
+        updatedEvent.breakType = undefined;
+        updatedEvent.breakDurationMinutes = undefined;
       }
 
       const shouldCreateGap =
