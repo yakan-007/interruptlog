@@ -12,8 +12,9 @@ import { AlertCircle } from 'lucide-react';
 import useEventsStore from '@/store/useEventsStore';
 import type { Event } from '@/types';
 import { createEventFromDraft, EventDraft } from '@/store/eventDraftUtils';
-import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import { BREAK_OPTIONS } from '@/lib/constants';
 import { formatDateTimeLocal, formatDateTimeLabel } from '@/utils/dateTime';
+import useInterruptCategories from '@/hooks/useInterruptCategories';
 
 interface AddPastEventModalProps {
   open: boolean;
@@ -27,14 +28,6 @@ const EVENT_LABELS: Record<Event['type'], string> = {
   break: '休憩',
 };
 
-const BREAK_OPTIONS: Array<{ value: NonNullable<Event['breakType']>; label: string }> = [
-  { value: 'short', label: 'ショート' },
-  { value: 'coffee', label: 'コーヒー' },
-  { value: 'lunch', label: 'ランチ' },
-  { value: 'custom', label: 'カスタム' },
-  { value: 'indefinite', label: '未設定' },
-];
-
 const clampTimestamp = (value: number): number => {
   const now = Date.now();
   return Math.min(value, now);
@@ -43,7 +36,7 @@ const clampTimestamp = (value: number): number => {
 const toReadable = (timestamp: number) => formatDateTimeLabel(timestamp);
 
 export default function AddPastEventModal({ open, onOpenChange, defaultRange }: AddPastEventModalProps) {
-  const { events, actions, categories, myTasks, isCategoryEnabled, interruptContacts, interruptSubjects, interruptCategorySettings } = useEventsStore(state => ({
+  const { events, actions, categories, myTasks, isCategoryEnabled, interruptContacts, interruptSubjects } = useEventsStore(state => ({
     events: state.events,
     actions: state.actions,
     categories: state.categories,
@@ -51,18 +44,10 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
     isCategoryEnabled: state.isCategoryEnabled,
     interruptContacts: state.interruptContacts,
     interruptSubjects: state.interruptSubjects,
-    interruptCategorySettings: state.interruptCategorySettings,
   }));
 
-  const interruptCategories = [
-    { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
-    { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
-    { name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
-    { name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
-    { name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
-    { name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
-  ];
-  const defaultInterruptCategory = interruptCategories[0]?.name ?? '';
+  const { categories: interruptCategories, defaultCategoryName } = useInterruptCategories();
+  const defaultInterruptCategory = defaultCategoryName;
 
   const [eventType, setEventType] = useState<Event['type']>('task');
   const [label, setLabel] = useState('');

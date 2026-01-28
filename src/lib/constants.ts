@@ -47,11 +47,11 @@ export const UI_STRINGS = {
 
 // 休憩オプション
 export const BREAK_OPTIONS = [
-  { value: 'short', label: '短い休憩', defaultMinutes: 5 },
-  { value: 'coffee', label: 'コーヒーブレイク', defaultMinutes: 15 },
-  { value: 'lunch', label: '昼休憩', defaultMinutes: 60 },
+  { value: 'short', label: 'ショート', defaultMinutes: 5 },
+  { value: 'coffee', label: 'コーヒー', defaultMinutes: 15 },
+  { value: 'lunch', label: 'ランチ', defaultMinutes: 60 },
   { value: 'custom', label: 'カスタム' },
-  { value: 'indefinite', label: '時間未定' },
+  { value: 'indefinite', label: '未設定' },
 ] as const;
 
 // イベントタイプ

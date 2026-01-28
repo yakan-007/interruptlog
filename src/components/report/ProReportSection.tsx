@@ -4,6 +4,7 @@ import type { DailyInterruptionDetailRow, DailyTaskDetailRow } from '@/app/repor
 import type { WeeklyProSummary } from '@/app/report/utils/proReports';
 import { formatDurationCompact } from '@/lib/reportUtils';
 import { formatDayLabel } from '@/app/report/utils/taskMetrics';
+import ProGate from '@/components/ProGate';
 
 interface ProReportSectionProps {
   granularity: 'day' | 'week';
@@ -13,13 +14,6 @@ interface ProReportSectionProps {
   weeklySummary?: WeeklyProSummary;
 }
 
-const LockedCard = ({ title }: { title: string }) => (
-  <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 dark:border-amber-600/40 dark:bg-amber-500/10 dark:text-amber-100">
-    <div className="font-semibold">{title}</div>
-    <p className="mt-2 text-xs">Proで解放されます。</p>
-  </div>
-);
-
 export default function ProReportSection({
   granularity,
   proAccess,
@@ -28,14 +22,11 @@ export default function ProReportSection({
   weeklySummary,
 }: ProReportSectionProps) {
   if (granularity === 'day') {
-    if (!proAccess) {
-      return <LockedCard title="Proランキング（タスク/割り込み）" />;
-    }
-
     const topTasks = taskDetails.slice(0, 5);
     const topInterrupts = interruptionDetails.slice(0, 5);
 
     return (
+      <ProGate proAccess={proAccess} lockedTitle="Proランキング（タスク/割り込み）">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">タスクランキング（時間）</h3>
@@ -73,48 +64,47 @@ export default function ProReportSection({
           )}
         </div>
       </div>
+      </ProGate>
     );
   }
 
-  if (!proAccess) {
-    return <LockedCard title="Pro週次まとめ" />;
-  }
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">週次まとめ（Pro）</h3>
-      <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-          <div className="text-xs text-slate-500">最も集中できた日</div>
-          {weeklySummary?.topFocusDay ? (
-            <div className="mt-1 font-semibold">
-              {formatDayLabel(weeklySummary.topFocusDay.dateKey)} / {formatDurationCompact(weeklySummary.topFocusDay.durationMs)}
-            </div>
-          ) : (
-            <div className="mt-1 text-xs text-slate-400">データなし</div>
-          )}
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-          <div className="text-xs text-slate-500">割り込みが多かった日</div>
-          {weeklySummary?.mostInterruptDay ? (
-            <div className="mt-1 font-semibold">
-              {formatDayLabel(weeklySummary.mostInterruptDay.dateKey)} / {weeklySummary.mostInterruptDay.count}回
-            </div>
-          ) : (
-            <div className="mt-1 text-xs text-slate-400">データなし</div>
-          )}
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-          <div className="text-xs text-slate-500">最長集中セッション</div>
-          {weeklySummary?.longestFocus ? (
-            <div className="mt-1 font-semibold">
-              {weeklySummary.longestFocus.label} / {formatDurationCompact(weeklySummary.longestFocus.durationMs)}
-            </div>
-          ) : (
-            <div className="mt-1 text-xs text-slate-400">データなし</div>
-          )}
+    <ProGate proAccess={proAccess} lockedTitle="Pro週次まとめ">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">週次まとめ（Pro）</h3>
+        <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+            <div className="text-xs text-slate-500">最も集中できた日</div>
+            {weeklySummary?.topFocusDay ? (
+              <div className="mt-1 font-semibold">
+                {formatDayLabel(weeklySummary.topFocusDay.dateKey)} / {formatDurationCompact(weeklySummary.topFocusDay.durationMs)}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-slate-400">データなし</div>
+            )}
+          </div>
+          <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+            <div className="text-xs text-slate-500">割り込みが多かった日</div>
+            {weeklySummary?.mostInterruptDay ? (
+              <div className="mt-1 font-semibold">
+                {formatDayLabel(weeklySummary.mostInterruptDay.dateKey)} / {weeklySummary.mostInterruptDay.count}回
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-slate-400">データなし</div>
+            )}
+          </div>
+          <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+            <div className="text-xs text-slate-500">最長集中セッション</div>
+            {weeklySummary?.longestFocus ? (
+              <div className="mt-1 font-semibold">
+                {weeklySummary.longestFocus.label} / {formatDurationCompact(weeklySummary.longestFocus.durationMs)}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-slate-400">データなし</div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </ProGate>
   );
 }

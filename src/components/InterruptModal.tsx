@@ -18,27 +18,19 @@ export type InterruptModalProps = {
 };
 
 import { formatElapsedTime } from '@/lib/timeUtils';
-import { TIMER_UPDATE_INTERVAL_MS, INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import { TIMER_UPDATE_INTERVAL_MS } from '@/lib/constants';
 import useEventsStore from '@/store/useEventsStore';
+import useInterruptCategories from '@/hooks/useInterruptCategories';
 
 
 export default function InterruptModal({ open, onOpenChange, form, setForm, onSubmit, onCancel, onSave, startTime }: InterruptModalProps) {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
-  const { interruptCategorySettings, interruptContacts, interruptSubjects } = useEventsStore(state => ({
-    interruptCategorySettings: state.interruptCategorySettings,
+  const { interruptContacts, interruptSubjects } = useEventsStore(state => ({
     interruptContacts: state.interruptContacts,
     interruptSubjects: state.interruptSubjects,
   }));
+  const { categories: interruptCategories } = useInterruptCategories();
   
-  const interruptCategories = [
-    { id: 'category1', name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
-    { id: 'category2', name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
-    { id: 'category3', name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
-    { id: 'category4', name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
-    { id: 'category5', name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
-    { id: 'category6', name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
-  ];
-
   useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
     if (open && startTime) {

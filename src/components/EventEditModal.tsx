@@ -10,11 +10,10 @@ import { AlertCircle, Clock } from 'lucide-react';
 import { Event } from '@/types';
 import { formatEventTime } from '@/lib/timeUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { INTERRUPT_CATEGORY_COLORS } from '@/lib/constants';
+import { BREAK_OPTIONS } from '@/lib/constants';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   useCategories,
-  useInterruptCategorySettings,
   useIsCategoryEnabled,
   useMyTasks,
   useInterruptContacts,
@@ -22,6 +21,7 @@ import {
 } from '@/hooks/useStoreSelectors';
 import { GAP_MIN_MS } from '@/store/eventHelpers';
 import { getEventDisplayLabel } from '@/utils/eventUtils';
+import useInterruptCategories from '@/hooks/useInterruptCategories';
 
 interface EventEditModalProps {
   event: Event | null;
@@ -49,14 +49,6 @@ interface EventEditModalProps {
   nextEvent?: Event;
 }
 
-const BREAK_OPTIONS: Array<{ value: NonNullable<Event['breakType']>; label: string }> = [
-  { value: 'short', label: 'ショート' },
-  { value: 'coffee', label: 'コーヒー' },
-  { value: 'lunch', label: 'ランチ' },
-  { value: 'custom', label: 'カスタム' },
-  { value: 'indefinite', label: '未設定' },
-];
-
 export default function EventEditModal({
   event,
   isOpen,
@@ -67,19 +59,11 @@ export default function EventEditModal({
 }: EventEditModalProps) {
   const categories = useCategories();
   const isCategoryEnabled = useIsCategoryEnabled();
-  const interruptCategorySettings = useInterruptCategorySettings();
   const myTasks = useMyTasks();
   const interruptContacts = useInterruptContacts();
   const interruptSubjects = useInterruptSubjects();
-  const interruptCategories = [
-    { name: interruptCategorySettings.category1, color: INTERRUPT_CATEGORY_COLORS.category1 },
-    { name: interruptCategorySettings.category2, color: INTERRUPT_CATEGORY_COLORS.category2 },
-    { name: interruptCategorySettings.category3, color: INTERRUPT_CATEGORY_COLORS.category3 },
-    { name: interruptCategorySettings.category4, color: INTERRUPT_CATEGORY_COLORS.category4 },
-    { name: interruptCategorySettings.category5, color: INTERRUPT_CATEGORY_COLORS.category5 },
-    { name: interruptCategorySettings.category6, color: INTERRUPT_CATEGORY_COLORS.category6 },
-  ];
-  const defaultInterruptCategory = interruptCategories[0]?.name ?? '';
+  const { categories: interruptCategories, defaultCategoryName } = useInterruptCategories();
+  const defaultInterruptCategory = defaultCategoryName;
   const [startDateTimeInput, setStartDateTimeInput] = useState('');
   const [endDateTimeInput, setEndDateTimeInput] = useState('');
   const [validationError, setValidationError] = useState('');
