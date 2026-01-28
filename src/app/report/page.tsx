@@ -40,6 +40,7 @@ import TaskDailyChanges from '@/components/report/TaskDailyChanges';
 import SummaryCards from '@/components/report/SummaryCards';
 import InterruptionInsights from '@/components/report/InterruptionInsights';
 import DailyDetailTables from '@/components/report/DailyDetailTables';
+import DailyTimeline from '@/components/report/DailyTimeline';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -65,10 +66,11 @@ const formatRangeDescription = (granularity: Granularity) => {
 };
 
 const ReportPage = () => {
-  const { events, taskLedger, categories, isHydrated } = useEventsStore(state => ({
+  const { events, taskLedger, categories, interruptCategorySettings, isHydrated } = useEventsStore(state => ({
     events: state.events,
     taskLedger: state.taskLedger,
     categories: state.categories,
+    interruptCategorySettings: state.interruptCategorySettings,
     isHydrated: state.isHydrated,
   }));
 
@@ -324,6 +326,13 @@ const ReportPage = () => {
 
         {granularity === 'day' && (
           <div className="space-y-6">
+            <DailyTimeline
+              events={eventsForSelectedDay}
+              dateKey={currentRange.startKey}
+              categories={categories}
+              taskLedger={taskLedger}
+              interruptCategorySettings={interruptCategorySettings}
+            />
             <DailyDetailTables
               taskDetails={dailyTaskDetails}
               interruptionDetails={dailyInterruptionDetails}
