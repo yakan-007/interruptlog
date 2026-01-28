@@ -14,6 +14,7 @@ import { buildHourlyTrend, buildWeeklyActivityPoints } from './utils/timeSeries'
 import { formatRangeLabel } from './utils/formatters';
 import type { HighlightMetric } from './utils/types';
 import { buildCsvContent, buildCsvFilename, buildExportRows } from './utils/export';
+import { buildWeeklyProSummary } from './utils/proReports';
 import { buildReportAnomalies } from './utils/anomalies';
 import {
   computeSummaryMetrics,
@@ -42,6 +43,7 @@ import InterruptionInsights from '@/components/report/InterruptionInsights';
 import DailyDetailTables from '@/components/report/DailyDetailTables';
 import DailyTimeline from '@/components/report/DailyTimeline';
 import ProExportDialog from '@/components/report/ProExportDialog';
+import ProReportSection from '@/components/report/ProReportSection';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -171,6 +173,11 @@ const ReportPage = () => {
   const weeklyCategorySeries = useMemo(
     () => (granularity === 'week' ? buildWeeklyCategorySeries(currentEvents, taskLedger, categories, currentRange) : null),
     [granularity, currentEvents, taskLedger, categories, currentRange],
+  );
+
+  const weeklyProSummary = useMemo(
+    () => (granularity === 'week' ? buildWeeklyProSummary(currentEvents, currentRange) : undefined),
+    [granularity, currentEvents, currentRange],
   );
 
   const anomalies = useMemo(() => buildReportAnomalies(currentEvents), [currentEvents]);
@@ -358,6 +365,12 @@ const ReportPage = () => {
               taskLedger={taskLedger}
               interruptCategorySettings={interruptCategorySettings}
             />
+            <ProReportSection
+              granularity="day"
+              proAccess={proAccess}
+              taskDetails={dailyTaskDetails}
+              interruptionDetails={dailyInterruptionDetails}
+            />
             <DailyDetailTables
               taskDetails={dailyTaskDetails}
               interruptionDetails={dailyInterruptionDetails}
@@ -384,6 +397,13 @@ const ReportPage = () => {
             <WeeklyActivityChart data={weeklyActivity} />
             <WeeklyTaskFlowChart data={weeklyTaskFlow} />
             {weeklyCategorySeries && <WeeklyCategoryStackedChart series={weeklyCategorySeries} />}
+            <ProReportSection
+              granularity="week"
+              proAccess={proAccess}
+              taskDetails={[]}
+              interruptionDetails={[]}
+              weeklySummary={weeklyProSummary}
+            />
             <InterruptionInsights
               stats={interruptionStats}
               eventsForSelectedDate={[]}

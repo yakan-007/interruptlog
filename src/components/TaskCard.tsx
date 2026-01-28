@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Trash2, Play, GripVertical, NotebookPen, Pencil } from 'lucide-react';
+import { Trash2, Play, GripVertical, NotebookPen, Pencil, Clock, CalendarClock } from 'lucide-react';
 import { MyTask, Event, Category, DueAlertSettings } from '@/types';
 import TaskCardTimer from './TaskCardTimer';
 import useEventsStore from '@/store/useEventsStore';
