@@ -176,6 +176,10 @@ export function useFeatureFlags(): FeatureFlags {
   return useEventsStore(state => state.featureFlags);
 }
 
+export function useProAccess(): boolean {
+  return useEventsStore(state => state.proAccess);
+}
+
 export function useDueAlertSettings(): DueAlertSettings {
   return useEventsStore(state => state.dueAlertSettings);
 }

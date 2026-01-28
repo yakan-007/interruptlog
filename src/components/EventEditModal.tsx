@@ -34,7 +34,7 @@ interface EventEditModalProps {
     gapActivityName?: string,
     newEventType?: Event['type'],
     newLabel?: string,
-    newCategoryId?: string,
+    newCategoryId?: string | null,
     interruptType?: string,
     createGapEvent?: boolean,
     extra?: {

@@ -6,6 +6,8 @@ type SettingsActionKeys =
   | 'toggleAutoStartTask'
   | 'setFeatureFlag'
   | 'toggleFeatureFlag'
+  | 'setProAccess'
+  | 'toggleProAccess'
   | 'setDueAlertPreset'
   | 'setDueAlertSettings'
   | 'toggleSortTasksByDueDate'
@@ -20,6 +22,7 @@ export const createSettingsActions = ({
     persistTaskPlacementSetting,
     persistAutoStartTaskSetting,
     persistFeatureFlags,
+    persistProAccess,
     persistDueAlertSettings,
     persistUiSettings,
   } = persist;
@@ -44,6 +47,16 @@ export const createSettingsActions = ({
       const current = get().featureFlags[flag];
       set({ featureFlags: { ...get().featureFlags, [flag]: !current } });
       persistFeatureFlags();
+    },
+
+    setProAccess: (value) => {
+      set({ proAccess: value });
+      persistProAccess();
+    },
+
+    toggleProAccess: () => {
+      set({ proAccess: !get().proAccess });
+      persistProAccess();
     },
 
     setDueAlertPreset: (preset: DueAlertSettings['preset']) => {

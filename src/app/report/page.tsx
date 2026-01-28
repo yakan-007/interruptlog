@@ -41,6 +41,7 @@ import SummaryCards from '@/components/report/SummaryCards';
 import InterruptionInsights from '@/components/report/InterruptionInsights';
 import DailyDetailTables from '@/components/report/DailyDetailTables';
 import DailyTimeline from '@/components/report/DailyTimeline';
+import ProExportDialog from '@/components/report/ProExportDialog';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -66,17 +67,19 @@ const formatRangeDescription = (granularity: Granularity) => {
 };
 
 const ReportPage = () => {
-  const { events, taskLedger, categories, interruptCategorySettings, isHydrated } = useEventsStore(state => ({
+  const { events, taskLedger, categories, interruptCategorySettings, proAccess, isHydrated } = useEventsStore(state => ({
     events: state.events,
     taskLedger: state.taskLedger,
     categories: state.categories,
     interruptCategorySettings: state.interruptCategorySettings,
+    proAccess: state.proAccess,
     isHydrated: state.isHydrated,
   }));
 
   const [selectedDate, setSelectedDate] = useState(() => toDateKey(new Date()));
 
   const [granularity, setGranularity] = useState<Granularity>('day');
+  const [isProExportOpen, setIsProExportOpen] = useState(false);
 
   const earliestEventDate = useMemo(() => {
     if (events.length === 0) return null;
@@ -191,6 +194,14 @@ const ReportPage = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleProExport = () => {
+    if (!proAccess) {
+      window.alert('この機能はProで利用できます。');
+      return;
+    }
+    setIsProExportOpen(true);
+  };
+
   const monthlyTaskFlow = useMemo(
     () => (granularity === 'month' ? buildMonthlyTaskPoints(taskRangeData.current.daily) : []),
     [granularity, taskRangeData],
@@ -291,6 +302,20 @@ const ReportPage = () => {
                   className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:ring-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700"
                 >
                   CSVを保存
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProExport}
+                  className={`rounded-lg border border-transparent px-3 py-2 text-sm font-medium shadow-sm ring-1 transition focus:outline-none focus:ring-2 focus:ring-rose-400 ${
+                    proAccess
+                      ? 'bg-amber-50 text-amber-900 ring-amber-200 hover:ring-amber-300 dark:bg-amber-500/20 dark:text-amber-100 dark:ring-amber-500/40'
+                      : 'bg-white/90 text-slate-400 ring-slate-200 hover:ring-slate-300 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700'
+                  }`}
+                >
+                  詳細エクスポート
+                  <span className="ml-2 rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-500/40 dark:text-amber-100">
+                    Pro
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -395,6 +420,16 @@ const ReportPage = () => {
             />
           </div>
         )}
+
+        <ProExportDialog
+          open={isProExportOpen}
+          onOpenChange={setIsProExportOpen}
+          defaultStartKey={currentRange.startKey}
+          defaultEndKey={currentRange.endKey}
+          events={events}
+          categories={categories}
+          taskLedger={taskLedger}
+        />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import InterruptCategorySection from '@/components/settings/InterruptCategorySec
 import InterruptDirectorySection from '@/components/settings/InterruptDirectorySection';
 import DataManagementSection from '@/components/settings/DataManagementSection';
 import DueAlertSettingsSection from '@/components/settings/DueAlertSettingsSection';
+import ProAccessSection from '@/components/settings/ProAccessSection';
 
 const SettingsPage = () => {
   const { isHydrated } = useEventsStore();
@@ -56,6 +57,11 @@ const SettingsPage = () => {
           <InterruptCategorySection />
           <InterruptDirectorySection />
           <DueAlertSettingsSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>Pro</SectionLabel>
+          <ProAccessSection />
         </section>
 
         <section className="space-y-4">

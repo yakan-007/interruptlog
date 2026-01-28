@@ -26,6 +26,7 @@ const createInitialState = (): Omit<EventsState, 'actions'> => ({
   featureFlags: {
     enableTaskPlanning: true,
   },
+  proAccess: false,
   dueAlertSettings: {
     warningMinutes: 6 * 60,
     dangerMinutes: 60,

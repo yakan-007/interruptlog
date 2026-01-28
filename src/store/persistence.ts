@@ -13,6 +13,7 @@ export interface PersistenceHelpers {
   persistInterruptDirectory: () => void;
   persistInterruptCategorySettings: () => void;
   persistFeatureFlags: () => void;
+  persistProAccess: () => void;
   persistDueAlertSettings: () => void;
   persistUiSettings: () => void;
   persistTaskPlacementSetting: () => void;
@@ -96,6 +97,13 @@ export const createPersistenceHelpers = (get: StoreGet): PersistenceHelpers => {
     });
   };
 
+  const persistProAccess = () => {
+    const { proAccess } = get();
+    dbSet(STORE_STORAGE_KEYS.PRO_ACCESS, proAccess).catch(error => {
+      console.error('[useEventsStore] Error persisting pro access to IndexedDB:', error);
+    });
+  };
+
   const persistDueAlertSettings = () => {
     const { dueAlertSettings } = get();
     dbSet(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS, dueAlertSettings).catch(error => {
@@ -134,6 +142,7 @@ export const createPersistenceHelpers = (get: StoreGet): PersistenceHelpers => {
     persistInterruptDirectory,
     persistInterruptCategorySettings,
     persistFeatureFlags,
+    persistProAccess,
     persistDueAlertSettings,
     persistUiSettings,
     persistTaskPlacementSetting,

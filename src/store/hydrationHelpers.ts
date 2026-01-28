@@ -15,6 +15,7 @@ export const STORE_STORAGE_KEYS = {
   TASK_PLACEMENT_SETTING: 'task-placement-setting',
   AUTO_START_TASK_SETTING: 'auto-start-task-setting',
   FEATURE_FLAGS_SETTING: 'feature-flags-setting',
+  PRO_ACCESS: 'pro-access',
   DUE_ALERT_SETTINGS: 'due-alert-settings',
   UI_SETTINGS: 'ui-settings',
   TASK_LEDGER: 'task-ledger',
@@ -52,6 +53,7 @@ export interface HydratedSettingsData {
   addTaskToTop: boolean;
   autoStartTask: boolean;
   featureFlags: FeatureFlags;
+  proAccess: boolean;
   dueAlertSettings: DueAlertSettings;
   uiSettings: UiSettings;
   interruptContacts: string[];
@@ -211,6 +213,7 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     storedTaskPlacement,
     storedAutoStartTask,
     storedFeatureFlags,
+    storedProAccess,
     storedDueAlertSettings,
     storedUiSettings,
     storedInterruptContacts,
@@ -220,6 +223,7 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     dbGet<boolean>(STORE_STORAGE_KEYS.TASK_PLACEMENT_SETTING),
     dbGet<boolean>(STORE_STORAGE_KEYS.AUTO_START_TASK_SETTING),
     dbGet<FeatureFlags>(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING),
+    dbGet<boolean>(STORE_STORAGE_KEYS.PRO_ACCESS),
     dbGet<DueAlertSettings>(STORE_STORAGE_KEYS.DUE_ALERT_SETTINGS),
     dbGet<UiSettings>(STORE_STORAGE_KEYS.UI_SETTINGS),
     dbGet<string[]>(STORE_STORAGE_KEYS.INTERRUPT_CONTACTS),
@@ -244,6 +248,9 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     enableTaskPlanning: storedFeatureFlags?.enableTaskPlanning ?? true,
   };
   await dbSet(STORE_STORAGE_KEYS.FEATURE_FLAGS_SETTING, featureFlags);
+
+  const proAccess = storedProAccess ?? false;
+  await dbSet(STORE_STORAGE_KEYS.PRO_ACCESS, proAccess);
 
   const sanitizeEntries = (values: string[] | undefined | null) =>
     (values ?? [])
@@ -276,6 +283,7 @@ export async function hydrateSettingsData(): Promise<HydratedSettingsData> {
     addTaskToTop: storedTaskPlacement ?? false,
     autoStartTask: storedAutoStartTask ?? false,
     featureFlags,
+    proAccess,
     dueAlertSettings,
     uiSettings,
     interruptContacts,

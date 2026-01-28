@@ -75,6 +75,8 @@ export interface EventsActions {
   toggleAutoStartTask: () => void;
   setFeatureFlag: (flag: keyof FeatureFlags, value: boolean) => void;
   toggleFeatureFlag: (flag: keyof FeatureFlags) => void;
+  setProAccess: (value: boolean) => void;
+  toggleProAccess: () => void;
   setDueAlertPreset: (preset: DueAlertSettings['preset']) => void;
   setDueAlertSettings: (settings: DueAlertSettings) => void;
   toggleSortTasksByDueDate: () => void;
@@ -97,6 +99,7 @@ export interface EventsState {
   autoStartTask: boolean;
   isHydrated: boolean;
   featureFlags: FeatureFlags;
+  proAccess: boolean;
   dueAlertSettings: DueAlertSettings;
   uiSettings: UiSettings;
   actions: EventsActions;
