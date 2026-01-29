@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Trash2, Play, GripVertical, NotebookPen, Pencil, Clock, CalendarClock } from 'lucide-react';
+import { Trash2, Play, GripVertical, Pencil, Clock, CalendarClock } from 'lucide-react';
 import { MyTask, Event, Category, DueAlertSettings } from '@/types';
 import TaskCardTimer from './TaskCardTimer';
 import useEventsStore from '@/store/useEventsStore';
@@ -31,7 +31,6 @@ interface TaskCardProps {
   onDragLeave?: () => void;
   onDrop?: (e: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
   onDragEnd?: () => void;
-  onEditPlanning?: (taskId: string) => void;
   onEditTask?: (taskId: string) => void;
   isDragDisabled?: boolean;
 }
@@ -55,7 +54,6 @@ export default function TaskCard({
   onDragLeave,
   onDrop,
   onDragEnd,
-  onEditPlanning,
   onEditTask,
   isDragDisabled,
 }: TaskCardProps) {
@@ -182,17 +180,6 @@ export default function TaskCard({
               title="タスクを編集"
             >
               <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {featureFlags.enableTaskPlanning && onEditPlanning && (
-            <Button
-              size="icon"
-              variant="ghost"
-              type="button"
-              onClick={() => onEditPlanning(task.id)}
-              title="予定時間と期限を編集"
-            >
-              <NotebookPen className="h-4 w-4" />
             </Button>
           )}
           {isActiveTask && activeEvent?.start && <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />}

@@ -5,36 +5,48 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import type { Category, MyTask } from '@/types';
+import type { Category, MyTask, TaskPlanning } from '@/types';
 
 interface TaskEditDialogProps {
   task: MyTask | null;
   categories: Category[];
   isCategoryEnabled: boolean;
+  planningEnabled: boolean;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updates: { name: string; categoryId?: string }) => void;
+  onSave: (updates: { name: string; categoryId?: string; planning?: TaskPlanning | null }) => void;
 }
 
 export default function TaskEditDialog({
   task,
   categories,
   isCategoryEnabled,
+  planningEnabled,
   isOpen,
   onClose,
   onSave,
 }: TaskEditDialogProps) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('none');
+  const [plannedMinutes, setPlannedMinutes] = useState('');
+  const [dueAt, setDueAt] = useState('');
 
   useEffect(() => {
     if (!task) {
       setName('');
       setCategoryId('none');
+      setPlannedMinutes('');
+      setDueAt('');
       return;
     }
     setName(task.name);
     setCategoryId(task.categoryId ?? 'none');
+    setPlannedMinutes(
+      task.planning?.plannedDurationMinutes !== undefined && task.planning?.plannedDurationMinutes !== null
+        ? String(task.planning.plannedDurationMinutes)
+        : ''
+    );
+    setDueAt(task.planning?.dueAt ? new Date(task.planning.dueAt).toISOString().slice(0, 16) : '');
   }, [task]);
 
   const trimmedName = useMemo(() => name.trim(), [name]);
@@ -44,7 +56,17 @@ export default function TaskEditDialog({
     if (!task) return;
     if (!trimmedName) return;
     const normalizedCategoryId = categoryId === 'none' ? undefined : categoryId;
-    onSave({ name: trimmedName, categoryId: normalizedCategoryId });
+    const parsedMinutes = Number(plannedMinutes);
+    const normalizedMinutes =
+      plannedMinutes.trim() === '' || Number.isNaN(parsedMinutes) ? undefined : Math.max(parsedMinutes, 0);
+    const parsedDueAt = dueAt ? new Date(dueAt).getTime() : undefined;
+    const normalizedDueAt = parsedDueAt && !Number.isNaN(parsedDueAt) ? parsedDueAt : undefined;
+    const nextPlanning: TaskPlanning | null | undefined = planningEnabled
+      ? (normalizedMinutes !== undefined || normalizedDueAt !== undefined
+          ? { plannedDurationMinutes: normalizedMinutes, dueAt: normalizedDueAt }
+          : null)
+      : undefined;
+    onSave({ name: trimmedName, categoryId: normalizedCategoryId, planning: nextPlanning });
   };
 
   return (
@@ -90,6 +112,31 @@ export default function TaskEditDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {planningEnabled && (
+            <div className="space-y-2">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">予定時間 (分)</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={plannedMinutes}
+                    onChange={event => setPlannedMinutes(event.target.value)}
+                    placeholder="例: 90"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">期限</label>
+                  <Input
+                    type="datetime-local"
+                    value={dueAt}
+                    onChange={event => setDueAt(event.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

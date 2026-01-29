@@ -4,9 +4,17 @@ import { formatDateTimeLabel } from '@/utils/dateTime';
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
+const sanitizeCsvValue = (value: string): string => {
+  const trimmed = value.trimStart();
+  if (trimmed.startsWith('=') || trimmed.startsWith('+') || trimmed.startsWith('-') || trimmed.startsWith('@')) {
+    return `'${value}`;
+  }
+  return value;
+};
+
 const toCsvValue = (value: string | number | null | undefined) => {
   if (value === null || value === undefined) return '';
-  const text = String(value).replace(/"/g, '""');
+  const text = sanitizeCsvValue(String(value)).replace(/"/g, '""');
   return `"${text}"`;
 };
 

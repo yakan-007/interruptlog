@@ -10,7 +10,6 @@ import { Event, MyTask, TaskPlanning } from '@/types';
 import { formatDateTimeLabel } from '@/utils/dateTime';
 import useEventsStore from '@/store/useEventsStore';
 import { useFeatureFlags, useTaskManagement, useArchivedTasks } from '@/hooks/useStoreSelectors';
-import TaskPlanningDialog from '@/components/task/TaskPlanningDialog';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import ArchivedTasksDialog from '@/components/task/ArchivedTasksDialog';
 import TaskEditDialog from '@/components/task/TaskEditDialog';
@@ -30,7 +29,6 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [newTaskPlannedDuration, setNewTaskPlannedDuration] = useState<string>('');
   const [newTaskDueAt, setNewTaskDueAt] = useState<string>('');
-  const [planningEditorTaskId, setPlanningEditorTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskName, setEditingTaskName] = useState('');
   const [editingTaskDialogId, setEditingTaskDialogId] = useState<string | null>(null);
@@ -172,10 +170,6 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     [myTasks],
   );
 
-  const planningEditorTask = useMemo(
-    () => (planningEditorTaskId ? myTasks.find(task => task.id === planningEditorTaskId) ?? null : null),
-    [myTasks, planningEditorTaskId]
-  );
   const taskEditDialogTask = useMemo(
     () => (editingTaskDialogId ? myTasks.find(task => task.id === editingTaskDialogId) ?? null : null),
     [myTasks, editingTaskDialogId]
@@ -210,43 +204,33 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
     }
   }, [editingTaskDialogId, myTasks]);
 
-  const handleOpenPlanningEditor = (taskId: string) => {
-    setPlanningEditorTaskId(taskId);
-  };
-
   const handleOpenTaskEditDialog = (taskId: string) => {
     setEditingTaskDialogId(taskId);
-  };
-
-  const handleClosePlanningEditor = () => {
-    setPlanningEditorTaskId(null);
   };
 
   const handleCloseTaskEditDialog = () => {
     setEditingTaskDialogId(null);
   };
 
-  const handleSavePlanning = (updates: { planning?: TaskPlanning | null }) => {
-    if (!planningEditorTaskId) return;
-    actions.updateMyTaskPlanning(planningEditorTaskId, updates);
-    handleClosePlanningEditor();
+  const isPlanningEqual = (a?: TaskPlanning | null, b?: TaskPlanning | null) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (a.plannedDurationMinutes ?? null) === (b.plannedDurationMinutes ?? null) &&
+      (a.dueAt ?? null) === (b.dueAt ?? null);
   };
 
-  const handleResetPlanning = () => {
-    if (!planningEditorTaskId) return;
-    actions.updateMyTaskPlanning(planningEditorTaskId, {
-      planning: null,
-    });
-    handleClosePlanningEditor();
-  };
-
-  const handleSaveTaskEdits = (updates: { name: string; categoryId?: string }) => {
+  const handleSaveTaskEdits = (updates: { name: string; categoryId?: string; planning?: TaskPlanning | null }) => {
     if (!taskEditDialogTask) return;
     if (updates.name !== taskEditDialogTask.name) {
       actions.updateMyTask(taskEditDialogTask.id, updates.name);
     }
     if (isCategoryEnabled && updates.categoryId !== taskEditDialogTask.categoryId) {
       actions.updateMyTaskCategory(taskEditDialogTask.id, updates.categoryId);
+    }
+    if (planningEnabled && updates.planning !== undefined && !isPlanningEqual(updates.planning, taskEditDialogTask.planning)) {
+      actions.updateMyTaskPlanning(taskEditDialogTask.id, {
+        planning: updates.planning ?? null,
+      });
     }
     handleCloseTaskEditDialog();
   };
@@ -381,7 +365,6 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
             onDragLeave={sortByDueDate ? undefined : handleDragLeave}
             onDrop={sortByDueDate ? undefined : handleDrop}
             onDragEnd={sortByDueDate ? undefined : handleDragEnd}
-            onEditPlanning={planningEnabled ? handleOpenPlanningEditor : undefined}
             onEditTask={handleOpenTaskEditDialog}
             isDragDisabled={sortByDueDate}
           />
@@ -448,20 +431,11 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
         </div>
       )}
 
-      {planningEnabled && planningEditorTask && (
-        <TaskPlanningDialog
-          task={planningEditorTask}
-          isOpen={Boolean(planningEditorTask)}
-          onClose={handleClosePlanningEditor}
-          onSave={handleSavePlanning}
-          onReset={handleResetPlanning}
-        />
-      )}
-
       <TaskEditDialog
         task={taskEditDialogTask}
         categories={categories}
         isCategoryEnabled={isCategoryEnabled}
+        planningEnabled={planningEnabled}
         isOpen={Boolean(taskEditDialogTask)}
         onClose={handleCloseTaskEditDialog}
         onSave={handleSaveTaskEdits}
