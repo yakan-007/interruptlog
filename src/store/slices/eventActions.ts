@@ -476,6 +476,16 @@ export const createEventActions = ({
         updatedEvent.meta = Object.keys(nextMeta).length > 0 ? nextMeta : undefined;
       }
 
+      if (
+        typeToApply === 'task' &&
+        updatedEvent.meta?.isUnknownActivity &&
+        (newLabel !== undefined || newCategoryId !== undefined || extra?.myTaskId !== undefined)
+      ) {
+        const nextMeta = { ...updatedEvent.meta };
+        delete nextMeta.isUnknownActivity;
+        updatedEvent.meta = Object.keys(nextMeta).length > 0 ? nextMeta : undefined;
+      }
+
       if (typeToApply === 'break') {
         if (extra?.breakType !== undefined) {
           updatedEvent.breakType = extra.breakType;

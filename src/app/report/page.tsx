@@ -332,6 +332,9 @@ const ReportPage = () => {
                   PDFで保存
                 </button>
               </div>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Pro: 任意期間の詳細エクスポートが利用できます。
+              </p>
               {earliestEventDate && (
                 <p className="text-xs text-slate-400 dark:text-slate-500">
                   データ利用可能期間: {earliestEventDate} 〜 {new Date().toISOString().split('T')[0]}

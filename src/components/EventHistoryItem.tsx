@@ -86,7 +86,7 @@ export default function EventHistoryItem({
           {event.type === 'interrupt' && (
             <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
               <div>発信: {event.who || '未入力'}</div>
-              <div>要件カテゴリ: {event.interruptType || '未入力'}</div>
+              <div>割り込みカテゴリ: {event.interruptType || '未入力'}</div>
             </div>
           )}
           {event.memo && (

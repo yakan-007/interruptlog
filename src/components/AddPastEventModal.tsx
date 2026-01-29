@@ -367,7 +367,7 @@ export default function AddPastEventModal({ open, onOpenChange, defaultRange }: 
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-slate-500 dark:text-slate-300">要件カテゴリ</Label>
+                <Label className="text-xs font-medium text-slate-500 dark:text-slate-300">割り込みカテゴリ</Label>
                 <div className="flex flex-wrap gap-2">
                   {interruptCategories.map(item => (
                     <Button
