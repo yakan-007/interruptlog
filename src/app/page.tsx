@@ -31,9 +31,9 @@ export default function LogPage() {
 
   const pageTitle = useMemo(() => {
     if (!isHydrated) {
-      return 'InterruptLog Slim';
+      return 'InterruptLog';
     }
-    return activeEvent ? `InterruptLog Slim - ${activeEvent.label ?? 'タスク'}` : 'InterruptLog Slim';
+    return activeEvent ? `InterruptLog - ${activeEvent.label ?? 'タスク'}` : 'InterruptLog';
   }, [activeEvent, isHydrated]);
 
   useDocumentTitle(pageTitle);
