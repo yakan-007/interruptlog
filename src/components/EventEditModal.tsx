@@ -73,6 +73,7 @@ export default function EventEditModal({
   const [eventLabel, setEventLabel] = useState('');
   const [eventCategoryId, setEventCategoryId] = useState<string>('none');
   const [interruptType, setInterruptType] = useState<string>('');
+  const [overlapPrevEnd, setOverlapPrevEnd] = useState<number | null>(null);
   const [eventWho, setEventWho] = useState('');
   const [eventMemo, setEventMemo] = useState('');
   const [eventMyTaskId, setEventMyTaskId] = useState<string>('none');
@@ -221,6 +222,7 @@ export default function EventEditModal({
       setValidationError('');
       setPreviewGap(null);
       setShowSmallGapNotice(false);
+      setOverlapPrevEnd(null);
 
       if (!event || !event.end) {
         return;
@@ -253,6 +255,7 @@ export default function EventEditModal({
         const prevEnd = prevEvent.end ?? prevEvent.start;
         if (newStartTime < prevEnd) {
           setValidationError(buildOverlapMessage('前のイベントと重なっています', prevEvent));
+          setOverlapPrevEnd(prevEnd);
           return;
         }
       }
@@ -311,6 +314,15 @@ export default function EventEditModal({
       if (newEndTime > Date.now()) {
         setValidationError('終了日時は現在より前である必要があります');
         return;
+      }
+
+      if (prevEvent) {
+        const prevEnd = prevEvent.end ?? prevEvent.start;
+        if (newStartTime < prevEnd) {
+          setValidationError(buildOverlapMessage('前のイベントと重なっています', prevEvent));
+          setOverlapPrevEnd(prevEnd);
+          return;
+        }
       }
 
       if (nextEvent && newEndTime > nextEvent.start) {
@@ -640,6 +652,18 @@ export default function EventEditModal({
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{validationError}</AlertDescription>
             </Alert>
+          )}
+          {overlapPrevEnd && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleDateTimeChange(toDateTimeLocalValue(overlapPrevEnd), 'start')}
+              >
+                前のイベントの終了を合わせる
+              </Button>
+            </div>
           )}
 
           {showSmallGapNotice && (
