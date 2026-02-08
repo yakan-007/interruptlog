@@ -238,9 +238,9 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
   return (
     <div className="mb-8">
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-semibold">マイタスク</h2>
+        <h2 className="text-lg font-semibold sm:text-xl">マイタスク</h2>
       </div>
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <Input
           type="text"
           value={newTaskName}
@@ -251,11 +251,11 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
             }
           }}
           placeholder="新しいタスク名"
-          className="flex-grow"
+          className="w-full sm:flex-1"
         />
         {isCategoryEnabled && (
           <Select value={newTaskCategoryId} onValueChange={setNewTaskCategoryId}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="カテゴリ" />
             </SelectTrigger>
             <SelectContent>
@@ -277,7 +277,11 @@ export default function TaskManagementSection({ activeEvent }: TaskManagementSec
         <Button 
           onClick={handleAddNewTask} 
           variant="outline"
-          className={autoStartTask ? 'border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20' : ''}
+          className={`w-full sm:w-auto ${
+            autoStartTask
+              ? 'border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20'
+              : ''
+          }`}
           title={autoStartTask ? 'タスク追加後、自動で開始されます' : 'タスクを追加します'}
         >
           {autoStartTask ? (

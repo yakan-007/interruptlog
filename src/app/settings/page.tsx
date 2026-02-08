@@ -13,6 +13,7 @@ import InterruptDirectorySection from '@/components/settings/InterruptDirectoryS
 import DataManagementSection from '@/components/settings/DataManagementSection';
 import DueAlertSettingsSection from '@/components/settings/DueAlertSettingsSection';
 import ProAccessSection from '@/components/settings/ProAccessSection';
+import Link from 'next/link';
 
 const SettingsPage = () => {
   const { isHydrated } = useEventsStore();
@@ -67,6 +68,26 @@ const SettingsPage = () => {
         <section className="space-y-4">
           <SectionLabel>データ管理</SectionLabel>
           <DataManagementSection />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>サポート</SectionLabel>
+          <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="space-y-3 text-sm">
+              <Link
+                href="/help"
+                className="block rounded-md border border-slate-200 px-4 py-3 text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/60"
+              >
+                使い方を見る
+              </Link>
+              <Link
+                href="/privacy"
+                className="block rounded-md border border-slate-200 px-4 py-3 text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/60"
+              >
+                プライバシーポリシー
+              </Link>
+            </div>
+          </div>
         </section>
       </div>
     </div>

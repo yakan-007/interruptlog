@@ -119,12 +119,28 @@ export const createCategoryActions = ({
 
     updateInterruptCategoryName: (categoryId, name) => {
       const currentSettings = get().interruptCategorySettings;
+      const previousName = currentSettings[categoryId];
       const updatedSettings = {
         ...currentSettings,
         [categoryId]: name.trim() || DEFAULT_INTERRUPT_CATEGORIES[categoryId],
       };
       set({ interruptCategorySettings: updatedSettings });
       persistInterruptCategorySettings();
+
+      if (previousName && previousName !== updatedSettings[categoryId]) {
+        const { events } = get();
+        const updatedEvents = events.map(event => {
+          if (event.type !== 'interrupt' || !event.interruptType) {
+            return event;
+          }
+          if (event.interruptType !== previousName) {
+            return event;
+          }
+          return { ...event, interruptType: updatedSettings[categoryId] };
+        });
+        set({ events: updatedEvents });
+        persistEventsState();
+      }
     },
 
     resetInterruptCategoryToDefault: (categoryId) => {

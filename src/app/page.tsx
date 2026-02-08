@@ -13,7 +13,8 @@ import {
   useEvents,
 } from '@/hooks/useStoreSelectors';
 import useDocumentTitle from '@/hooks/useDocumentTitle';
-import { buildAnomalies } from '@/utils/anomalies';
+import { buildAnomalies, filterDismissedAnomalies } from '@/utils/anomalies';
+import useDismissedAnomalies from '@/hooks/useDismissedAnomalies';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,6 +29,7 @@ export default function LogPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddPastEventOpen, setIsAddPastEventOpen] = useState(false);
   const [pendingAddRange, setPendingAddRange] = useState<{ start: number; end: number } | null>(null);
+  const { dismissedIds: dismissedAnomalyIds } = useDismissedAnomalies();
 
   const pageTitle = useMemo(() => {
     if (!isHydrated) {
@@ -84,7 +86,10 @@ export default function LogPage() {
   };
 
   const orderedEvents = useMemo(() => events.slice().sort((a, b) => a.start - b.start), [events]);
-  const anomalyCount = useMemo(() => buildAnomalies(events).length, [events]);
+  const anomalyCount = useMemo(() => {
+    const anomalies = buildAnomalies(events);
+    return filterDismissedAnomalies(anomalies, dismissedAnomalyIds).length;
+  }, [events, dismissedAnomalyIds]);
 
   const lastCompletedEventEnd = useMemo(() => {
     const completed = events.filter(event => event.end !== undefined);
@@ -117,10 +122,11 @@ export default function LogPage() {
   }, [isAddPastEventOpen, pendingAddRange, lastCompletedEventEnd, suggestedBackfillEnd]);
 
   return (
-    <div className="container mx-auto p-4 pb-16">
-      <h1 className="text-2xl font-bold mb-4">InterruptLog</h1>
-      {anomalyCount > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+    <div className="container mx-auto px-4 pt-[calc(env(safe-area-inset-top)+1rem)]">
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold sm:text-2xl">InterruptLog</h1>
+        {anomalyCount > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
@@ -130,23 +136,30 @@ export default function LogPage() {
               設定で確認する
             </Link>
           </div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
-      <TaskManagementSection
-        activeEvent={activeEvent}
-      />
+      <div className="mt-6 space-y-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+          <TaskManagementSection
+            activeEvent={activeEvent}
+          />
+        </section>
 
-      <EventHistorySection
-        events={events}
-        showAllHistory={showAllHistory}
-        setShowAllHistory={setShowAllHistory}
-        onAddPastEvent={() => {
-          setPendingAddRange({ start: lastCompletedEventEnd, end: suggestedBackfillEnd });
-          setIsAddPastEventOpen(true);
-        }}
-        onEditEvent={handleEditEvent}
-      />
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+          <EventHistorySection
+            events={events}
+            showAllHistory={showAllHistory}
+            setShowAllHistory={setShowAllHistory}
+            onAddPastEvent={() => {
+              setPendingAddRange({ start: lastCompletedEventEnd, end: suggestedBackfillEnd });
+              setIsAddPastEventOpen(true);
+            }}
+            onEditEvent={handleEditEvent}
+          />
+        </section>
+      </div>
 
       <AddPastEventModal
         open={isAddPastEventOpen}

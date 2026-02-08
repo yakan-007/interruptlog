@@ -38,10 +38,10 @@ const TaskCardTimer: React.FC<TaskCardTimerProps> = ({ startTime, myTaskId }) =>
 
   if (!elapsedTime && startTime > 0) {
     const pastDuration = getTaskTotalDuration(myTaskId);
-    return <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">({formatTaskTime(startTime, pastDuration)})</span>;
+    return <span className="text-xs text-blue-600 dark:text-blue-400">{formatTaskTime(startTime, pastDuration)}</span>;
   }
 
-  return <span className="text-xs text-blue-600 dark:text-blue-400 ml-2">({elapsedTime})</span>;
+  return <span className="text-xs text-blue-600 dark:text-blue-400">{elapsedTime}</span>;
 };
 
 export default TaskCardTimer; 

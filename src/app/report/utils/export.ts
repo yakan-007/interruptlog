@@ -12,7 +12,7 @@ const sanitizeCsvValue = (value: string): string => {
   return value;
 };
 
-const toCsvValue = (value: string | number | null | undefined) => {
+const toCsvValue = (value: string | number | boolean | null | undefined) => {
   if (value === null || value === undefined) return '';
   const text = sanitizeCsvValue(String(value)).replace(/"/g, '""');
   return `"${text}"`;
@@ -24,7 +24,12 @@ export interface ReportExportRow {
   label: string;
   start: string;
   end: string;
+  startEpoch: number;
+  endEpoch: number;
+  timezone: string;
+  isRunning: boolean;
   durationMinutes: number;
+  categoryId: string;
   category: string;
   taskName: string;
   who: string;
@@ -45,6 +50,7 @@ export const buildExportRows = (
 ): ReportExportRow[] => {
   const rangeStart = range.start.getTime();
   const rangeEnd = range.end.getTime() + MS_IN_DAY;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
   const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
   const taskMap = new Map(Object.values(taskLedger).map(task => [task.id, task.name]));
 
@@ -60,6 +66,7 @@ export const buildExportRows = (
       const durationMinutes = Math.max(0, (effectiveEnd - effectiveStart) / 60000);
       const categoryName = event.categoryId ? categoryMap.get(event.categoryId) : '';
       const taskName = event.meta?.myTaskId ? taskMap.get(event.meta.myTaskId) : '';
+      const isRunning = event.end === undefined || event.end === null;
 
       return {
         id: event.id,
@@ -67,7 +74,12 @@ export const buildExportRows = (
         label: event.label ?? '',
         start: formatDateTimeLabel(effectiveStart),
         end: formatDateTimeLabel(effectiveEnd),
+        startEpoch: effectiveStart,
+        endEpoch: effectiveEnd,
+        timezone,
+        isRunning,
         durationMinutes: Math.round(durationMinutes * 10) / 10,
+        categoryId: event.categoryId ?? '',
         category: categoryName ?? '',
         taskName: taskName ?? '',
         who: event.who ?? '',
@@ -89,7 +101,12 @@ export const buildCsvContent = (rows: ReportExportRow[]) => {
     'label',
     'start',
     'end',
+    'start_epoch',
+    'end_epoch',
+    'timezone',
+    'is_running',
     'duration_minutes',
+    'category_id',
     'category',
     'task_name',
     'who',
@@ -107,7 +124,12 @@ export const buildCsvContent = (rows: ReportExportRow[]) => {
     row.label,
     row.start,
     row.end,
+    row.startEpoch,
+    row.endEpoch,
+    row.timezone,
+    row.isRunning,
     row.durationMinutes,
+    row.categoryId,
     row.category,
     row.taskName,
     row.who,

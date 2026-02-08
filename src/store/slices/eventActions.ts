@@ -203,9 +203,6 @@ export const createEventActions = ({
             interruptType: data.interruptType !== undefined ? data.interruptType : interruptEvent.interruptType,
             urgency: data.urgency !== undefined ? data.urgency : interruptEvent.urgency,
           };
-          if (data.who) {
-            actions.addInterruptContact(data.who);
-          }
           actions.updateEvent(updatedEvent);
         } else {
           console.warn('[useEventsStore] updateInterruptDetails: No active interrupt event found to update.');
@@ -543,23 +540,7 @@ export const createEventActions = ({
       if (currentEventId) {
         const interruptToCancel = events.find(e => e.id === currentEventId && e.type === 'interrupt' && !e.end);
         if (interruptToCancel) {
-          const now = Date.now();
-          const duration = now - interruptToCancel.start;
-          const placeholderEvent: Event | null = duration > 0
-            ? {
-                id: uuidv4(),
-                type: 'task',
-                label: '未分類の時間',
-                start: interruptToCancel.start,
-                end: now,
-                meta: { isUnknownActivity: true },
-              }
-            : null;
-
           updatedEvents = events.filter(event => event.id !== interruptToCancel.id);
-          if (placeholderEvent) {
-            updatedEvents = [...updatedEvents, placeholderEvent].sort((a, b) => a.start - b.start);
-          }
         }
       }
 

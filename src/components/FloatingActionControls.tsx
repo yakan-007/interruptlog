@@ -130,7 +130,7 @@ export default function FloatingActionControls() {
 
       {/* Floating Control Panel */}
       {!interruptModal.isModalOpen && !breakModal.isBreakModalOpen && (
-        <div className="fixed bottom-16 left-0 right-0 z-20 px-4">
+        <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-0 right-0 z-20 px-4">
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-2xl border border-gray-200 bg-white/95 px-4 py-4 shadow-2xl backdrop-blur dark:border-gray-700 dark:bg-gray-900/80">
             <ActiveEventDisplay activeEvent={activeEvent} />
             <EventControlButtons

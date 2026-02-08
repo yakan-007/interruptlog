@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   description: 'Minimal MVP for InterruptLog',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,7 +30,7 @@ export default function RootLayout({
       <body className={`${GeistSans.className} bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
         <ErrorBoundary>
           <ClientProviders> 
-            <main className="pb-16">{children}</main>
+            <main className="pb-[calc(env(safe-area-inset-bottom)+5rem)]">{children}</main>
             <FloatingActionControls />
             <IconTabs />
           </ClientProviders>

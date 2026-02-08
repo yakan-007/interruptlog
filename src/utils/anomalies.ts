@@ -2,6 +2,7 @@ import type { Event } from '@/types';
 
 export const ANOMALY_FUTURE_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 export const ANOMALY_MAX_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
+export const ANOMALY_DISMISS_STORAGE_KEY = 'anomaly-dismissed-events';
 
 export type AnomalyItem = {
   event: Event;
@@ -30,4 +31,12 @@ export const buildAnomalies = (
     return items;
   }
   return items.slice(0, Math.max(0, options.limit));
+};
+
+export const filterDismissedAnomalies = (items: AnomalyItem[], dismissedIds: string[]) => {
+  if (dismissedIds.length === 0) {
+    return items;
+  }
+  const dismissed = new Set(dismissedIds);
+  return items.filter(item => !dismissed.has(item.event.id));
 };

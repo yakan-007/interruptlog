@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Download, Upload, AlertTriangle, Database, Trash2, Clock, Scissors, XCircle } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Database, Trash2, Clock, XCircle, ShieldCheck } from 'lucide-react';
+import EventEditModal from '@/components/EventEditModal';
 import useEventsStore from '@/store/useEventsStore';
 import { Event, MyTask } from '@/types';
 import { dbGet, dbSet } from '@/lib/db';
 import { getEventDisplayLabel } from '@/utils/eventUtils';
 import { buildAnomalies } from '@/utils/anomalies';
+import useDismissedAnomalies from '@/hooks/useDismissedAnomalies';
 
 type DataRetentionPolicy = 'none' | '1week' | '1month' | '3months' | '6months' | '1year';
 
@@ -26,7 +28,6 @@ const RETENTION_OPTIONS = [
 ];
 
 const STORAGE_KEY_DATA_MANAGEMENT = 'data-management-config';
-const MIN_DURATION_MS = 60 * 1000; // 1 minute
 
 const buildRetentionCandidates = (events: Event[], policy: DataRetentionPolicy) => {
   if (policy === 'none') return [];
@@ -38,19 +39,6 @@ const buildRetentionCandidates = (events: Event[], policy: DataRetentionPolicy) 
   return events.filter(event => new Date(event.start) < cutoffDate);
 };
 
-const applyEventTrim = (event: Event, targetEnd: number, now: number) => {
-  let newStart = event.start;
-  let newEnd = Math.min(targetEnd, now);
-  if (newStart > now) {
-    newStart = now - MIN_DURATION_MS;
-  }
-  if (newEnd <= newStart) {
-    newStart = newEnd - MIN_DURATION_MS;
-  }
-  return { start: newStart, end: newEnd };
-};
-
-
 export default function DataManagementSection() {
   const { events, myTasks, isHydrated, actions } = useEventsStore();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -60,7 +48,13 @@ export default function DataManagementSection() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  const [trimInputs, setTrimInputs] = useState<Record<string, string>>({});
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const {
+    dismissedIds: dismissedAnomalyIds,
+    dismissAnomalies,
+    resetDismissed,
+  } = useDismissedAnomalies();
 
   // Load saved config
   useEffect(() => {
@@ -72,6 +66,7 @@ export default function DataManagementSection() {
     };
     loadConfig();
   }, []);
+
 
   // Save config
   const saveConfig = async (newConfig: DataManagementConfig) => {
@@ -124,56 +119,67 @@ export default function DataManagementSection() {
     [events, config.retentionPolicy],
   );
   const anomalies = useMemo(() => buildAnomalies(events), [events]);
+  const visibleAnomalies = useMemo(
+    () => anomalies.filter(({ event }) => !dismissedAnomalyIds.includes(event.id)),
+    [anomalies, dismissedAnomalyIds],
+  );
+  const sortedEvents = useMemo(() => events.slice().sort((a, b) => a.start - b.start), [events]);
+  const editingEvent = useMemo(
+    () => (editingEventId ? events.find(event => event.id === editingEventId) ?? null : null),
+    [events, editingEventId],
+  );
+  const editingIndex = useMemo(
+    () => (editingEvent ? sortedEvents.findIndex(event => event.id === editingEvent.id) : -1),
+    [sortedEvents, editingEvent],
+  );
+  const prevEvent = editingIndex > 0 ? sortedEvents[editingIndex - 1] : undefined;
+  const nextEvent = editingIndex >= 0 ? sortedEvents[editingIndex + 1] : undefined;
 
-  useEffect(() => {
-    if (anomalies.length === 0) {
-      setTrimInputs({});
-      return;
-    }
-    const defaultValue = new Date().toISOString().slice(0, 16);
-    setTrimInputs(prev => {
-      const next: Record<string, string> = {};
-      anomalies.forEach(({ event }) => {
-        next[event.id] = prev[event.id] ?? defaultValue;
-      });
-      return next;
-    });
-  }, [anomalies]);
-
-  const handleTrimEvent = (eventId: string) => {
-    const target = events.find(e => e.id === eventId);
-    if (!target) return;
-    const now = Date.now();
-    const trimmed = applyEventTrim(target, target.end ?? now, now);
-
-    const updated = events
-      .map(e => (e.id === eventId ? { ...e, ...trimmed } : e))
-      .sort((a, b) => a.start - b.start);
-    actions.setEvents(updated);
-    setLastAction(`イベント「${getEventDisplayLabel(target)}」を現在時刻まで切り詰めました`);
+  const handleOpenEdit = (eventId: string) => {
+    setEditingEventId(eventId);
+    setIsEditOpen(true);
   };
 
-  const handleTrimEventToInput = (eventId: string) => {
-    const target = events.find(e => e.id === eventId);
-    if (!target) return;
-    const value = trimInputs[eventId];
-    if (!value) {
-      setLastAction('日時を入力してください');
-      return;
-    }
-    const parsed = new Date(value);
-    const parsedTime = parsed.getTime();
-    if (Number.isNaN(parsedTime)) {
-      setLastAction('無効な日時です');
-      return;
-    }
-    const now = Date.now();
-    const trimmed = applyEventTrim(target, parsedTime, now);
-    const updated = events
-      .map(e => (e.id === eventId ? { ...e, ...trimmed } : e))
-      .sort((a, b) => a.start - b.start);
-    actions.setEvents(updated);
-    setLastAction(`イベント「${getEventDisplayLabel(target)}」を${parsed.toLocaleString()}まで短縮しました`);
+  const handleCloseEdit = () => {
+    setIsEditOpen(false);
+    setEditingEventId(null);
+  };
+
+  const handleSaveEdit = (
+    eventId: string,
+    newStartTime: number,
+    newEndTime: number,
+    gapActivityName?: string,
+    newEventType?: Event['type'],
+    newLabel?: string,
+    newCategoryId?: string | null,
+    interruptType?: string,
+    createGapEvent?: boolean,
+    extra?: {
+      who?: string;
+      memo?: string;
+      myTaskId?: string | null;
+      breakType?: Event['breakType'];
+      breakDurationMinutes?: Event['breakDurationMinutes'];
+    },
+  ) => {
+    actions.updateEventTimeRange(
+      eventId,
+      newStartTime,
+      newEndTime,
+      gapActivityName,
+      newEventType,
+      newLabel,
+      newCategoryId,
+      interruptType,
+      createGapEvent,
+      extra,
+    );
+    handleCloseEdit();
+  };
+
+  const handleDismissAnomaly = (eventId: string) => {
+    dismissAnomalies([eventId]);
   };
 
   const handleDeleteEvent = (eventId: string) => {
@@ -284,6 +290,10 @@ export default function DataManagementSection() {
     <>
       <div className="rounded-lg border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <h2 className="mb-4 text-lg font-medium">データ管理</h2>
+        <div className="mb-6 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+          <ShieldCheck className="mt-0.5 h-4 w-4 text-slate-500" />
+          <p>データは端末内に保存され、外部サーバーへ送信されません。</p>
+        </div>
         
         {/* Data Retention Settings */}
         <div className="mb-6 space-y-4">
@@ -355,56 +365,46 @@ export default function DataManagementSection() {
           </div>
 
           {/* Anomaly inspector */}
-          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="font-semibold">長時間/未来イベントの確認</span>
-            </div>
-            <p className="text-xs text-amber-700 dark:text-amber-200">
-              12時間超または未来時刻のイベントを表示します。履歴で見つからない場合の手動修正用です。
-            </p>
-            {anomalies.length === 0 ? (
-              <p className="text-xs text-amber-700 dark:text-amber-200">異常イベントはありません。</p>
-            ) : (
+          {visibleAnomalies.length > 0 && (
+            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-semibold">長時間/未来イベントの確認</span>
+              </div>
+              <p className="text-xs text-amber-700 dark:text-amber-200">
+                12時間超または未来時刻のイベントを表示します。履歴で見つからない場合の手動修正用です。
+              </p>
               <ul className="space-y-2 text-xs">
-                {anomalies.map(({ event, duration }) => (
+                {visibleAnomalies.map(({ event, duration }) => (
                   <li key={event.id} className="rounded-md border border-amber-200 bg-white/70 p-2 dark:border-amber-700 dark:bg-amber-900/40">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="min-w-0">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 space-y-1">
                         <div className="font-semibold truncate">{getEventDisplayLabel(event)}</div>
                         <div className="text-amber-700 dark:text-amber-200">
                           {new Date(event.start).toLocaleString()} 〜 {event.end ? new Date(event.end).toLocaleString() : '実行中'}
                         </div>
                         <div className="text-amber-600 dark:text-amber-300">長さ: {Math.round(duration / 3600000)}h</div>
                       </div>
-                      <div className="flex gap-2 pt-1 sm:pt-0">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleTrimEvent(event.id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-2 py-1 text-white transition-colors hover:bg-amber-600"
-                          title="終了を現在付近に短縮"
+                          type="button"
+                          onClick={() => handleOpenEdit(event.id)}
+                          className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-3 py-1.5 text-white transition-colors hover:bg-amber-600"
+                          title="イベントを編集"
                         >
-                          <Scissors className="h-3.5 w-3.5" />
-                          切り詰め
+                          編集
                         </button>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="datetime-local"
-                            value={trimInputs[event.id] ?? ''}
-                            onChange={e => setTrimInputs(prev => ({ ...prev, [event.id]: e.target.value }))}
-                            className="w-44 rounded border border-amber-300 bg-white px-2 py-1 text-xs text-amber-800 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:bg-amber-900/40 dark:text-amber-100"
-                          />
-                          <button
-                            onClick={() => handleTrimEventToInput(event.id)}
-                            className="inline-flex items-center gap-1 rounded-md bg-amber-600 px-2 py-1 text-white transition-colors hover:bg-amber-700"
-                            title="日時を指定して終了時刻を設定"
-                          >
-                            <Clock className="h-3.5 w-3.5" />
-                            指定時刻
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDismissAnomaly(event.id)}
+                          className="inline-flex items-center gap-1 rounded-md bg-white/80 px-3 py-1.5 text-amber-800 ring-1 ring-amber-200 transition hover:bg-white"
+                          title="問題なしとして非表示にする"
+                        >
+                          問題なし
+                        </button>
                         <button
                           onClick={() => handleDeleteEvent(event.id)}
-                          className="inline-flex items-center gap-1 rounded-md bg-red-500 px-2 py-1 text-white transition-colors hover:bg-red-600"
+                          className="inline-flex items-center gap-1 rounded-md bg-red-500 px-3 py-1.5 text-white transition-colors hover:bg-red-600"
                           title="イベントを削除"
                         >
                           <XCircle className="h-3.5 w-3.5" />
@@ -415,8 +415,20 @@ export default function DataManagementSection() {
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
+            </div>
+          )}
+          {dismissedAnomalyIds.length > 0 && visibleAnomalies.length === 0 && (
+            <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              確認済みのイベントは非表示です。
+              <button
+                type="button"
+                onClick={resetDismissed}
+                className="ml-2 text-slate-600 underline underline-offset-2 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
+              >
+                再表示
+              </button>
+            </div>
+          )}
 
           {/* Manual Cleanup */}
           {config.retentionPolicy !== 'none' && (
@@ -482,6 +494,15 @@ export default function DataManagementSection() {
           </div>
         </div>
       </div>
+
+      <EventEditModal
+        event={editingEvent}
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        onSave={handleSaveEdit}
+        prevEvent={prevEvent}
+        nextEvent={nextEvent}
+      />
 
       {/* 削除確認ダイアログ */}
       {showDeleteConfirmation && (

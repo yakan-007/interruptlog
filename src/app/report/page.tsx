@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import useEventsStore from '@/store/useEventsStore';
 import type { Granularity } from './utils/types';
 import { buildRangeInfo, toDateKey } from './utils/range';
@@ -25,6 +25,8 @@ import {
   formatDurationCompact,
 } from '@/lib/reportUtils';
 import { getEventDisplayLabel } from '@/utils/eventUtils';
+import { filterDismissedAnomalies } from '@/utils/anomalies';
+import useDismissedAnomalies from '@/hooks/useDismissedAnomalies';
 import HighlightsGrid from '@/components/report/HighlightsGrid';
 import ExecutiveSummary from '@/components/report/ExecutiveSummary';
 import {
@@ -44,6 +46,8 @@ import DailyDetailTables from '@/components/report/DailyDetailTables';
 import DailyTimeline from '@/components/report/DailyTimeline';
 import ProExportDialog from '@/components/report/ProExportDialog';
 import ProReportSection from '@/components/report/ProReportSection';
+import ProGate from '@/components/ProGate';
+import Link from 'next/link';
 
 const GRANULARITY_OPTIONS: Granularity[] = ['day', 'week', 'month', 'year'];
 
@@ -82,6 +86,17 @@ const ReportPage = () => {
 
   const [granularity, setGranularity] = useState<Granularity>('day');
   const [isProExportOpen, setIsProExportOpen] = useState(false);
+  const {
+    dismissedIds: dismissedAnomalyIds,
+    dismissAnomalies,
+  } = useDismissedAnomalies();
+  const availableGranularities = proAccess ? GRANULARITY_OPTIONS : (['day', 'week'] as Granularity[]);
+
+  useEffect(() => {
+    if (!proAccess && (granularity === 'month' || granularity === 'year')) {
+      setGranularity('week');
+    }
+  }, [proAccess, granularity]);
 
   const earliestEventDate = useMemo(() => {
     if (events.length === 0) return null;
@@ -181,6 +196,10 @@ const ReportPage = () => {
   );
 
   const anomalies = useMemo(() => buildReportAnomalies(currentEvents), [currentEvents]);
+  const visibleAnomalies = useMemo(
+    () => filterDismissedAnomalies(anomalies, dismissedAnomalyIds),
+    [anomalies, dismissedAnomalyIds],
+  );
 
   const exportEvents = useMemo(
     () => buildExportRows(events, currentRange, categories, taskLedger),
@@ -225,6 +244,10 @@ const ReportPage = () => {
   const rangeLabel = useMemo(() => formatRangeLabel(selectedDate, granularity), [selectedDate, granularity]);
   const comparisonLabel = COMPARISON_LABELS[granularity];
 
+  const handleDismissAnomalies = () => {
+    dismissAnomalies(visibleAnomalies.map(item => item.event.id));
+  };
+
   if (!isHydrated) {
     return <div className="p-4 text-center">レポートデータを読み込み中...</div>;
   }
@@ -243,14 +266,14 @@ const ReportPage = () => {
               <p className="text-sm text-slate-500 dark:text-slate-400">{formatRangeDescription(granularity)}</p>
             </div>
           </div>
-          {anomalies.length > 0 && (
+          {visibleAnomalies.length > 0 && (
             <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-100">
               <div className="font-semibold">データ確認: 長時間/未来イベントがあります</div>
               <p className="text-xs text-amber-700 dark:text-amber-200">
                 履歴の時計アイコンから開始/終了を調整してください（一覧は上位5件まで表示）。
               </p>
               <ul className="mt-2 space-y-1 text-xs">
-                {anomalies.map(item => (
+                {visibleAnomalies.map(item => (
                   <li key={item.event.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <span className="truncate">
                       {getEventDisplayLabel(item.event)}
@@ -261,12 +284,27 @@ const ReportPage = () => {
                   </li>
                 ))}
               </ul>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <a
+                  href="/settings"
+                  className="rounded-md bg-white/80 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-white"
+                >
+                  設定で修正
+                </a>
+                <button
+                  type="button"
+                  onClick={handleDismissAnomalies}
+                  className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-600"
+                >
+                  問題なし
+                </button>
+              </div>
             </div>
           )}
           <div className="flex flex-col items-center gap-3 md:items-end">
             <div className="flex flex-wrap items-center gap-3 print:hidden">
               <div className="inline-flex rounded-full bg-white p-1 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                {GRANULARITY_OPTIONS.map(option => {
+                {availableGranularities.map(option => {
                   const isActive = granularity === option;
                     const label =
                       option === 'day'
@@ -344,6 +382,25 @@ const ReportPage = () => {
           </div>
         </header>
 
+        {!proAccess && (
+          <div className="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Proで深掘りレポート</h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  月次/年次の推移、カテゴリ別の時間配分、詳細エクスポートが解放されます。
+                </p>
+              </div>
+              <Link
+                href="/settings"
+                className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+              >
+                Proを確認
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           <ExecutiveSummary
             rangeLabel={rangeLabel}
@@ -385,7 +442,9 @@ const ReportPage = () => {
                 label={rangeLabel}
               />
             )}
-            <DayTrendChart data={hourlyTrend} />
+            <ProGate proAccess={proAccess} lockedTitle="時間帯の集中傾向（Pro）">
+              <DayTrendChart data={hourlyTrend} />
+            </ProGate>
             <InterruptionInsights
               stats={interruptionStats}
               eventsForSelectedDate={eventsForSelectedDay}
@@ -398,8 +457,14 @@ const ReportPage = () => {
         {granularity === 'week' && (
           <div className="space-y-6">
             <WeeklyActivityChart data={weeklyActivity} />
-            <WeeklyTaskFlowChart data={weeklyTaskFlow} />
-            {weeklyCategorySeries && <WeeklyCategoryStackedChart series={weeklyCategorySeries} />}
+            <ProGate proAccess={proAccess} lockedTitle="週次の流れ（Pro）">
+              <WeeklyTaskFlowChart data={weeklyTaskFlow} />
+            </ProGate>
+            {weeklyCategorySeries && (
+              <ProGate proAccess={proAccess} lockedTitle="カテゴリ別の時間配分（Pro）">
+                <WeeklyCategoryStackedChart series={weeklyCategorySeries} />
+              </ProGate>
+            )}
             <ProReportSection
               granularity="week"
               proAccess={proAccess}
@@ -418,29 +483,49 @@ const ReportPage = () => {
 
         {granularity === 'month' && (
           <div className="space-y-6">
-            <MonthlyTaskFlowChart data={monthlyTaskFlow} />
-            <TaskAggregateSummary totals={taskRangeData.current.totals} label="月間" />
-            <CategoryOverview stats={categoryStats} />
-            <InterruptionInsights
-              stats={interruptionStats}
-              eventsForSelectedDate={[]}
-              selectedDateKey={currentRange.startKey}
-              showTimeline={false}
-            />
+            {proAccess ? (
+              <>
+                <MonthlyTaskFlowChart data={monthlyTaskFlow} />
+                <TaskAggregateSummary totals={taskRangeData.current.totals} label="月間" />
+                <CategoryOverview stats={categoryStats} />
+                <InterruptionInsights
+                  stats={interruptionStats}
+                  eventsForSelectedDate={[]}
+                  selectedDateKey={currentRange.startKey}
+                  showTimeline={false}
+                />
+              </>
+            ) : (
+              <ProGate proAccess={false} lockedTitle="月次レポートはProで解放されます">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  月ごとの推移やカテゴリ配分を確認できます。
+                </div>
+              </ProGate>
+            )}
           </div>
         )}
 
         {granularity === 'year' && (
           <div className="space-y-6">
-            <YearlyTaskFlowChart data={yearlyTaskFlow} />
-            <TaskAggregateSummary totals={taskRangeData.current.totals} label="年間" />
-            <CategoryOverview stats={categoryStats} />
-            <InterruptionInsights
-              stats={interruptionStats}
-              eventsForSelectedDate={[]}
-              selectedDateKey={currentRange.startKey}
-              showTimeline={false}
-            />
+            {proAccess ? (
+              <>
+                <YearlyTaskFlowChart data={yearlyTaskFlow} />
+                <TaskAggregateSummary totals={taskRangeData.current.totals} label="年間" />
+                <CategoryOverview stats={categoryStats} />
+                <InterruptionInsights
+                  stats={interruptionStats}
+                  eventsForSelectedDate={[]}
+                  selectedDateKey={currentRange.startKey}
+                  showTimeline={false}
+                />
+              </>
+            ) : (
+              <ProGate proAccess={false} lockedTitle="年次レポートはProで解放されます">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  年間の傾向と季節性をまとめて確認できます。
+                </div>
+              </ProGate>
+            )}
           </div>
         )}
 

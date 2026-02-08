@@ -82,9 +82,9 @@ export default function EventHistorySection({
   return (
     <div>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-semibold">イベント履歴</h2>
+        <h2 className="text-lg font-semibold sm:text-xl">イベント履歴</h2>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button variant="outline" size="sm" onClick={onAddPastEvent}>
+          <Button variant="outline" size="sm" onClick={onAddPastEvent} className="w-full sm:w-auto">
             押し忘れを追加
           </Button>
           <Select
@@ -94,7 +94,7 @@ export default function EventHistorySection({
               setShowAllHistory(false);
             }}
           >
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-full sm:w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

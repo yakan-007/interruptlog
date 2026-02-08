@@ -116,23 +116,24 @@ export default function TaskCard({
       onDrop={dragEnabled && onDrop ? event => onDrop(event, task.id) : undefined}
       onDragEnd={dragEnabled ? onDragEnd : undefined}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <div
-          className={cn('p-1', dragEnabled ? 'cursor-grab' : 'cursor-default opacity-40')}
-          draggable={dragEnabled}
-          onDragStart={dragEnabled && onDragStart ? event => onDragStart(event, task.id) : undefined}
-        >
-          <GripVertical className="h-5 w-5 text-gray-400" />
-        </div>
-        <Checkbox
-          checked={task.isCompleted}
-          onChange={() => onToggleCompletion(task.id)}
-          className="mr-1"
-          id={`task-${task.id}`}
-              disabled={false}
-        />
-        <div className="min-w-[140px] flex-1">
-          {editingTaskId === task.id ? (
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div
+            className={cn('p-1', dragEnabled ? 'cursor-grab' : 'cursor-default opacity-40')}
+            draggable={dragEnabled}
+            onDragStart={dragEnabled && onDragStart ? event => onDragStart(event, task.id) : undefined}
+          >
+            <GripVertical className="h-5 w-5 text-gray-400" />
+          </div>
+          <Checkbox
+            checked={task.isCompleted}
+            onChange={() => onToggleCompletion(task.id)}
+            className="mr-1"
+            id={`task-${task.id}`}
+            disabled={false}
+          />
+          <div className="min-w-0 flex-1">
+            {editingTaskId === task.id ? (
             <Input
               type="text"
               value={editingTaskName}
@@ -148,7 +149,7 @@ export default function TaskCard({
               className="h-8"
               autoFocus
             />
-          ) : (
+            ) : (
             <div className="flex items-center gap-2">
               {isCategoryEnabled && taskCategory && (
                 <span
@@ -159,7 +160,7 @@ export default function TaskCard({
               )}
               <span
                 className={cn(
-                  'flex-1 cursor-pointer select-none',
+                  'min-w-0 flex-1 cursor-pointer select-none truncate',
                   task.isCompleted ? 'text-gray-500 line-through' : 'text-gray-800 dark:text-gray-100'
                 )}
                 onDoubleClick={() => !task.isCompleted && onStartEditTask(task.id, task.name)}
@@ -168,41 +169,50 @@ export default function TaskCard({
                 {task.name}
               </span>
             </div>
-          )}
+            )}
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          {onEditTask && !task.isCompleted && (
+        <div className="flex flex-col items-center gap-2 sm:ml-auto sm:items-end">
+          {isActiveTask && activeEvent?.start && (
+            <div className="w-fit rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+              <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />
+            </div>
+          )}
+          <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:grid-cols-3">
+            {onEditTask && !task.isCompleted && (
+              <Button
+                size="icon"
+                variant="ghost"
+                type="button"
+                onClick={() => onEditTask(task.id)}
+                title="タスクを編集"
+                className="w-full"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+            {!task.isCompleted && (
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => onStartEvent(task.name, task.id)}
+                disabled={!canStartEvent}
+                title="タスクを開始"
+                className="w-full"
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               size="icon"
               variant="ghost"
-              type="button"
-              onClick={() => onEditTask(task.id)}
-              title="タスクを編集"
+              onClick={() => onDeleteTask(task.id)}
+              title="タスクを削除"
+              className="w-full text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
             >
-              <Pencil className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
-          )}
-          {isActiveTask && activeEvent?.start && <TaskCardTimer startTime={activeEvent.start} myTaskId={task.id} />}
-          {!task.isCompleted && (
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={() => onStartEvent(task.name, task.id)}
-              disabled={!canStartEvent}
-              title="タスクを開始"
-            >
-              <Play className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => onDeleteTask(task.id)}
-            title="タスクを削除"
-            className="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          </div>
         </div>
       </div>
 
