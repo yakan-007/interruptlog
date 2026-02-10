@@ -286,7 +286,7 @@ const ReportPage = () => {
               </ul>
               <div className="mt-3 flex flex-wrap gap-2">
                 <a
-                  href="/settings"
+                  href="/settings#anomaly-check"
                   className="rounded-md bg-white/80 px-3 py-1.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition hover:bg-white"
                 >
                   設定で修正

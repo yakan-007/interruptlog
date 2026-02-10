@@ -132,7 +132,7 @@ export default function LogPage() {
               <AlertTriangle className="h-4 w-4" />
               <span>異常なイベントが {anomalyCount} 件あります。</span>
             </div>
-            <Link href="/settings" className="text-xs font-semibold underline underline-offset-4">
+            <Link href="/settings#anomaly-check" className="text-xs font-semibold underline underline-offset-4">
               設定で確認する
             </Link>
           </div>

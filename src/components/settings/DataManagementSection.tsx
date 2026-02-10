@@ -366,7 +366,10 @@ export default function DataManagementSection() {
 
           {/* Anomaly inspector */}
           {visibleAnomalies.length > 0 && (
-            <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
+            <div
+              id="anomaly-check"
+              className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100"
+            >
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 <span className="font-semibold">長時間/未来イベントの確認</span>

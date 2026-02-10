@@ -118,8 +118,9 @@ export default function EventEditModal({
   }, []);
 
   const syncFromEvent = useCallback((source: Event) => {
+    const effectiveEnd = source.end ?? Date.now();
     setStartDateTimeInput(toDateTimeLocalValue(source.start));
-    setEndDateTimeInput(toDateTimeLocalValue(source.end ?? source.start));
+    setEndDateTimeInput(toDateTimeLocalValue(effectiveEnd));
     setEventType(source.type || 'task');
     setEventLabel(source.label || '');
     setEventCategoryId(source.categoryId || 'none');
@@ -145,9 +146,10 @@ export default function EventEditModal({
   }, [defaultInterruptCategory]);
 
   useEffect(() => {
-    if (event && event.end) {
+    if (event) {
       try {
-        if (Number.isNaN(new Date(event.end).getTime())) {
+        const effectiveEnd = event.end ?? Date.now();
+        if (Number.isNaN(new Date(effectiveEnd).getTime())) {
           console.error('[EventEditModal] Invalid date:', event.end);
           return;
         }
@@ -224,7 +226,7 @@ export default function EventEditModal({
       setShowSmallGapNotice(false);
       setOverlapPrevEnd(null);
 
-      if (!event || !event.end) {
+      if (!event) {
         return;
       }
 
@@ -267,7 +269,7 @@ export default function EventEditModal({
       }
 
       // Show gap preview if reducing end time by at least 1 minute
-      if (newEndTime < event.end) {
+      if (event.end !== undefined && event.end !== null && newEndTime < event.end) {
         if ((event.end - newEndTime) >= GAP_MIN_MS) {
           setPreviewGap({ start: newEndTime, end: event.end });
           setShouldCreateGap(false);
@@ -289,7 +291,7 @@ export default function EventEditModal({
 
   const handleSave = () => {
     try {
-      if (!event || !event.end || validationError) {
+      if (!event || validationError) {
         return;
       }
 
@@ -330,7 +332,11 @@ export default function EventEditModal({
         return;
       }
 
-      const canCreateGap = newEndTime < event.end && (event.end - newEndTime) >= GAP_MIN_MS;
+      const canCreateGap =
+        event.end !== undefined &&
+        event.end !== null &&
+        newEndTime < event.end &&
+        (event.end - newEndTime) >= GAP_MIN_MS;
       // Pass gap activity name only if we're reducing time by at least 1 minute
       const gapName = canCreateGap && shouldCreateGap ? gapActivityName : undefined;
       const normalizedLabel = eventLabel.trim();
