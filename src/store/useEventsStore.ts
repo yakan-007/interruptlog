@@ -65,27 +65,9 @@ const useEventsStore = create<EventsState>((set, get) => {
 });
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    const state = useEventsStore.getState();
-    if (state.currentEventId) {
-      const currentEvent = state.events.find(e => e.id === state.currentEventId);
-      if (currentEvent && !currentEvent.end) {
-        state.actions.stopCurrentEvent();
-      }
-    }
-  });
-
   (async () => {
     try {
       await useEventsStore.getState().actions.hydrate();
-      const store = useEventsStore.getState();
-
-      if (store.currentEventId) {
-        const currentEvent = store.events.find(e => e.id === store.currentEventId);
-        if (currentEvent && !currentEvent.end) {
-          store.actions.stopCurrentEvent();
-        }
-      }
     } catch (error) {
       console.error('[useEventsStore] Error during initial hydration:', error);
     }
