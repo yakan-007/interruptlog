@@ -1,0 +1,18 @@
+.il-body-log.has-dock { padding-bottom: 196px; }
+
+.il-body-log.has-runbar { padding-bottom: 280px; }
+
+.il-body-log.has-live-dock { padding-bottom: 372px; }
+
+.il-empty-action {
+  margin-top: 12px;
+}
+
+.il-log-bottomspace { height: 8px; }
+
+.il-archivecopy {
+  margin: 2px 16px 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}

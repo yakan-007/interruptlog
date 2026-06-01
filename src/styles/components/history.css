@@ -1,0 +1,436 @@
+.il-history-nav {
+  padding: 2px 16px 4px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.il-history-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg);
+  padding-bottom: 8px;
+  box-shadow: 0 1px 0 var(--hair);
+}
+
+.il-history-dateblock {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.il-history-datebig {
+  font-size: 54px;
+  line-height: 0.9;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.il-history-datemeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 5px;
+}
+
+.il-history-datemeta .month {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.il-history-datemeta .year,
+.il-history-datemeta .weekday {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.il-history-navactions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.il-history-navbtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  box-shadow: var(--sh-card);
+}
+
+.il-history-todaybtn {
+  height: 42px;
+  border-radius: 12px;
+  border: none;
+  background: var(--bg-elevated);
+  box-shadow: var(--sh-card);
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.il-history-todaybtn.active {
+  background: var(--ink);
+  color: var(--bg-elevated);
+}
+
+.il-history-datepick {
+  position: relative;
+  overflow: hidden;
+}
+
+.il-history-datepick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.il-history-toolbar {
+  padding: 8px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.il-history-summary {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.il-history-warnwrap {
+  margin: 2px 16px 10px;
+}
+
+.il-history-list {
+  padding: 0 16px;
+}
+
+.il-history-listcard {
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--sh-card);
+}
+
+.il-history-timeline {
+  margin: 0 16px;
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+  position: relative;
+}
+
+.il-history-timeline-canvas {
+  position: relative;
+}
+
+.il-history-hourline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-history-hourline:first-child { border-top: none; }
+
+.il-history-hourline .label {
+  position: absolute;
+  left: 14px;
+  top: -8px;
+  font-size: 11px;
+  color: var(--ink-4);
+  background: var(--bg-elevated);
+  padding-right: 8px;
+}
+
+.il-history-track {
+  position: absolute;
+  left: 58px;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+}
+
+.il-history-nowline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: color-mix(in oklch, var(--accent) 45%, transparent);
+  z-index: 2;
+}
+
+.il-history-nowline span {
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 15%, transparent);
+}
+
+.il-history-eventcard {
+  position: absolute;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--bg) 80%, var(--bg-elevated));
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(23, 21, 18, 0.04);
+  padding: 9px 10px 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.il-history-eventcard .rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--ink-5);
+}
+
+.il-history-eventcard.t-task .rail { background: var(--task); }
+.il-history-eventcard.t-interrupt .rail { background: var(--interrupt); }
+.il-history-eventcard.t-break .rail { background: var(--break); }
+.il-history-eventcard.t-unknown .rail { background: var(--unknown); }
+
+.il-history-eventcard .time {
+  font-size: 10px;
+  color: var(--ink-3);
+  margin-bottom: 4px;
+}
+
+.il-history-eventcard .headline {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.il-history-eventcard .title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.il-history-eventcard .meta {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.il-history-eventcard .chips {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.il-history-eventcard.compact {
+  padding: 5px 10px 5px 14px;
+  display: flex;
+  align-items: center;
+}
+
+.il-history-eventcard.compact .headline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.il-history-eventcard.compact .chips { display: none; }
+
+.il-history-eventcard.compact .title {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.il-history-eventcard.compact .time {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.il-history-eventcard.compact .meta { display: none; }
+
+.il-history-eventcard.micro {
+  padding: 6px 10px 6px 14px;
+  background: color-mix(in oklch, var(--bg-elevated) 92%, var(--bg));
+  box-shadow: 0 2px 6px rgba(23, 21, 18, 0.08);
+}
+
+.il-history-eventcard.micro .headline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.il-history-eventcard.micro .time {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.il-history-eventcard.micro .title {
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.il-history-eventcard.micro .meta,
+.il-history-eventcard.micro .chips { display: none; }
+
+.il-ev {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px 10px 20px;
+  align-items: flex-start;
+  position: relative;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.il-ev + .il-ev::before {
+  content: '';
+  position: absolute;
+  left: 28px;
+  top: -3px;
+  height: 6px;
+  width: 1px;
+  background: var(--hair-strong);
+}
+
+.il-ev .dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--ink-4);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.il-ev.t-task .dot { background: var(--task); }
+.il-ev.t-interrupt .dot { background: var(--interrupt); }
+.il-ev.t-break .dot { background: var(--break); }
+.il-ev.t-unknown .dot { background: var(--unknown); }
+
+.il-ev .ev-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.il-ev .ev-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.il-ev .ev-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.il-ev .ev-meta.wrap { flex-wrap: wrap; }
+.il-ev .ev-meta .type { color: var(--ink-2); font-weight: 500; }
+
+.il-ev .ev-dur {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.il-ev .ev-dur .accent { color: var(--accent); }
+
+.il-history-memo {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.il-history-bottomspace { height: 24px; }
+
+.il-body-history.has-runbar {
+  padding-bottom: 104px;
+}
+
+.il-body-history.runbar-task {
+  padding-bottom: 132px;
+}
+
+.il-history-bottomspace.has-runbar {
+  height: 112px;
+}
+
+.il-history-bottomspace.runbar-task {
+  height: 144px;
+}
+
+@media (max-width: 430px) {
+  .il-history-nav { padding-top: 0; }
+  .il-history-datebig { font-size: 46px; }
+  .il-history-navactions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .il-history-toolbar { align-items: stretch; }
+  .il-history-toolbar .il-seg { width: 100%; }
+  .il-history-toolbar .il-seg > button { flex: 1; }
+  .il-body-history.has-runbar {
+    padding-bottom: 120px;
+  }
+  .il-body-history.runbar-task {
+    padding-bottom: 152px;
+  }
+  .il-history-bottomspace.has-runbar {
+    height: 124px;
+  }
+  .il-history-bottomspace.runbar-task {
+    height: 168px;
+  }
+}

@@ -1,0 +1,1040 @@
+.il-quickdock {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 24;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in oklch, var(--task-cat, var(--accent)) 18%, var(--hair));
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 4%, var(--bg-elevated));
+  box-shadow: 0 14px 32px rgba(23, 21, 18, 0.08);
+}
+
+.il-quickdock-error {
+  margin-bottom: 8px;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--urg-high);
+}
+
+.il-quickdock-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 44px);
+  gap: 8px;
+  align-items: center;
+}
+
+.il-quickdock-input {
+  min-width: 0;
+  height: 44px;
+}
+
+.il-quickdock-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklch, var(--hair) 84%, transparent);
+  background: color-mix(in oklch, var(--bg-sunken) 86%, var(--bg-elevated) 14%);
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
+}
+
+.il-quickdock-icon:active { transform: scale(0.98); }
+
+.il-quickdock-icon.detail.active {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 12%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--task-cat, var(--accent)) 26%, var(--hair));
+  color: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
+}
+
+.il-quickdock-icon.start {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
+  border-color: transparent;
+  color: var(--bg-elevated);
+  box-shadow: 0 8px 18px color-mix(in oklch, var(--task-cat, var(--accent)) 14%, transparent);
+}
+
+.il-quickdock-icon.add {
+  color: var(--ink-2);
+}
+
+.il-quickdock-icon:disabled {
+  opacity: 0.42;
+  cursor: default;
+  box-shadow: none;
+  transform: none;
+}
+
+.il-quickdock-cats {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 10px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.il-quickdock-cats::-webkit-scrollbar { display: none; }
+
+.il-quickdock-cat {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hair);
+  background: var(--bg-elevated);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+}
+
+.il-quickdock-cat .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.il-quickdock-cat.active {
+  background: color-mix(in oklch, var(--chip-cat, var(--accent)) 14%, var(--bg-elevated));
+  color: color-mix(in oklch, var(--chip-cat, var(--accent)) 74%, var(--ink) 26%);
+  border-color: color-mix(in oklch, var(--chip-cat, var(--accent)) 28%, var(--hair));
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+}
+
+.il-todaystrip {
+  padding: 4px 16px 8px;
+}
+
+.il-todaystrip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.il-todaystrip-head .label {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.il-todaystrip-head .value {
+  font-size: 13px;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.il-todaystrip-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--ink-3);
+  flex-wrap: wrap;
+}
+
+.il-todaystrip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.il-todaystrip-item .swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.il-todaystrip-item .amount {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.il-taskcard {
+  position: relative;
+  background: var(--bg-elevated);
+  border-radius: 16px;
+  margin: 6px 16px;
+  padding: 12px 12px 12px 18px;
+  box-shadow: var(--sh-card);
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  column-gap: 10px;
+  row-gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, margin .16s ease;
+}
+
+.il-taskcard.completed { opacity: 0.55; }
+.il-taskcard.running {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--task-cat, var(--accent)) 10%, var(--bg-elevated)),
+      color-mix(in oklch, var(--task-cat, var(--accent)) 6%, var(--bg-elevated))
+    );
+  box-shadow: var(--sh-card), inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 34%, var(--hair-strong));
+}
+.il-taskcard.draggable {
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  padding-left: 18px;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.il-taskcard .cat-rail {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--cat, var(--ink-5));
+}
+
+.il-taskcard .task-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  grid-column: 2;
+}
+
+.il-taskcard .task-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.il-taskcard .check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-4);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 0;
+  grid-column: 1;
+  align-self: center;
+  margin-top: 0;
+}
+
+.il-taskcard:not(.completed) .check:hover {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 12%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--task-cat, var(--accent)) 72%, var(--ink-4));
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--task-cat, var(--accent)) 12%, transparent);
+}
+
+.il-taskcard .check:active { transform: scale(0.92); }
+
+.il-taskcard.completed .check {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  color: var(--bg-elevated);
+}
+
+.il-taskcard .title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.32;
+  color: var(--ink);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.il-taskcard.completed .title {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+
+.il-tasklist.dragging {
+  user-select: none;
+}
+
+.il-tasklist.dragging .il-taskcard {
+  transition: margin .16s ease, transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+}
+
+.il-taskcard.arming {
+  transform: translateY(-2px) scale(1.006);
+  box-shadow: 0 14px 28px rgba(23, 21, 18, 0.1), inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 18%, var(--hair));
+}
+
+.il-taskcard.drag-source {
+  opacity: 0.18;
+  transform: scale(0.985);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 16%, var(--hair));
+  pointer-events: none;
+}
+
+.il-taskcard.floating {
+  position: fixed;
+  top: var(--drag-float-top, 0px);
+  left: var(--drag-float-left, 0px);
+  width: var(--drag-float-width, 320px);
+  margin: 0;
+  z-index: 24;
+  pointer-events: none;
+}
+
+.il-taskcard.floating.dragging {
+  opacity: 0.98;
+  transform: translate3d(0, calc(var(--drag-offset-y, 0px) - 8px), 0) scale(1.018) rotate(-0.4deg);
+  box-shadow:
+    0 22px 44px rgba(23, 21, 18, 0.16),
+    inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 34%, var(--hair));
+  z-index: 6;
+  cursor: grabbing;
+}
+
+.il-taskcard.drop-before {
+  margin-top: calc(var(--drag-gap, 86px) + 12px);
+  overflow: visible;
+  z-index: 2;
+}
+
+.il-taskcard.drop-after {
+  margin-bottom: calc(var(--drag-gap, 86px) + 12px);
+  overflow: visible;
+  z-index: 2;
+}
+
+.il-taskcard.drop-before::before,
+.il-taskcard.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: calc(var(--drag-gap, 86px) - 10px);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 8%, var(--bg-elevated)),
+      color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 4%, var(--bg-elevated))
+    );
+  border: 1px dashed color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 30%, var(--hair));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, white 20%, transparent),
+    0 6px 16px color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 8%, transparent);
+  z-index: 4;
+}
+
+.il-taskcard.drop-before::before {
+  top: calc((var(--drag-gap, 86px) + 12px) * -1 + 6px);
+}
+
+.il-taskcard.drop-after::after {
+  bottom: calc((var(--drag-gap, 86px) + 12px) * -1 + 6px);
+}
+
+.il-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink-3);
+  flex-wrap: wrap;
+}
+
+.il-meta .sep { color: var(--ink-5); }
+.il-meta .muted { color: var(--ink-4); }
+.il-meta .strong { font-weight: 600; color: var(--ink-2); }
+.il-meta .subtle { color: var(--ink-3); font-weight: 500; }
+.il-meta .danger { color: var(--urg-high); }
+
+.il-taskcard .task-actions {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  align-self: center;
+}
+
+.il-taskcard.completed .il-task-action {
+  grid-column: 3;
+}
+
+.il-taskcard.completed .il-ghostbtn {
+  grid-column: 4;
+}
+
+.il-starttbtn {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: var(--ink);
+  color: var(--bg-elevated);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.il-starttbtn.running {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.il-starttbtn.completed {
+  background: var(--bg-sunken);
+  color: var(--ink);
+}
+
+.il-starttbtn .status {
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.il-ghostbtn {
+  width: 38px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklch, var(--hair) 82%, transparent);
+  background: color-mix(in oklch, var(--bg-sunken) 82%, var(--bg-elevated) 18%);
+  color: var(--ink-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.il-task-action {
+  min-width: 40px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--bg-sunken);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 12px;
+  white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
+}
+
+.il-task-action.icon-only {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+  border-radius: 12px;
+  gap: 0;
+}
+
+.il-task-action.start {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 14%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--task-cat, var(--accent)) 24%, var(--hair));
+  color: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+}
+
+.il-task-action.running {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
+  color: var(--bg-elevated);
+  border-color: transparent;
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--task-cat, var(--accent)) 14%, transparent);
+}
+
+.il-task-action.secondary {
+  background: var(--bg-sunken);
+  color: var(--ink-2);
+}
+
+.il-archivehead {
+  width: calc(100% - 32px);
+  margin: 12px 16px 2px;
+  padding: 12px 2px 10px;
+  border: none;
+  border-top: 0.5px solid var(--hair);
+  background: transparent;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.il-archivehead .label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.il-archivehead .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.il-archivehead .count {
+  font-weight: 600;
+}
+
+.il-archivehead .chev {
+  display: inline-flex;
+  transition: transform .15s ease;
+}
+
+.il-archivehead .chev.open {
+  transform: rotate(180deg);
+}
+
+.il-runbar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  border-radius: 18px;
+  padding: 10px 10px 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  z-index: 30;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+
+.il-runbar.task {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--runbar-accent, var(--accent)) 9%, var(--bg-elevated)),
+      color-mix(in oklch, var(--runbar-accent, var(--accent)) 14%, var(--bg-elevated))
+    );
+  color: var(--ink);
+  border-color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 26%, var(--hair-strong));
+  box-shadow: 0 10px 24px rgba(23, 21, 18, 0.06);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
+  align-items: center;
+}
+
+.il-runbar.task.raised {
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 126px);
+}
+
+.il-runbar.interrupt { background: var(--interrupt); }
+.il-runbar.break { background: var(--break); color: #1a1a16; }
+.il-runbar.break.target {
+  border-color: color-mix(in oklch, var(--break) 26%, var(--hair-strong));
+  box-shadow: 0 10px 24px rgba(23, 21, 18, 0.08);
+}
+.il-runbar.break.warn {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, oklch(0.84 0.13 82) 86%, var(--bg-elevated)),
+      color-mix(in oklch, oklch(0.78 0.13 76) 76%, var(--bg-elevated))
+    );
+  color: oklch(0.28 0.05 72);
+  border-color: color-mix(in oklch, oklch(0.72 0.12 76) 54%, var(--hair-strong));
+  box-shadow: 0 12px 28px color-mix(in oklch, oklch(0.80 0.13 78) 18%, transparent);
+}
+.il-runbar.break.late {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, oklch(0.76 0.16 42) 82%, var(--bg-elevated)),
+      color-mix(in oklch, oklch(0.70 0.17 34) 76%, var(--bg-elevated))
+    );
+  color: oklch(0.24 0.07 28);
+  border-color: color-mix(in oklch, oklch(0.60 0.18 30) 58%, var(--hair-strong));
+  box-shadow: 0 14px 30px color-mix(in oklch, oklch(0.66 0.16 35) 20%, transparent);
+}
+
+.il-runbar .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: il-pulse 2s ease-out infinite;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.il-runbar.task .dot {
+  color: var(--runbar-accent, var(--accent));
+  opacity: 0.95;
+  position: absolute;
+  top: 18px;
+  left: 18px;
+}
+
+@keyframes il-pulse {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.85; }
+  60% { box-shadow: 0 0 0 6px transparent; opacity: 0.85; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0.85; }
+}
+
+.il-runbar .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.il-runbar .label .top {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.il-runbar.task .label .top {
+  color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 52%, var(--ink) 48%);
+  opacity: 0.88;
+}
+
+.il-runbar .label .name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.il-runbar .label.single .name {
+  margin-top: 0;
+  font-weight: 600;
+}
+
+.il-runbar.task .label {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 0 28px;
+}
+
+.il-runbar.task .label .name {
+  margin-top: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.il-runbar .time {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding-right: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.il-runbar.task .time {
+  grid-column: 1 / -1;
+  justify-self: center;
+  min-width: 190px;
+  padding: 4px 14px 6px;
+  border-radius: 14px;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  background: color-mix(in oklch, var(--runbar-accent, var(--accent)) 9%, var(--bg-elevated));
+  color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 78%, var(--ink) 22%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--runbar-accent, var(--accent)) 14%, transparent);
+}
+
+.il-runbar.task .rb-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 8px;
+}
+
+.il-runbar.task.compact {
+  padding: 10px 12px 10px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+.il-runbar.task.compact .dot {
+  top: 14px;
+  left: 14px;
+}
+
+.il-runbar.task.compact .label {
+  grid-column: 1;
+  text-align: left;
+  padding: 0 0 0 14px;
+}
+
+.il-runbar.task.compact .label .name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.il-runbar.task.compact .time {
+  grid-column: 1;
+  justify-self: start;
+  min-width: 0;
+  padding: 0 0 0 14px;
+  border-radius: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: left;
+  background: transparent;
+  color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 78%, var(--ink) 22%);
+  box-shadow: none;
+}
+
+.il-runbar.task.compact .rb-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.il-runbar.task.compact .rb-actions .rb-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.il-runbar.compact:not(.task) {
+  padding: 8px 10px 8px 12px;
+  border-radius: 16px;
+  gap: 8px;
+}
+
+.il-runbar.compact:not(.task) .label .top {
+  font-size: 9px;
+}
+
+.il-runbar.compact:not(.task) .label .name {
+  font-size: 13px;
+}
+
+.il-runbar.compact:not(.task) .time {
+  font-size: 15px;
+  padding-right: 0;
+}
+
+.il-runbar.compact:not(.task) .rb-btn {
+  width: 40px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.il-runbar .rb-btn {
+  width: 44px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.12);
+  color: currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.il-runbar.task .rb-btn {
+  background: color-mix(in oklch, var(--runbar-accent, var(--accent)) 10%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 20%, var(--hair));
+  color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 68%, var(--ink) 32%);
+}
+
+.il-runbar.task .rb-actions .rb-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+}
+
+.il-runbar .rb-btn.stop { background: rgba(255, 255, 255, 0.95); color: var(--ink); }
+.il-runbar.task .rb-btn.stop {
+  background: color-mix(in oklch, var(--runbar-accent, var(--accent)) 74%, var(--ink) 26%);
+  color: var(--bg-elevated);
+  border-color: transparent;
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--runbar-accent, var(--accent)) 14%, transparent);
+}
+.il-runbar.break .rb-btn.stop { color: var(--break); }
+.il-runbar.break.warn .rb-btn.stop { color: oklch(0.40 0.10 72); }
+.il-runbar.break.late .rb-btn.stop { color: oklch(0.38 0.14 28); }
+
+.il-tabbar {
+  position: relative;
+  background: color-mix(in oklch, var(--bg) 88%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid var(--hair);
+  padding: 4px 0 max(10px, env(safe-area-inset-bottom));
+  display: flex;
+  z-index: 20;
+}
+
+.il-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 6px 0 4px;
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.il-tab.active { color: color-mix(in oklch, var(--accent) 70%, var(--ink) 30%); }
+
+.il-tabicon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.il-tabicon svg { display: block; }
+
+@media (max-width: 520px) {
+  .il-runbar {
+    left: 12px;
+    right: 12px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 8px;
+    align-items: center;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .il-runbar.task {
+    box-shadow: 0 16px 36px rgba(23, 21, 18, 0.14);
+  }
+
+  .il-runbar.task.raised {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 126px);
+  }
+
+  .il-runbar.task.compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    padding: 10px 12px 10px 14px;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(23, 21, 18, 0.1);
+  }
+
+  .il-runbar.task.compact .label {
+    padding-left: 14px;
+  }
+
+  .il-runbar.task.compact .label .name {
+    font-size: 14px;
+    white-space: nowrap;
+    display: block;
+  }
+
+  .il-runbar.task.compact .time {
+    min-width: 0;
+    padding-left: 14px;
+    font-size: 22px;
+    background: transparent;
+  }
+
+  .il-runbar.task.compact .rb-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    gap: 6px;
+  }
+
+  .il-runbar.task.compact .rb-actions .rb-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .il-runbar.compact:not(.task) {
+    display: flex;
+    gap: 8px;
+    padding: 8px 10px 8px 12px;
+    border-radius: 16px;
+  }
+
+  .il-runbar.compact:not(.task) .dot {
+    position: static;
+    top: auto;
+    left: auto;
+  }
+
+  .il-runbar.compact:not(.task) .label {
+    flex: 1;
+    text-align: left;
+    padding: 0;
+  }
+
+  .il-runbar.compact:not(.task) .label .top {
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  .il-runbar.compact:not(.task) .label .name {
+    margin-top: 2px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .il-runbar.compact:not(.task) .time {
+    min-width: 0;
+    padding: 0;
+    font-size: 15px;
+    background: transparent;
+    text-align: right;
+  }
+
+  .il-runbar.compact:not(.task) .rb-btn {
+    grid-column: auto;
+    grid-row: auto;
+    width: 40px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .il-runbar:not(.task) .dot {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+  }
+
+  .il-runbar:not(.task) .label {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 0 28px;
+  }
+
+  .il-runbar:not(.task) .label .top {
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .il-runbar:not(.task) .label .name {
+    margin-top: 5px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .il-runbar:not(.task) .time {
+    grid-column: 1 / -1;
+    justify-self: center;
+    min-width: 190px;
+    padding: 4px 14px 6px;
+    border-radius: 14px;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .il-runbar:not(.task) .rb-btn {
+    width: 100%;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .il-runbar:not(.task) {
+    grid-template-columns: minmax(0, 1fr) 64px;
+  }
+
+  .il-runbar:not(.task) .label,
+  .il-runbar:not(.task) .time {
+    grid-column: 1;
+    justify-self: stretch;
+    text-align: left;
+    padding-left: 22px;
+  }
+
+  .il-runbar:not(.task) .time {
+    min-width: 0;
+  }
+
+  .il-runbar:not(.task) .rb-btn {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+  }
+}

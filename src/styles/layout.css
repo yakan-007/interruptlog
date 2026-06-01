@@ -1,0 +1,122 @@
+.il-appshell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.il-appcontent {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.il-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  position: relative;
+}
+
+.il-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.il-body::-webkit-scrollbar { display: none; }
+
+.il-topbar {
+  padding: max(16px, calc(env(safe-area-inset-top) + 8px)) 20px 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.il-topbar h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.il-topbar .sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.il-topbar .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.il-topbar .actions .il-iconbtn {
+  margin-top: auto;
+  background: color-mix(in oklch, var(--bg-elevated) 76%, var(--accent) 24%);
+  border-color: color-mix(in oklch, var(--accent) 18%, var(--hair));
+  color: color-mix(in oklch, var(--accent) 72%, var(--ink) 28%);
+}
+
+.il-topbar.il-topbar-log {
+  padding-bottom: 6px;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.il-topbar.il-topbar-log .sub {
+  margin-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+.il-section-h {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 18px 20px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.il-section-h .count {
+  color: var(--ink-4);
+  font-weight: 500;
+}
+
+@media (max-width: 430px) {
+  .il-topbar {
+    padding-top: max(18px, calc(env(safe-area-inset-top) + 10px));
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 8px;
+  }
+
+  .il-topbar h1 {
+    font-size: 24px;
+  }
+
+  .il-topbar .sub {
+    display: none;
+  }
+
+  .il-topbar.il-topbar-log .sub {
+    display: block;
+    font-size: 11px;
+  }
+}

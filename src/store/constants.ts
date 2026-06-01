@@ -1,1 +1,0 @@
-export const MAX_INTERRUPT_DIRECTORY_ENTRIES = 10;

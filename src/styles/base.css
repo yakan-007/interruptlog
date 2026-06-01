@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+
+.il {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv08";
+  color-scheme: light;
+}
+
+[data-theme="dark"].il { color-scheme: dark; }
+
+.il-mono {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.il-tab { font-variant-numeric: tabular-nums; }
+
+@keyframes il-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.il-fade { animation: il-fade .25s ease-out; }
+
+@keyframes il-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes il-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

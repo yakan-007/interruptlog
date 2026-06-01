@@ -1,0 +1,142 @@
+.il-onboarding {
+  justify-content: space-between;
+}
+
+.il-onboarding-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: max(40px, calc(env(safe-area-inset-top) + 20px)) 28px 24px;
+  text-align: center;
+}
+
+.il-onboarding-mark {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+  border-radius: 22px;
+  background: var(--ink);
+  color: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.il-onboarding-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.il-onboarding h1 {
+  margin: 0 0 12px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+}
+
+.il-onboarding-copy {
+  margin: 0 auto 32px;
+  max-width: 300px;
+  font-size: 15px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+
+.il-onboarding-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 320px);
+  margin: 0 auto;
+  text-align: left;
+}
+
+.il-onboarding-feature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.il-onboarding-featureicon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.il-onboarding-featurecopy .title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.il-onboarding-featurecopy .subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.il-onboarding-storage {
+  width: min(100%, 320px);
+  margin: 18px auto 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: color-mix(in oklch, var(--accent) 7%, var(--bg-elevated));
+  border: 1px solid color-mix(in oklch, var(--accent) 18%, var(--hair));
+  text-align: left;
+}
+
+.il-onboarding-storage .title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.il-onboarding-storage .copy {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.il-onboarding-footer {
+  padding:
+    20px
+    20px
+    max(44px, calc(env(safe-area-inset-bottom) + 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.il-onboarding-cta {
+  height: 50px;
+  font-size: 16px;
+}
+
+.il-onboarding-note {
+  font-size: 11px;
+  color: var(--ink-4);
+  text-align: center;
+}
+
+@media (max-width: 430px) {
+  .il-onboarding-main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .il-onboarding h1 {
+    font-size: 32px;
+  }
+}

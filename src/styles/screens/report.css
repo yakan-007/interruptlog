@@ -1,0 +1,337 @@
+.il-body-report {
+  padding-bottom: 180px;
+}
+
+.il-report-range {
+  padding: 4px 16px 10px;
+}
+
+.il-report-mode {
+  padding: 4px 16px 6px;
+}
+
+.il-report-submode {
+  padding: 4px 16px 6px;
+}
+
+.il-report-statgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px 16px 4px;
+}
+
+.il-card {
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  box-shadow: var(--sh-card);
+  margin: 8px 16px;
+  padding: 14px 16px;
+}
+
+.il-card h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.il-report-exportcopy {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.il-stat {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.il-stat .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-left: 2px;
+}
+
+.il-delta {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.il-delta.up { color: var(--urg-high); }
+.il-delta.down { color: var(--task); }
+.il-delta.flat { color: var(--ink-4); }
+.il-delta .delta-label { color: var(--ink-4); font-weight: 500; }
+
+.il-statcard {
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.il-statcard-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.il-statcard-head .swatch {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.il-statcard-head .label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.il-report-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.il-report-meta .peak { color: var(--interrupt); }
+
+.il-report-weekday {
+  height: 100%;
+}
+
+.il-report-weekday .stack {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  opacity: 0.9;
+}
+
+.il-report-weekday .stack.interrupt { background: var(--interrupt); }
+.il-report-weekday .stack.task { background: var(--task); }
+
+.il-report-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.il-report-row .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+.il-report-row .main {
+  flex: 1;
+}
+
+.il-report-row .main .title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.il-report-row .main .sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+.il-report-row .spark {
+  width: 90px;
+  height: 6px;
+  background: var(--bg-sunken);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.il-report-row .spark > div {
+  height: 100%;
+  background: var(--interrupt);
+  opacity: 0.8;
+}
+
+.il-report-row .value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  width: 48px;
+  text-align: right;
+}
+
+.il-report-categoryrow {
+  padding: 8px 0;
+}
+
+.il-report-categoryrow .header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.il-report-categoryrow .name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.il-report-categoryrow .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.il-report-categoryrow .value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.il-report-categoryrow .value .muted {
+  color: var(--ink-4);
+}
+
+.il-report-categoryrow .bar {
+  height: 4px;
+  background: var(--bg-sunken);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.il-report-categoryrow .bar > div {
+  height: 100%;
+}
+
+.il-report-taskstats {
+  display: flex;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.il-taskstat {
+  flex: 1;
+  min-width: 0;
+}
+
+.il-taskstat .label {
+  font-size: 10px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.il-taskstat .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.il-taskstat .value.accent { color: var(--accent); }
+
+.il-report-export {
+  padding: 20px 20px 8px;
+  text-align: center;
+}
+
+.il-team-drop {
+  background: var(--bg-elevated);
+  border: 1px dashed var(--hair);
+  border-radius: 14px;
+  box-shadow: var(--sh-card);
+  margin: 8px 16px;
+  padding: 16px;
+  text-align: center;
+}
+
+.il-team-drop input {
+  display: none;
+}
+
+.il-team-drop .copy {
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+.il-team-importmeta {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.il-team-memberrow .main .sub {
+  line-height: 1.45;
+}
+
+.il-team-actiongrid {
+  display: grid;
+  gap: 8px;
+}
+
+.il-team-templatebutton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.il-team-templatebutton:active {
+  opacity: 0.7;
+}
+
+.il-team-templatebutton .main {
+  flex: 1;
+  min-width: 0;
+}
+
+.il-team-templatebutton .title,
+.il-team-templatebutton .sub {
+  display: block;
+}
+
+.il-team-templatebutton .title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.il-team-templatebutton .sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+
+.il-team-templatebutton .meta {
+  color: var(--ink-4);
+  flex-shrink: 0;
+}
