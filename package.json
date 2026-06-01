@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "interruptlog",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -11,11 +11,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/app": "^8.1.0",
-    "@capacitor/cli": "^8.3.1",
-    "@capacitor/core": "^8.3.1",
-    "@capacitor/ios": "^8.3.1",
-    "@capacitor/preferences": "^8.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { App as CapacitorApp } from '@capacitor/app';
 
 export function handleAppStateChange({ isActive }, { persistNow, resyncNow }) {
   if (isActive) {
@@ -11,33 +10,22 @@ export function handleAppStateChange({ isActive }, { persistNow, resyncNow }) {
 
 export function useAppLifecycle({ enabled, persistNow, resyncNow }) {
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled || typeof document === 'undefined') return undefined;
 
-    let disposed = false;
-    let listenerHandle = null;
-
-    const register = async () => {
-      try {
-        const handle = await CapacitorApp.addListener('appStateChange', (state) => {
-          handleAppStateChange(state, { persistNow, resyncNow });
-        });
-
-        if (disposed) {
-          await handle.remove();
-          return;
-        }
-
-        listenerHandle = handle;
-      } catch {
-        listenerHandle = null;
-      }
+    const handleVisibilityChange = () => {
+      handleAppStateChange({ isActive: document.visibilityState === 'visible' }, { persistNow, resyncNow });
     };
 
-    void register();
+    const handlePageHide = () => {
+      void persistNow();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
 
     return () => {
-      disposed = true;
-      if (listenerHandle) void listenerHandle.remove();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [enabled, persistNow, resyncNow]);
 }
