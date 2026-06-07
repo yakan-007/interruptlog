@@ -1,4 +1,4 @@
-import { categories as defaultCategories } from '../data';
+import { categories as defaultCategories, interruptCats as defaultInterruptCats } from '../data';
 import { asArray, asNumber, cleanText, clone, isObject, uniqueTexts } from './utils';
 
 export const APP_NAME = 'InterruptLog';
@@ -32,6 +32,7 @@ export function createEmptyState() {
     taskTemplates: [],
     events: [],
     categories: clone(defaultCategories),
+    interruptCats: clone(defaultInterruptCats),
     whoChips: [],
     subjectChips: [],
     teamWorkspace: {
@@ -53,6 +54,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
   const tasks = asArray(raw.tasks).map(normalizeTask).filter(Boolean);
   const taskTemplates = asArray(raw.taskTemplates).map(normalizeTaskTemplate).filter(Boolean);
   const categories = asArray(raw.categories).map(normalizeCategory).filter(Boolean);
+  const interruptCats = asArray(raw.interruptCats).map(normalizeInterruptCategory).filter(Boolean);
   const events = asArray(raw.events).map(normalizeEvent).filter(Boolean);
   const taskIds = new Set(tasks.map((task) => task.id));
   const running = normalizeRunning(raw.running, taskIds);
@@ -63,6 +65,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
     taskTemplates,
     events: resolveOpenEvents(events, running, now),
     categories: categories.length ? categories : clone(defaultCategories),
+    interruptCats: interruptCats.length ? interruptCats : clone(defaultInterruptCats),
     whoChips: uniqueTexts(raw.whoChips),
     subjectChips: uniqueTexts(raw.subjectChips),
     teamWorkspace: normalizeTeamWorkspace(raw.teamWorkspace, now),
@@ -130,6 +133,16 @@ export function normalizeCategory(category) {
     id: String(category.id),
     name: cleanText(category.name) || 'カテゴリ',
     color: String(category.color || 'oklch(0.58 0.08 220)'),
+  };
+}
+
+export function normalizeInterruptCategory(category) {
+  if (!isObject(category) || !category.id) return null;
+  const rawIcon = category.icon;
+  return {
+    id: String(category.id),
+    name: cleanText(category.name) || 'カテゴリ',
+    icon: rawIcon === null ? null : cleanText(rawIcon) || 'dots',
   };
 }
 

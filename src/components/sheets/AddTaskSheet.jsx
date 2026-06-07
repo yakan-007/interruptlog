@@ -12,6 +12,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
   const [error, setError] = useState('');
   const selectedCategory = state.categories.find((category) => category.id === categoryId) ?? null;
   const taskAccent = selectedCategory?.color ?? 'var(--accent)';
+  const isPaused = state.running?.type === 'interrupt' || state.running?.type === 'break';
 
   useEffect(() => {
     if (editing || !onDraftChange) return;
@@ -57,7 +58,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
         ) : (
           <>
             <button className="btn secondary" onClick={() => submit('create')}>追加</button>
-            <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('start')}>{Icons.play(12)} 追加して開始</button>
+            <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('start')} disabled={isPaused}>{Icons.play(12)} 追加して開始</button>
           </>
         )}
       </>

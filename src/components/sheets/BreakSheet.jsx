@@ -6,7 +6,7 @@ export default function BreakSheet({ state, actions, onClose }) {
   const presets = [5, 10, 15, 30, 45];
 
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
-  const elapsed = now - (state.running?.start ?? now);
+  const elapsed = Math.max(0, now - (state.running?.start ?? now));
   const planned = state.running?.type === 'break' ? Math.max(0, state.running.plannedBreakDurationMinutes ?? 0) : 0;
   const plannedMs = planned * 60000;
   const overMs = plannedMs > 0 ? elapsed - plannedMs : 0;

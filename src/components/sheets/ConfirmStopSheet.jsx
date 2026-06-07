@@ -5,7 +5,7 @@ import SheetShell from './SheetShell';
 export default function ConfirmStopSheet({ state, actions, onClose }) {
   const now = useTicker(1000);
   const task = state.runningTaskMeta?.task ?? null;
-  const elapsed = now - (state.running?.start ?? now);
+  const elapsed = Math.max(0, now - (state.running?.start ?? now));
   const category = task ? state.categories.find((item) => item.id === task.categoryId) : null;
   const taskAccent = category?.color ?? 'var(--accent)';
 

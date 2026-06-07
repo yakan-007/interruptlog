@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Icons from '../../icons';
 import { fmtDateHeader, useTicker } from '../../helpers';
 import { partitionCompletedTasks, selectTaskPriorSpentMs } from '../../state';
@@ -27,7 +27,14 @@ export default function LogScreen({ state, actions }) {
     () => partitionCompletedTasks(state.completedTasks, now),
     [state.completedTasks, now]
   );
+  const activeIndexById = useMemo(
+    () => new Map(state.activeTasks.map((task, index) => [task.id, index])),
+    [state.activeTasks]
+  );
   const draggedTask = drag ? state.activeTasks.find((task) => task.id === drag.id) ?? null : null;
+  const visibleActiveTasks = drag
+    ? state.activeTasks.filter((task) => task.id !== drag.id)
+    : state.activeTasks;
   const dragAccent = drag
     ? categoriesById[state.activeTasks.find((task) => task.id === drag.id)?.categoryId]?.color ?? 'var(--accent)'
     : undefined;
@@ -160,11 +167,7 @@ export default function LogScreen({ state, actions }) {
       <div
         className={
           'il-body il-body-log' +
-          (state.running?.type === 'task'
-            ? ' has-runbar has-live-dock'
-            : state.running
-              ? ' has-runbar'
-              : ' has-dock')
+          (state.running ? ' has-runbar has-live-dock' : ' has-dock')
         }
       >
         <div className="il-section-h">
@@ -193,35 +196,28 @@ export default function LogScreen({ state, actions }) {
                 : undefined
             }
           >
-            {state.activeTasks.map((task, index) => {
-              const isDragging = drag?.id === task.id;
-              const dropIndex = drag?.overIndex;
-              const isDropBefore = Boolean(drag && !isDragging && dropIndex === index);
-              const isDropAfter = Boolean(drag && !isDragging && dropIndex === state.activeTasks.length && index === state.activeTasks.length - 1);
-              return (
-            <TaskCard
-              key={task.id}
-              task={task}
-              category={categoriesById[task.categoryId]}
-              running={state.running?.taskId === task.id && state.running?.type === 'task'}
-              runningStart={state.running?.start}
-              priorSpent={selectTaskPriorSpentMs(state, task.id)}
-              now={now}
-              onStart={() => actions.startTask(task.id)}
-              onStop={() => actions.openSheet('confirmStop')}
-              onComplete={() => actions.completeTask(task.id)}
-              onEdit={() => actions.openSheet('editTask', task)}
-              onCardPointerDown={(event) => armDrag(event, task.id, index)}
-              dragState={{
-                isArming: pressing?.id === task.id,
-                isDragging,
-                offsetY: isDragging ? (drag?.y ?? 0) - (drag?.startY ?? 0) : 0,
-                isDropBefore,
-                isDropAfter,
-              }}
-            />
-              );
-            })}
+            {visibleActiveTasks.map((task, index) => (
+              <Fragment key={task.id}>
+                {drag?.overIndex === index && <TaskDropPlaceholder />}
+                <TaskCard
+                  task={task}
+                  category={categoriesById[task.categoryId]}
+                  running={state.running?.taskId === task.id && state.running?.type === 'task'}
+                  runningStart={state.running?.start}
+                  priorSpent={selectTaskPriorSpentMs(state, task.id)}
+                  now={now}
+                  onStart={() => actions.startTask(task.id)}
+                  onStop={() => actions.openSheet('confirmStop')}
+                  onComplete={() => actions.completeTask(task.id)}
+                  onEdit={() => actions.openSheet('editTask', task)}
+                  onCardPointerDown={(event) => armDrag(event, task.id, activeIndexById.get(task.id) ?? index)}
+                  dragState={{
+                    isArming: pressing?.id === task.id,
+                  }}
+                />
+              </Fragment>
+            ))}
+            {drag?.overIndex === visibleActiveTasks.length && <TaskDropPlaceholder />}
           </div>
         )}
 
@@ -299,7 +295,11 @@ export default function LogScreen({ state, actions }) {
         )}
       </div>
 
-      {(!state.running || state.running.type === 'task') && <QuickAddCard state={state} actions={actions} />}
+      <QuickAddCard state={state} actions={actions} />
     </div>
   );
+}
+
+function TaskDropPlaceholder() {
+  return <div className="il-taskdrop-placeholder" aria-hidden="true" />;
 }

@@ -2,7 +2,7 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: max(10px, env(safe-area-inset-bottom));
+  bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px));
   z-index: 24;
   padding: 12px;
   border-radius: 20px;
@@ -285,6 +285,21 @@
   transition: margin .16s ease, transform .16s ease, box-shadow .16s ease, opacity .16s ease;
 }
 
+.il-taskdrop-placeholder {
+  height: var(--drag-gap, 86px);
+  margin: 6px 16px;
+  border-radius: 16px;
+  border: 1px dashed color-mix(in oklch, var(--drag-task-cat, var(--accent)) 38%, var(--hair-strong));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--drag-task-cat, var(--accent)) 10%, transparent),
+      color-mix(in oklch, var(--drag-task-cat, var(--accent)) 5%, transparent)
+    );
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 35%, transparent);
+  transition: height .16s ease, margin .16s ease, opacity .16s ease;
+}
+
 .il-taskcard.arming {
   transform: translateY(-2px) scale(1.006);
   box-shadow: 0 14px 28px rgba(23, 21, 18, 0.1), inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 18%, var(--hair));
@@ -315,47 +330,6 @@
     inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 34%, var(--hair));
   z-index: 6;
   cursor: grabbing;
-}
-
-.il-taskcard.drop-before {
-  margin-top: calc(var(--drag-gap, 86px) + 12px);
-  overflow: visible;
-  z-index: 2;
-}
-
-.il-taskcard.drop-after {
-  margin-bottom: calc(var(--drag-gap, 86px) + 12px);
-  overflow: visible;
-  z-index: 2;
-}
-
-.il-taskcard.drop-before::before,
-.il-taskcard.drop-after::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  height: calc(var(--drag-gap, 86px) - 10px);
-  border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 8%, var(--bg-elevated)),
-      color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 4%, var(--bg-elevated))
-    );
-  border: 1px dashed color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 30%, var(--hair));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklch, white 20%, transparent),
-    0 6px 16px color-mix(in oklch, var(--drag-task-cat, var(--task-cat, var(--accent))) 8%, transparent);
-  z-index: 4;
-}
-
-.il-taskcard.drop-before::before {
-  top: calc((var(--drag-gap, 86px) + 12px) * -1 + 6px);
-}
-
-.il-taskcard.drop-after::after {
-  bottom: calc((var(--drag-gap, 86px) + 12px) * -1 + 6px);
 }
 
 .il-meta {
@@ -532,7 +506,7 @@
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: max(8px, env(safe-area-inset-bottom));
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px));
   border-radius: 18px;
   padding: 10px 10px 10px 14px;
   display: flex;
@@ -560,8 +534,12 @@
   align-items: center;
 }
 
+.il-runbar.raised {
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px) + 126px);
+}
+
 .il-runbar.task.raised {
-  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 126px);
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px) + 126px);
 }
 
 .il-runbar.interrupt { background: var(--interrupt); }
@@ -865,7 +843,7 @@
   .il-runbar {
     left: 12px;
     right: 12px;
-    bottom: max(10px, env(safe-area-inset-bottom));
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px));
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px 8px;
@@ -878,8 +856,9 @@
     box-shadow: 0 16px 36px rgba(23, 21, 18, 0.14);
   }
 
+  .il-runbar.raised,
   .il-runbar.task.raised {
-    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 126px);
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px) + 126px);
   }
 
   .il-runbar.task.compact {

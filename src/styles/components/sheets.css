@@ -11,12 +11,15 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--keyboard-inset, 0px);
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   box-shadow: var(--sh-sheet);
   z-index: 101;
-  max-height: calc(86% - env(safe-area-inset-top));
+  max-height: min(
+    calc(86% - env(safe-area-inset-top)),
+    calc(100dvh - env(safe-area-inset-top) - var(--keyboard-inset, 0px))
+  );
   display: flex;
   flex-direction: column;
   animation: il-sheet-in .3s cubic-bezier(.3, .9, .3, 1);

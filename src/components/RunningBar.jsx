@@ -23,7 +23,8 @@ export default function RunningBar({ state, actions, raised = false, compact = f
   const taskAccent = category?.color ?? 'var(--accent)';
   const breakTargetMinutes = running.type === 'break' ? Math.max(0, running.plannedBreakDurationMinutes ?? 0) : 0;
   const breakTargetMs = breakTargetMinutes * 60000;
-  const breakOverMs = breakTargetMs > 0 ? now - running.start - breakTargetMs : 0;
+  const elapsedMs = Math.max(0, now - running.start);
+  const breakOverMs = breakTargetMs > 0 ? elapsedMs - breakTargetMs : 0;
   const breakTone = breakTargetMs <= 0 ? '' : breakOverMs >= 120000 ? ' late' : breakOverMs >= 0 ? ' warn' : ' target';
   const style = running.type === 'task'
     ? { '--runbar-accent': taskAccent, '--task-cat': taskAccent }
@@ -36,7 +37,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
         {running.type !== 'task' && <div className="top">{meta.subLabel}</div>}
         <div className="name">{meta.label}</div>
       </div>
-      <div className="time il-mono">{fmtRunbarDuration(now - running.start)}</div>
+      <div className="time il-mono">{fmtRunbarDuration(elapsedMs)}</div>
       {running.type === 'task' ? (
         <div className="rb-actions">
           <button className="rb-btn" aria-label="interrupt" onClick={() => actions.openSheet('interrupt')}>{Icons.bolt(16)}</button>

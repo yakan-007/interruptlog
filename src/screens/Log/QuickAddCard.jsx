@@ -14,6 +14,7 @@ export default function QuickAddCard({ state, actions }) {
   }));
 
   const hasName = Boolean(draft.name.trim());
+  const isPaused = state.running?.type === 'interrupt' || state.running?.type === 'break';
   const selectedCategoryId = state.categories.some((category) => category.id === draft.categoryId)
     ? draft.categoryId
     : state.categories[0]?.id ?? null;
@@ -37,6 +38,16 @@ export default function QuickAddCard({ state, actions }) {
     inputRef.current?.focus();
   };
 
+  const revealAddedTask = () => {
+    if (!state.preferences.topAdd) return;
+    window.requestAnimationFrame(() => {
+      inputRef.current
+        ?.closest('.il-screen')
+        ?.querySelector('.il-body-log')
+        ?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  };
+
   const openDetails = () => {
     actions.openSheet('addTask', {
       draft: {
@@ -50,6 +61,7 @@ export default function QuickAddCard({ state, actions }) {
       },
       onAfterSubmit: (nextDraft) => {
         resetDraft(nextDraft?.categoryId ?? selectedCategoryId);
+        revealAddedTask();
       },
     });
   };
@@ -70,6 +82,7 @@ export default function QuickAddCard({ state, actions }) {
       return;
     }
     resetDraft(selectedCategoryId);
+    revealAddedTask();
   };
 
   return (
@@ -104,7 +117,7 @@ export default function QuickAddCard({ state, actions }) {
         <button
           className="il-quickdock-icon start"
           onClick={() => submit('start')}
-          disabled={!hasName}
+          disabled={!hasName || isPaused}
           aria-label="追加して開始"
         >
           {Icons.play(16)}

@@ -7,12 +7,12 @@ export default function InterruptSheet({ state, actions, onClose }) {
   const [who, setWho] = useState('');
   const [label, setLabel] = useState('');
   const [urgency, setUrgency] = useState('med');
-  const [categoryId, setCategoryId] = useState('int-chat');
+  const [categoryId, setCategoryId] = useState(state.interruptCats[0]?.id ?? '');
   const [memo, setMemo] = useState('');
   const now = useTicker(1000);
 
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
-  const elapsed = now - (state.running?.start ?? now);
+  const elapsed = Math.max(0, now - (state.running?.start ?? now));
 
   const save = (resume) => {
     actions.saveInterrupt({ who, label: label || (who ? `${who}から` : '割り込み'), urgency, categoryId, memo, resume });
@@ -78,7 +78,7 @@ export default function InterruptSheet({ state, actions, onClose }) {
         <div className="il-seg full">
           {state.interruptCats.map((category) => (
             <button key={category.id} className={categoryId === category.id ? 'active' : ''} onClick={() => setCategoryId(category.id)}>
-              {Icons[category.icon] ? Icons[category.icon](12) : null}
+              {category.icon && Icons[category.icon] ? Icons[category.icon](12) : null}
               <span className="il-segicon-label">{category.name}</span>
             </button>
           ))}

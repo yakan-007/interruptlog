@@ -15,6 +15,7 @@ import {
   createTaskAndStartInState,
   createTaskInState,
   deleteCategoryInState,
+  deleteInterruptCategoryInState,
   deleteTaskTemplateInState,
   deleteEventInState,
   deleteTaskInState,
@@ -34,6 +35,7 @@ import {
   saveCategoryInState,
   saveChipsInState,
   saveEventInState,
+  saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskTemplateInState,
   saveTaskInState,
@@ -251,6 +253,14 @@ export function useAppState() {
 
     deleteCategory(id) {
       mutate((state) => deleteCategoryInState(state, id));
+    },
+
+    saveInterruptCategory(category) {
+      mutate((state) => saveInterruptCategoryInState(state, category));
+    },
+
+    deleteInterruptCategory(id) {
+      mutate((state) => deleteInterruptCategoryInState(state, id));
     },
 
     saveChips(kind, chips) {

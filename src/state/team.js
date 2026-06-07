@@ -1,4 +1,4 @@
-import { APP_NAME, normalizeArchiveEntry, normalizeCategory, normalizeTaskTemplate } from './schema';
+import { APP_NAME, normalizeArchiveEntry, normalizeCategory, normalizeInterruptCategory, normalizeTaskTemplate } from './schema';
 import { newId } from './ids';
 import { asArray, asNumber, cleanText, uniqueTexts } from './utils';
 
@@ -15,6 +15,7 @@ export function buildTeamSettingsExport(state, now = Date.now()) {
     exportedAt: new Date(now).toISOString(),
     taxonomyVersion: state.teamWorkspace?.taxonomyVersion ?? '',
     categories: state.categories,
+    interruptCats: state.interruptCats,
     whoChips: state.whoChips,
     subjectChips: state.subjectChips,
   };
@@ -23,7 +24,7 @@ export function buildTeamSettingsExport(state, now = Date.now()) {
 export function applyTeamSettingsImport(state, input) {
   const payload = parsePayload(input);
   if (!payload || payload.kind !== TEAM_SETTINGS_KIND) {
-    return { state, error: 'チーム設定JSONを読み込めませんでした', addedCategories: 0, updatedCategories: 0 };
+    return { state, error: 'チーム設定JSONを読み込めませんでした', addedCategories: 0, updatedCategories: 0, addedInterruptCategories: 0, updatedInterruptCategories: 0 };
   }
 
   const incoming = asArray(payload.categories).map(normalizeCategory).filter(Boolean);
@@ -37,11 +38,23 @@ export function applyTeamSettingsImport(state, input) {
     return next;
   });
   const additions = [...byId.values()];
+  const incomingInterrupts = asArray(payload.interruptCats).map(normalizeInterruptCategory).filter(Boolean);
+  const interruptsById = new Map(incomingInterrupts.map((category) => [category.id, category]));
+  let updatedInterruptCategories = 0;
+  const interruptCats = state.interruptCats.map((category) => {
+    if (!interruptsById.has(category.id)) return category;
+    updatedInterruptCategories += 1;
+    const next = interruptsById.get(category.id);
+    interruptsById.delete(category.id);
+    return next;
+  });
+  const interruptAdditions = [...interruptsById.values()];
 
   return {
     state: {
       ...state,
       categories: [...categories, ...additions],
+      interruptCats: [...interruptCats, ...interruptAdditions],
       whoChips: uniqueTexts([...state.whoChips, ...asArray(payload.whoChips)]),
       subjectChips: uniqueTexts([...state.subjectChips, ...asArray(payload.subjectChips)]),
       teamWorkspace: {
@@ -52,6 +65,8 @@ export function applyTeamSettingsImport(state, input) {
     error: null,
     addedCategories: additions.length,
     updatedCategories,
+    addedInterruptCategories: interruptAdditions.length,
+    updatedInterruptCategories,
   };
 }
 

@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { interruptCats } from '../data';
 
 const DATE_LABEL_OPTIONS = { month: 'long', day: 'numeric', weekday: 'short' };
 const PAUSED_START_MESSAGE = '先に現在の割り込みや休憩を処理してください';
@@ -9,7 +8,7 @@ export function buildViewState(app) {
     ready: app.ready,
     lastError: app.lastError,
     todayLabel: new Date().toLocaleDateString('ja-JP', DATE_LABEL_OPTIONS),
-    interruptCats,
+    interruptCats: app.state.interruptCats,
     tasks: app.state.tasks,
     taskTemplates: app.state.taskTemplates,
     events: app.state.events,
@@ -78,7 +77,12 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
       return result;
     },
     createTaskAndStart(data) {
+      if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
+        showToast(PAUSED_START_MESSAGE);
+        return { ok: false, error: PAUSED_START_MESSAGE };
+      }
       const result = app.actions.createTaskAndStart(data);
+      if (!result.ok && result.error) showToast(result.error);
       return result;
     },
     saveInterrupt(data) {
@@ -128,6 +132,12 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
     },
     deleteCategory(id) {
       app.actions.deleteCategory(id);
+    },
+    saveInterruptCategory(category) {
+      app.actions.saveInterruptCategory(category);
+    },
+    deleteInterruptCategory(id) {
+      app.actions.deleteInterruptCategory(id);
     },
     saveChips(kind, chips) {
       app.actions.saveChips(kind, chips);

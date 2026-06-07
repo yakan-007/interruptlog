@@ -19,6 +19,7 @@ import {
   createEmptyState,
   createTaskAndStartInState,
   createTaskInState,
+  deleteInterruptCategoryInState,
   deleteTaskInState,
   findOverlappingEvents,
   moveTaskToIndexInState,
@@ -32,6 +33,7 @@ import {
   restoreTaskAndStartInState,
   restoreTaskInState,
   saveBreakInState,
+  saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskInState,
   selectCompletedTasks,
@@ -95,6 +97,28 @@ describe('state model', () => {
 
     expect(rehydrated.preferences.onboardingDone).toBe(true);
     expect(imported.preferences.onboardingDone).toBe(true);
+  });
+
+  it('normalizes, saves, and deletes editable interrupt categories', () => {
+    const legacy = normalizeState({
+      ...createEmptyState(),
+      interruptCats: undefined,
+    });
+    const saved = saveInterruptCategoryInState(legacy, { name: '来客', icon: null }, 1000);
+    const customId = saved.interruptCats.find((category) => category.name === '来客')?.id;
+    const renamed = saveInterruptCategoryInState(saved, { id: customId, name: '来客対応', icon: 'bolt' }, 2000);
+    const withEvent = {
+      ...renamed,
+      events: [{ id: 'e1', type: 'interrupt', label: '受付', categoryId: customId, start: 1, end: 2 }],
+    };
+    const deleted = deleteInterruptCategoryInState(withEvent, customId);
+
+    expect(legacy.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
+    expect(customId).toBeTruthy();
+    expect(saved.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客', icon: null });
+    expect(renamed.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客対応', icon: 'bolt' });
+    expect(deleted.interruptCats.some((category) => category.id === customId)).toBe(false);
+    expect(deleted.events[0].categoryId).toBe(null);
   });
 
   it('clamps report stats to the selected range', () => {

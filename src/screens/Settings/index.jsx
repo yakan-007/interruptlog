@@ -7,6 +7,7 @@ import {
   ChipsSheet,
   ConfirmResetSheet,
   ImportSheet,
+  InterruptCategorySheet,
   PayloadImportSheet,
 } from './panels';
 
@@ -66,6 +67,20 @@ export default function SettingsScreen({ state, actions }) {
           </button>
         </div>
 
+        <div className="il-section-h"><span>割り込みカテゴリ</span><span className="count">{state.interruptCats.length}</span></div>
+        <div className="il-settings-group">
+          {state.interruptCats.map((category) => (
+            <button key={category.id} className="il-setrow il-setbutton" onClick={() => setPanel({ type: 'interruptCategory', category })}>
+              <span className="il-settings-noteicon" aria-hidden="true">{category.icon ? (Icons[category.icon]?.(14) ?? Icons.dots(14)) : Icons.circle(14)}</span>
+              <span className="tg"><span className="t">{category.name}</span></span>
+              {Icons.chevR(14)}
+            </button>
+          ))}
+          <button className="il-setrow il-setbutton accent" onClick={() => setPanel({ type: 'interruptCategory' })}>
+            <span className="tg"><span className="t">{Icons.plus(14)} 割り込みカテゴリを追加</span></span>
+          </button>
+        </div>
+
         <div className="il-section-h"><span>よく使う入力</span></div>
         <div className="il-settings-group">
           <button className="il-setrow il-setbutton" onClick={() => setPanel({ type: 'chips', kind: 'who' })}>
@@ -107,7 +122,7 @@ export default function SettingsScreen({ state, actions }) {
                 </span>
               </div>
               <button className="il-setrow il-setbutton" onClick={() => actions.exportTeamSettings()}>
-                <span className="tg"><span className="t accent-inline">{Icons.download(14)} チーム設定を書き出す</span><span className="s">カテゴリ、発信者チップ、件名チップを配布</span></span>
+                <span className="tg"><span className="t accent-inline">{Icons.download(14)} チーム設定を書き出す</span><span className="s">タスクカテゴリ、割り込みカテゴリ、入力チップを配布</span></span>
               </button>
               <button className="il-setrow il-setbutton" onClick={() => setPanel({ type: 'teamSettingsImport' })}>
                 <span className="tg"><span className="t accent-inline">チーム設定を読み込む</span><span className="s">個人ログを消さずに共通設定だけ更新</span></span>
@@ -180,6 +195,14 @@ export default function SettingsScreen({ state, actions }) {
           onDelete={(id) => { actions.deleteCategory(id); setPanel(null); }}
         />
       )}
+      {panel?.type === 'interruptCategory' && (
+        <InterruptCategorySheet
+          category={panel.category}
+          onClose={() => setPanel(null)}
+          onSave={(category) => { actions.saveInterruptCategory(category); setPanel(null); }}
+          onDelete={(id) => { actions.deleteInterruptCategory(id); setPanel(null); }}
+        />
+      )}
       {panel?.type === 'chips' && (
         <ChipsSheet
           kind={panel.kind}
@@ -201,7 +224,7 @@ export default function SettingsScreen({ state, actions }) {
       {panel?.type === 'teamSettingsImport' && (
         <PayloadImportSheet
           title="チーム設定を読み込む"
-          copy="カテゴリ、発信者チップ、件名チップだけを追加・更新します。個人のタスクや履歴は消えません。"
+          copy="タスクカテゴリ、割り込みカテゴリ、入力チップだけを追加・更新します。個人のタスクや履歴は消えません。"
           label="チーム設定JSON"
           onClose={() => setPanel(null)}
           onImport={(payload) => {

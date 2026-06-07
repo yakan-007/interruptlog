@@ -64,6 +64,26 @@ export default function App() {
     containerRef.current.style.setProperty('--accent', app.state.preferences.accent);
   }, [app.state.preferences.accent, app.state.preferences.dark]);
 
+  useEffect(() => {
+    const updateKeyboardInset = () => {
+      const viewport = window.visualViewport;
+      const inset = viewport
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+      containerRef.current?.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`);
+    };
+
+    updateKeyboardInset();
+    window.visualViewport?.addEventListener('resize', updateKeyboardInset);
+    window.visualViewport?.addEventListener('scroll', updateKeyboardInset);
+    window.addEventListener('resize', updateKeyboardInset);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateKeyboardInset);
+      window.visualViewport?.removeEventListener('scroll', updateKeyboardInset);
+      window.removeEventListener('resize', updateKeyboardInset);
+    };
+  }, []);
+
   const state = useMemo(() => buildViewState(app), [app]);
   const actions = useViewActions({ app, showToast, openSheet, closeSheet });
   const showOnboarding = app.ready && !state.preferences.onboardingDone;
@@ -124,7 +144,7 @@ export default function App() {
               <RunningBar
                 state={state}
                 actions={actions}
-                raised={tab === 'log' && state.running?.type === 'task'}
+                raised={tab === 'log'}
                 compact={tab !== 'log'}
               />
             )}
