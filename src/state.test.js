@@ -32,7 +32,9 @@ import {
   reorderTaskInState,
   restoreTaskAndStartInState,
   restoreTaskInState,
+  cancelPauseInState,
   saveBreakInState,
+  saveEventInState,
   saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskInState,
@@ -569,6 +571,34 @@ describe('state model', () => {
 
     expect(result.error).toBe(null);
     expect(result.preview?.candidate.label).toBe('割り込み');
+  });
+
+  it('keeps task category changes when editing a history event', () => {
+    const state = {
+      ...createEmptyState(),
+      events: [{ id: 'task-event', type: 'task', taskId: 't1', label: '作業', categoryId: 'cat-dev', start: 1000, end: 2000 }],
+    };
+
+    const result = saveEventInState(state, {
+      id: 'task-event',
+      type: 'task',
+      taskId: 't1',
+      label: '作業',
+      categoryId: 'cat-doc',
+      start: 1000,
+      end: 2000,
+    });
+
+    expect(result.error).toBe(null);
+    expect(result.state.events[0]).toMatchObject({ type: 'task', categoryId: 'cat-doc' });
+  });
+
+  it('does not create unknown records when cancelling a pause', () => {
+    const state = beginPauseInState(createEmptyState(), 'interrupt', 1000);
+    const result = cancelPauseInState(state, 7000);
+
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({ type: 'interrupt', label: 'キャンセルした割り込み', start: 1000, end: 7000 });
   });
 
   it('round-trips JSON backup payloads in v2 format', () => {

@@ -17,7 +17,7 @@ export default function ReportScreen({ state, actions }) {
     [state, range, now]
   );
 
-  const total = currentStats.focus + currentStats.interrupt + currentStats.break + currentStats.unknown || 1;
+  const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
   const deltaHours = (current, previous) => (current - previous) / 3600000;
   const {
     hourly,
@@ -101,7 +101,6 @@ export default function ReportScreen({ state, actions }) {
               <StatCard label="集中時間" color="var(--task)" value={currentStats.focus} delta={deltaHours(currentStats.focus, previousStats.focus)} deltaLabel={compareLabel} />
               <StatCard label="割り込み時間" color="var(--interrupt)" value={currentStats.interrupt} delta={deltaHours(currentStats.interrupt, previousStats.interrupt)} deltaLabel={compareLabel} deltaInvert />
               <StatCard label="休憩時間" color="var(--break)" value={currentStats.break} delta={deltaHours(currentStats.break, previousStats.break)} deltaLabel={compareLabel} />
-              <StatCard label="未分類時間" color="var(--unknown)" value={currentStats.unknown} delta={deltaHours(currentStats.unknown, previousStats.unknown)} deltaLabel={compareLabel} deltaInvert />
             </div>
 
             <div className="il-card">
@@ -110,10 +109,9 @@ export default function ReportScreen({ state, actions }) {
                 <span style={{ width: `${currentStats.focus / total * 100}%`, background: 'var(--task)' }} />
                 <span style={{ width: `${currentStats.interrupt / total * 100}%`, background: 'var(--interrupt)' }} />
                 <span style={{ width: `${currentStats.break / total * 100}%`, background: 'var(--break)' }} />
-                <span style={{ width: `${currentStats.unknown / total * 100}%`, background: 'var(--unknown)' }} />
               </div>
               <div className="il-hbar-legend">
-                {[['focus', 'task', '集中'], ['interrupt', 'interrupt', '割り込み'], ['break', 'break', '休憩'], ['unknown', 'unknown', '未分類']].map(([statKey, colorKey, label]) => (
+                {[['focus', 'task', '集中'], ['interrupt', 'interrupt', '割り込み'], ['break', 'break', '休憩']].map(([statKey, colorKey, label]) => (
                   <span key={statKey} className="l">
                     <span className="sw" style={{ background: `var(--${colorKey})` }} />
                     {label} {Math.round(currentStats[statKey] / total * 100)}%

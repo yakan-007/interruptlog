@@ -15,7 +15,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [startM, setStartM] = useState(initialDraft?.startM ?? String(initial.getMinutes()).padStart(2, '0'));
   const [endH, setEndH] = useState(initialDraft?.endH ?? String(initial.getHours()).padStart(2, '0'));
   const [endM, setEndM] = useState(initialDraft?.endM ?? String(Math.min(initial.getMinutes() + 30, 59)).padStart(2, '0'));
-  const [createGap, setCreateGap] = useState(Boolean(initialDraft?.createGap));
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
 
   const handleAdd = () => {
@@ -39,7 +38,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       ...(type === 'task' ? { categoryId: taskCategoryId } : {}),
       ...(type === 'interrupt' ? { who, urgency, categoryId: interruptCategoryId } : {}),
     };
-    const previewResult = actions.previewAddMissedEvent(draft, { createGap });
+    const previewResult = actions.previewAddMissedEvent(draft, { createGap: false });
     if (previewResult.error) {
       setError(previewResult.error ?? '入力を確認してください');
       return;
@@ -50,14 +49,14 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, startH, startM, endH, endM, createGap },
+        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, startH, startM, endH, endM },
         confirmLabel: '追加する',
         successMessage: 'イベントを追加しました',
       });
       return;
     }
 
-    const result = actions.addMissedEvent(draft, { createGap, saveWhoChip });
+    const result = actions.addMissedEvent(draft, { createGap: false, saveWhoChip });
     if (!result.ok) setError(result.error ?? '入力を確認してください');
   };
 
@@ -74,7 +73,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           <button className={type === 'task' ? 'active' : ''} onClick={() => setType('task')}>タスク</button>
           <button className={type === 'interrupt' ? 'active' : ''} onClick={() => setType('interrupt')}>割り込み</button>
           <button className={type === 'break' ? 'active' : ''} onClick={() => setType('break')}>休憩</button>
-          <button className={type === 'unknown' ? 'active' : ''} onClick={() => setType('unknown')}>未分類</button>
         </div>
       </div>
       <div className="il-field">
@@ -173,13 +171,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
             </label>
           </div>
         </div>
-      </div>
-      <div className="il-setrow il-sheet-toggle-row">
-        <div className="tg">
-          <div className="t">空いた時間を未分類として補う</div>
-          <div className="s">実際に空白がある場合だけ未分類時間を自動作成します</div>
-        </div>
-        <button className={'il-toggle' + (createGap ? ' on' : '')} onClick={() => setCreateGap(!createGap)} aria-label="ギャップ記録を切り替え" />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

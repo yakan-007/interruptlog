@@ -442,6 +442,7 @@
   border-radius: 10px;
   background: var(--bg-sunken);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
   line-height: 1.35;
 }

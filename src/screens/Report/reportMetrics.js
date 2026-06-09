@@ -7,7 +7,7 @@ export const URGENCY_META = {
 };
 
 export function buildReportMetrics(state, currentStats, bounds, now) {
-  const total = currentStats.focus + currentStats.interrupt + currentStats.break + currentStats.unknown || 1;
+  const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
   const hourly = buildHourlyInterrupts(currentStats.events);
   const maxHourly = Math.max(...hourly, 1);
   const dayStats = buildDayStats(state, now);

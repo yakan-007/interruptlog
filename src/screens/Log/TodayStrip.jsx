@@ -16,14 +16,12 @@ export default function TodayStrip({ state }) {
         <span style={{ width: `${summary.percentages.task}%`, background: 'var(--task)' }} />
         <span style={{ width: `${summary.percentages.interrupt}%`, background: 'var(--interrupt)' }} />
         <span style={{ width: `${summary.percentages.break}%`, background: 'var(--break)' }} />
-        <span style={{ width: `${summary.percentages.unknown}%`, background: 'var(--unknown)' }} />
       </div>
 
       <div className="il-todaystrip-legend">
         <LegendDot color="var(--task)" label="集中" value={fmtDurationShort(summary.task)} />
         <LegendDot color="var(--interrupt)" label="割り込み" value={fmtDurationShort(summary.interrupt)} />
         <LegendDot color="var(--break)" label="休憩" value={fmtDurationShort(summary.break)} />
-        {summary.unknown > 0 && <LegendDot color="var(--unknown)" label="未分類" value={fmtDurationShort(summary.unknown)} />}
       </div>
     </div>
   );

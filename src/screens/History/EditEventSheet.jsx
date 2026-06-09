@@ -6,13 +6,19 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../helpers';
 export default function EditEventSheet({ event, state, actions, onClose }) {
   const [label, setLabel] = useState(event.label ?? '');
   const [memo, setMemo] = useState(event.memo ?? '');
-  const [type, setType] = useState(event.type);
+  const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
   const [urgency, setUrgency] = useState(event.urgency ?? 'med');
-  const [categoryId, setCategoryId] = useState(event.categoryId ?? '');
+  const [taskCategoryId, setTaskCategoryId] = useState(event.type === 'task' ? event.categoryId ?? state.categories[0]?.id ?? '' : state.categories[0]?.id ?? '');
+  const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? state.interruptCats[0]?.id ?? '' : state.interruptCats[0]?.id ?? '');
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end));
+
+  const handleTypeChange = (nextType) => {
+    setError('');
+    setType(nextType);
+  };
 
   const handleSave = () => {
     const start = fromDateTimeLocalValue(startAt);
@@ -21,9 +27,16 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       setError('日時を確認してください');
       return;
     }
-    const extra = type === 'interrupt'
-      ? { who, urgency, categoryId }
-      : { who: '', urgency: 'med', categoryId: null };
+    const extra = {
+      taskId: type === 'task' ? event.taskId ?? null : null,
+      who: type === 'interrupt' ? who : '',
+      urgency: type === 'interrupt' ? urgency : 'med',
+      categoryId: type === 'task'
+        ? taskCategoryId
+        : type === 'interrupt'
+          ? interruptCategoryId
+          : null,
+    };
     const draft = { ...event, type, label, memo, start, end, ...extra };
     const previewResult = actions.previewSaveEvent(draft);
     if (previewResult.error) {
@@ -59,8 +72,8 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       <div className="il-field">
         <label>種別</label>
         <div className="il-seg full">
-          {[['task', 'タスク'], ['interrupt', '割り込み'], ['break', '休憩'], ['unknown', '未分類']].map(([value, text]) => (
-            <button key={value} className={type === value ? 'active' : ''} onClick={() => setType(value)}>
+          {[['task', 'タスク'], ['interrupt', '割り込み'], ['break', '休憩']].map(([value, text]) => (
+            <button key={value} className={type === value ? 'active' : ''} onClick={() => handleTypeChange(value)}>
               {text}
             </button>
           ))}
@@ -71,6 +84,24 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         <label>ラベル</label>
         <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
       </div>
+
+      {type === 'task' && (
+        <div className="il-field">
+          <label>カテゴリ</label>
+          <div className="il-chiprow">
+            {state.categories.map((category) => (
+              <button
+                key={category.id}
+                className={'c task-cat' + (taskCategoryId === category.id ? ' sel' : '')}
+                onClick={() => setTaskCategoryId(category.id)}
+                style={{ '--chip-cat': category.color, borderLeft: `3px solid ${category.color}` }}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {type === 'interrupt' && (
         <>
@@ -93,7 +124,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
             <label>カテゴリ</label>
             <div className="il-chiprow">
               {state.interruptCats.map((category) => (
-                <button key={category.id} className={'c' + (categoryId === category.id ? ' sel' : '')} onClick={() => setCategoryId(category.id)}>
+                <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
                   {category.name}
                 </button>
               ))}

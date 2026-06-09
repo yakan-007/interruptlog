@@ -21,7 +21,7 @@ export const TYPE_LABELS = {
   task: 'タスク',
   interrupt: '割り込み',
   break: '休憩',
-  unknown: '未分類時間',
+  unknown: '記録',
 };
 
 export function createEmptyState() {

@@ -47,7 +47,7 @@ export function selectTodayStripSummary(state, now = Date.now()) {
     else if (event.type === 'unknown') unknown += duration;
   }
 
-  const total = task + interrupt + breakMs + unknown;
+  const total = task + interrupt + breakMs;
   const percent = (value) => total ? (value / total) * 100 : 0;
   return {
     task,

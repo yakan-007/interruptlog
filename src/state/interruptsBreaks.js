@@ -78,12 +78,13 @@ export function saveBreakInState(state, data, now = Date.now()) {
 export function cancelPauseInState(state, now = Date.now()) {
   let next = state;
   if (state.running?.start && now - state.running.start > 5000) {
+    const type = state.running.type === 'break' ? 'break' : 'interrupt';
     next = {
       ...state,
       events: [...state.events, {
         id: newId('ev', now),
-        type: 'unknown',
-        label: 'キャンセル',
+        type,
+        label: type === 'break' ? 'キャンセルした休憩' : 'キャンセルした割り込み',
         start: state.running.start,
         end: now,
       }],

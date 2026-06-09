@@ -1,6 +1,6 @@
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../history';
 
-const TYPE_LABELS = { task: 'タスク', interrupt: '割り込み', break: '休憩', unknown: '未分類時間' };
+const TYPE_LABELS = { task: 'タスク', interrupt: '割り込み', break: '休憩', unknown: '記録' };
 const URGENCY_LABELS = { low: '低', med: '中', high: '高' };
 
 export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, onEdit }) {

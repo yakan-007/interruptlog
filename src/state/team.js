@@ -312,7 +312,7 @@ function addEntryToSummary(summary, entry) {
   const member = cleanText(entry.member) || '未設定';
   addGroupedDuration(summary.members, member, 'member', entry.type, durationMs, entry.type === 'interrupt');
 
-  const categoryKey = cleanText(entry.categoryId) || cleanText(entry.category) || '未分類';
+  const categoryKey = cleanText(entry.categoryId) || cleanText(entry.category) || '分類なし';
   const category = addGroupedDuration(summary.categories, categoryKey, 'category', entry.type, durationMs, false);
   category.name = cleanText(entry.category) || category.name || categoryKey;
 

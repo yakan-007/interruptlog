@@ -297,7 +297,6 @@ function CompareView({ entries, grain, comparison, onGrainChange }) {
             <CompareStat label="集中" value={comparison.current.totals.task} delta={comparison.deltas.task} color="var(--task)" />
             <CompareStat label="割り込み" value={comparison.current.totals.interrupt} delta={comparison.deltas.interrupt} color="var(--interrupt)" />
             <CompareStat label="休憩" value={comparison.current.totals.break} delta={comparison.deltas.break} color="var(--break)" />
-            <CompareStat label="未分類" value={comparison.current.totals.unknown} delta={comparison.deltas.unknown} color="var(--unknown)" />
           </div>
           <ArchiveBreakdown summary={comparison.current} />
         </>
@@ -312,7 +311,6 @@ function SummaryStats({ summary }) {
       <StatCard label="集中時間" color="var(--task)" value={summary.totals.task} />
       <StatCard label="割り込み時間" color="var(--interrupt)" value={summary.totals.interrupt} />
       <StatCard label="休憩時間" color="var(--break)" value={summary.totals.break} />
-      <StatCard label="未分類時間" color="var(--unknown)" value={summary.totals.unknown} />
     </div>
   );
 }

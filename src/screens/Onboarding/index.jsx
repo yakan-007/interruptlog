@@ -17,7 +17,7 @@ const FEATURES = [
     icon: Icons.report,
     color: 'oklch(0.5 0.12 280)',
     title: '時間の行方が見える',
-    subtitle: '集中・割り込み・休憩・未分類を可視化',
+    subtitle: '集中・割り込み・休憩を可視化',
   },
 ];
 

@@ -42,10 +42,8 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
       return;
     }
     setError('');
-    if (!editing) {
-      onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt });
-      onClose();
-    }
+    if (!editing) onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt });
+    onClose();
   };
 
   return (

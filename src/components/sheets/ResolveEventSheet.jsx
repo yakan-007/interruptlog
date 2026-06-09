@@ -116,9 +116,13 @@ function formatEventWindow(event) {
 }
 
 function formatTime(date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${padTime(date.getHours())}:${padTime(date.getMinutes())}:${padTime(date.getSeconds())}`;
 }
 
 function formatMonthDayTime(date) {
   return `${date.getMonth() + 1}/${date.getDate()} ${formatTime(date)}`;
+}
+
+function padTime(value) {
+  return String(value).padStart(2, '0');
 }
