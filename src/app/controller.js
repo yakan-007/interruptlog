@@ -34,10 +34,6 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
     openSheet,
     closeSheet,
     startTask(id) {
-      if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
-        showToast(PAUSED_START_MESSAGE);
-        return { ok: false, error: PAUSED_START_MESSAGE };
-      }
       app.actions.startTask(id);
       return { ok: true, error: null };
     },

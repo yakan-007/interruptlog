@@ -96,7 +96,8 @@ export function saveTaskInState(state, data, now = Date.now()) {
 export function startTaskInState(state, taskId, now = Date.now()) {
   const task = state.tasks.find((item) => item.id === taskId);
   if (!task) return state;
-  const closed = closeTaskSessionInState(state, now);
+  const pauseClosed = closePauseSessionInState(state, now);
+  const closed = closeTaskSessionInState(pauseClosed, now);
   const event = {
     id: newId('ev', now),
     type: 'task',
@@ -113,6 +114,23 @@ export function startTaskInState(state, taskId, now = Date.now()) {
     ...closed,
     events: [...closed.events, event],
     running: { type: 'task', taskId, start: now, label: null, preTaskId: null },
+  };
+}
+
+function closePauseSessionInState(state, now = Date.now()) {
+  const running = state.running;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
+  return {
+    ...state,
+    events: [...state.events, {
+      id: newId('ev', now),
+      type: running.type,
+      label: running.type === 'break' ? '未記録の休憩' : '未記録の割り込み',
+      ...(running.type === 'break' ? { breakDurationMinutes: Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0) } : {}),
+      start: running.start,
+      end: now,
+    }],
+    running: null,
   };
 }
 

@@ -40,6 +40,7 @@ import {
   selectHistoryDaySummary,
   selectTodayStripSummary,
   setBreakTargetInState,
+  startTaskInState,
   stopTaskInState,
   partitionCompletedTasks,
   selectActiveTasks,
@@ -632,6 +633,29 @@ describe('state model', () => {
       plannedBreakDurationMinutes: 15,
       start: 4000,
     });
+  });
+
+  it('switches from a pause timer to a task card without losing the pause event', () => {
+    let state = createEmptyState();
+    const first = createTaskInState(state, { name: '最初', categoryId: 'cat-dev', plannedDurationMinutes: 20 }, 1000);
+    const second = createTaskInState(first.state, { name: '戻り先', categoryId: 'cat-doc', plannedDurationMinutes: 30 }, 1200);
+    state = beginPauseInState(second.state, 'interrupt', 3000);
+    state = startTaskInState(state, second.taskId, 4500);
+
+    expect(state.events).toHaveLength(2);
+    expect(state.events[0]).toMatchObject({
+      type: 'interrupt',
+      label: '未記録の割り込み',
+      start: 3000,
+      end: 4500,
+    });
+    expect(state.events[1]).toMatchObject({
+      type: 'task',
+      taskId: second.taskId,
+      start: 4500,
+      end: null,
+    });
+    expect(state.running).toMatchObject({ type: 'task', taskId: second.taskId });
   });
 
   it('creates a task without auto-starting', () => {

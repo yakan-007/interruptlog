@@ -2,15 +2,10 @@ import { useMemo, useState } from 'react';
 import Icons from '../../icons';
 import { fmtDurationShort, useTicker } from '../../helpers';
 import { selectReportInputs } from '../../state';
+import { buildReportMetrics } from './reportMetrics';
 import StatCard from './StatCard';
 import TaskStat from './TaskStat';
 import TeamReport from './TeamReport';
-
-const URGENCY_META = {
-  low: { label: '低', color: 'var(--urg-low)', copy: '後回しにできた割り込み' },
-  med: { label: '中', color: 'var(--urg-med)', copy: 'その場で扱う相談' },
-  high: { label: '高', color: 'var(--urg-high)', copy: '即対応が必要だった割り込み' },
-};
 
 export default function ReportScreen({ state, actions }) {
   const [mode, setMode] = useState('personal');
@@ -24,91 +19,31 @@ export default function ReportScreen({ state, actions }) {
 
   const total = currentStats.focus + currentStats.interrupt + currentStats.break + currentStats.unknown || 1;
   const deltaHours = (current, previous) => (current - previous) / 3600000;
-
-  const hourly = Array(12).fill(0);
-  for (const event of currentStats.events.filter((item) => item.type === 'interrupt')) {
-    const hour = new Date(event.clippedStart).getHours();
-    if (hour >= 9 && hour <= 20) hourly[hour - 9] += event.durationMs;
-  }
-  const maxHourly = Math.max(...hourly, 1);
-
-  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayStats = Array(7).fill(null).map((_, index) => {
-    const dayStart = now - (6 - index) * 86400000;
-    const base = new Date(dayStart);
-    base.setHours(0, 0, 0, 0);
-    const dayInput = selectReportInputs(state, 'day', base.getTime() + 86399999);
-    return {
-      day: weekDays[new Date(dayStart).getDay()],
-      focus: dayInput.currentStats.focus,
-      interrupt: dayInput.currentStats.interrupt,
-    };
-  });
-  const maxDay = Math.max(...dayStats.map((day) => day.focus + day.interrupt), 1);
-
-  const senderMap = {};
-  for (const event of currentStats.events.filter((item) => item.type === 'interrupt' && item.who)) {
-    if (!senderMap[event.who]) senderMap[event.who] = { who: event.who, count: 0, time: 0 };
-    senderMap[event.who].count += 1;
-    senderMap[event.who].time += event.durationMs;
-  }
-  const senders = Object.values(senderMap).sort((a, b) => b.time - a.time).slice(0, 5);
-  const maxSenderTime = Math.max(...senders.map((sender) => sender.time), 1);
-
-  const urgencyStats = ['low', 'med', 'high'].map((key) => {
-    const events = currentStats.events.filter((item) => item.type === 'interrupt' && (item.urgency || 'med') === key);
-    return {
-      key,
-      ...URGENCY_META[key],
-      count: events.length,
-      time: events.reduce((sum, event) => sum + event.durationMs, 0),
-    };
-  });
-  const maxUrgencyTime = Math.max(...urgencyStats.map((item) => item.time), 1);
-  const topUrgency = urgencyStats.reduce((top, item) => item.time > top.time ? item : top, urgencyStats[0]);
-
-  const categoryMap = {};
-  for (const event of currentStats.events.filter((item) => item.type === 'task' && item.categoryId)) {
-    if (!categoryMap[event.categoryId]) categoryMap[event.categoryId] = { id: event.categoryId, time: 0 };
-    categoryMap[event.categoryId].time += event.durationMs;
-  }
-  const categoryList = Object.values(categoryMap).sort((a, b) => b.time - a.time);
-  const totalCategoryTime = categoryList.reduce((sum, category) => sum + category.time, 0) || 1;
-
-  const taskEvents = currentStats.events.filter((event) => event.type === 'task' && event.taskId);
-  const uniqueTaskIds = [...new Set(taskEvents.map((event) => event.taskId))];
-  const taskTimeById = taskEvents.reduce((map, event) => {
-    map.set(event.taskId, (map.get(event.taskId) ?? 0) + event.durationMs);
-    return map;
-  }, new Map());
-  const taskReportRows = uniqueTaskIds
-    .map((id) => {
-      const task = state.tasks.find((item) => item.id === id);
-      const firstEvent = taskEvents.find((event) => event.taskId === id);
-      const category = state.categories.find((item) => item.id === (task?.categoryId ?? firstEvent?.categoryId));
-      const completedInRange = Boolean(task?.isCompleted && task.completedAt >= bounds.since && task.completedAt < bounds.until);
-      return {
-        id,
-        name: task?.name ?? firstEvent?.label ?? 'タスク',
-        categoryName: category?.name ?? '',
-        categoryColor: category?.color ?? 'var(--task)',
-        time: taskTimeById.get(id) ?? 0,
-        completedAt: task?.completedAt ?? null,
-        completedInRange,
-      };
-    })
-    .sort((a, b) => {
-      if (a.completedInRange !== b.completedInRange) return a.completedInRange ? -1 : 1;
-      return b.time - a.time || a.name.localeCompare(b.name, 'ja');
-    });
-  const completedTasks = taskReportRows.filter((task) => task.completedInRange);
-  const incompleteTasks = taskReportRows.filter((task) => !task.completedInRange);
-  const completedInRange = completedTasks.length;
-  const taskRate = uniqueTaskIds.length > 0 ? Math.round((completedInRange / uniqueTaskIds.length) * 100) : 0;
-
-  const peakHour = hourly.indexOf(Math.max(...hourly));
-  const quietHour = hourly.indexOf(Math.min(...hourly));
-  const hasInterruptTrend = hourly.some((value) => value >= 60000);
+  const {
+    hourly,
+    maxHourly,
+    dayStats,
+    maxDay,
+    senders,
+    maxSenderTime,
+    urgencyStats,
+    maxUrgencyTime,
+    topUrgency,
+    categoryList,
+    totalCategoryTime,
+    uniqueTaskIds,
+    taskReportRows,
+    completedTasks,
+    incompleteTasks,
+    completedInRange,
+    taskRate,
+    peakHour,
+    quietHour,
+    hasInterruptTrend,
+  } = useMemo(
+    () => buildReportMetrics(state, currentStats, bounds, now),
+    [bounds, currentStats, now, state]
+  );
 
   return (
     <div className="il-screen il-fade">

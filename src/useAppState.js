@@ -59,6 +59,10 @@ function toActionResult(result) {
   return { ok: !result?.error, error: result?.error ?? null, taskId: result?.taskId ?? null };
 }
 
+function toStateActionResult(result) {
+  return { ok: !result.error, ...result };
+}
+
 export function useAppState() {
   const [appState, setAppState] = useState(() => createEmptyState());
   const appStateRef = useRef(appState);
@@ -115,17 +119,20 @@ export function useAppState() {
     setTrackedAppState((current) => recipe(current));
   }, [setTrackedAppState]);
 
-  const applyResult = useCallback((result) => {
+  const commitResult = useCallback((result) => {
     setTrackedAppState(result.state);
     setLastError(result.error ?? null);
-    return toActionResult(result);
   }, [setTrackedAppState]);
 
+  const applyResult = useCallback((result) => {
+    commitResult(result);
+    return toActionResult(result);
+  }, [commitResult]);
+
   const applyStateResult = useCallback((result) => {
-    setTrackedAppState(result.state);
-    setLastError(result.error ?? null);
-    return { ok: !result.error, ...result };
-  }, [setTrackedAppState]);
+    commitResult(result);
+    return toStateActionResult(result);
+  }, [commitResult]);
 
   const actions = useMemo(() => ({
     beginInterrupt() {

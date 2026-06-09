@@ -1,24 +1,14 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Icons from '../../icons';
 import { fmtDateHeader, useTicker } from '../../helpers';
 import { partitionCompletedTasks, selectTaskPriorSpentMs } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import TaskCard from './TaskCard';
-
-const LONG_PRESS_MS = 220;
-const PRESS_MOVE_TOLERANCE = 10;
-
-function isInteractiveTarget(target) {
-  return target instanceof Element && Boolean(target.closest('button, a, input, textarea, select, label'));
-}
+import { useTaskDrag } from './useTaskDrag';
 
 export default function LogScreen({ state, actions }) {
   const now = useTicker(1000);
   const [showArchive, setShowArchive] = useState(false);
-  const [pressing, setPressing] = useState(null);
-  const [drag, setDrag] = useState(null);
-  const dragRef = useRef(null);
-  const listRef = useRef(null);
   const categoriesById = useMemo(
     () => Object.fromEntries(state.categories.map((category) => [category.id, category])),
     [state.categories]
@@ -27,136 +17,16 @@ export default function LogScreen({ state, actions }) {
     () => partitionCompletedTasks(state.completedTasks, now),
     [state.completedTasks, now]
   );
-  const activeIndexById = useMemo(
-    () => new Map(state.activeTasks.map((task, index) => [task.id, index])),
-    [state.activeTasks]
-  );
-  const draggedTask = drag ? state.activeTasks.find((task) => task.id === drag.id) ?? null : null;
-  const visibleActiveTasks = drag
-    ? state.activeTasks.filter((task) => task.id !== drag.id)
-    : state.activeTasks;
-  const dragAccent = drag
-    ? categoriesById[state.activeTasks.find((task) => task.id === drag.id)?.categoryId]?.color ?? 'var(--accent)'
-    : undefined;
-
-  const finishDrag = useCallback(() => {
-    const current = dragRef.current;
-    if (current?.overIndex != null) {
-      actions.moveTaskToIndex(current.id, current.overIndex);
-    }
-    dragRef.current = null;
-    setPressing(null);
-    setDrag(null);
-  }, [actions]);
-
-  const updateDrag = useCallback((clientY) => {
-    const current = dragRef.current;
-    if (!current) return;
-
-    const cards = [...(listRef.current?.querySelectorAll('.il-taskcard[data-task-id]') ?? [])];
-    const otherRects = cards
-      .filter((card) => card.dataset.taskId !== current.id)
-      .map((card) => card.getBoundingClientRect());
-    const overIndex = otherRects.reduce(
-      (index, rect) => clientY > rect.top + rect.height / 2 ? index + 1 : index,
-      0
-    );
-    const next = { ...current, y: clientY, overIndex };
-    dragRef.current = next;
-    setDrag(next);
-  }, []);
-
-  const startDrag = useCallback((taskId, index, clientY, rect) => {
-    if (state.activeTasks.length < 2) return;
-    const next = {
-      id: taskId,
-      fromIndex: index,
-      overIndex: index,
-      startY: clientY,
-      y: clientY,
-      height: rect?.height ?? 86,
-      width: rect?.width ?? 320,
-      left: rect?.left ?? 16,
-      top: rect?.top ?? 0,
-    };
-    dragRef.current = next;
-    setDrag(next);
-  }, [state.activeTasks.length]);
-
-  const armDrag = useCallback((event, taskId, index) => {
-    if (state.activeTasks.length < 2) return;
-    if (event.button != null && event.button !== 0) return;
-    if (isInteractiveTarget(event.target)) return;
-    setPressing({
-      id: taskId,
-      index,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-    });
-  }, [state.activeTasks.length]);
-
-  useEffect(() => {
-    if (!pressing || drag) return undefined;
-
-    const timer = window.setTimeout(() => {
-      const card = [...(listRef.current?.querySelectorAll('.il-taskcard[data-task-id]') ?? [])]
-        .find((item) => item.dataset.taskId === pressing.id);
-      card?.setPointerCapture?.(pressing.pointerId);
-      startDrag(pressing.id, pressing.index, pressing.startY, card?.getBoundingClientRect());
-      setPressing(null);
-    }, LONG_PRESS_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [drag, pressing, startDrag]);
-
-  useEffect(() => {
-    if (!pressing || drag) return undefined;
-
-    const onPointerMove = (event) => {
-      if (event.pointerId !== pressing.pointerId) return;
-      const movedX = Math.abs(event.clientX - pressing.startX);
-      const movedY = Math.abs(event.clientY - pressing.startY);
-      if (movedX > PRESS_MOVE_TOLERANCE || movedY > PRESS_MOVE_TOLERANCE) {
-        setPressing(null);
-      }
-    };
-    const onPointerUp = (event) => {
-      if (event.pointerId === pressing.pointerId) {
-        setPressing(null);
-      }
-    };
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-    return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-    };
-  }, [drag, pressing]);
-
-  useEffect(() => {
-    if (!drag) return undefined;
-
-    const onPointerMove = (event) => {
-      event.preventDefault();
-      updateDrag(event.clientY);
-    };
-    const onPointerUp = () => {
-      finishDrag();
-    };
-
-    window.addEventListener('pointermove', onPointerMove, { passive: false });
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-    return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-    };
-  }, [drag, finishDrag, updateDrag]);
+  const {
+    activeIndexById,
+    armDrag,
+    drag,
+    draggedTask,
+    dragAccent,
+    listRef,
+    pressing,
+    visibleActiveTasks,
+  } = useTaskDrag(state.activeTasks, categoriesById, actions);
 
   return (
     <div className="il-screen il-fade">
