@@ -334,11 +334,12 @@
 
 .il-meta {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-3);
   flex-wrap: wrap;
+  line-height: 1.35;
 }
 
 .il-meta .sep { color: var(--ink-5); }
@@ -346,6 +347,21 @@
 .il-meta .strong { font-weight: 600; color: var(--ink-2); }
 .il-meta .subtle { color: var(--ink-3); font-weight: 500; }
 .il-meta .danger { color: var(--urg-high); }
+.il-meta .meta-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.il-taskcard .task-cat-label {
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 12%, var(--bg-sunken));
+  border: 1px solid color-mix(in oklch, var(--task-cat, var(--accent)) 22%, transparent);
+}
 
 .il-taskcard .task-actions {
   grid-column: 3;
@@ -544,6 +560,12 @@
 
 .il-runbar.interrupt { background: var(--interrupt); }
 .il-runbar.break { background: var(--break); color: #1a1a16; }
+.il-runbar.reopenable {
+  cursor: pointer;
+}
+.il-runbar.reopenable:active {
+  transform: translateY(1px) scale(0.995);
+}
 .il-runbar.break.target {
   border-color: color-mix(in oklch, var(--break) 26%, var(--hair-strong));
   box-shadow: 0 10px 24px rgba(23, 21, 18, 0.08);
@@ -786,16 +808,30 @@
   border-radius: 14px;
 }
 
-.il-runbar .rb-btn.stop { background: rgba(255, 255, 255, 0.95); color: var(--ink); }
+.il-runbar .rb-btn.stop {
+  background: color-mix(in oklch, var(--ink) 88%, transparent);
+  color: var(--bg-elevated);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px rgba(23, 21, 18, 0.18);
+}
 .il-runbar.task .rb-btn.stop {
   background: color-mix(in oklch, var(--runbar-accent, var(--accent)) 74%, var(--ink) 26%);
   color: var(--bg-elevated);
   border-color: transparent;
   box-shadow: 0 6px 16px color-mix(in oklch, var(--runbar-accent, var(--accent)) 14%, transparent);
 }
-.il-runbar.break .rb-btn.stop { color: var(--break); }
-.il-runbar.break.warn .rb-btn.stop { color: oklch(0.40 0.10 72); }
-.il-runbar.break.late .rb-btn.stop { color: oklch(0.38 0.14 28); }
+.il-runbar.interrupt .rb-btn.stop {
+  background: color-mix(in oklch, var(--ink) 82%, var(--interrupt) 18%);
+  color: #fffdf8;
+}
+.il-runbar.break .rb-btn.stop,
+.il-runbar.break.warn .rb-btn.stop,
+.il-runbar.break.late .rb-btn.stop {
+  background: color-mix(in oklch, var(--ink) 82%, var(--break) 18%);
+  color: #fffdf8;
+}
 
 .il-tabbar {
   position: relative;

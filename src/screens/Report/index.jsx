@@ -6,9 +6,15 @@ import StatCard from './StatCard';
 import TaskStat from './TaskStat';
 import TeamReport from './TeamReport';
 
+const URGENCY_META = {
+  low: { label: '低', color: 'var(--urg-low)', copy: '後回しにできた割り込み' },
+  med: { label: '中', color: 'var(--urg-med)', copy: 'その場で扱う相談' },
+  high: { label: '高', color: 'var(--urg-high)', copy: '即対応が必要だった割り込み' },
+};
+
 export default function ReportScreen({ state, actions }) {
   const [mode, setMode] = useState('personal');
-  const [range, setRange] = useState('week');
+  const [range, setRange] = useState('day');
   const teamModeEnabled = state.preferences.teamModeEnabled;
   const now = useTicker(1000);
   const { bounds, currentStats, previousStats, compareLabel } = useMemo(
@@ -49,6 +55,18 @@ export default function ReportScreen({ state, actions }) {
   const senders = Object.values(senderMap).sort((a, b) => b.time - a.time).slice(0, 5);
   const maxSenderTime = Math.max(...senders.map((sender) => sender.time), 1);
 
+  const urgencyStats = ['low', 'med', 'high'].map((key) => {
+    const events = currentStats.events.filter((item) => item.type === 'interrupt' && (item.urgency || 'med') === key);
+    return {
+      key,
+      ...URGENCY_META[key],
+      count: events.length,
+      time: events.reduce((sum, event) => sum + event.durationMs, 0),
+    };
+  });
+  const maxUrgencyTime = Math.max(...urgencyStats.map((item) => item.time), 1);
+  const topUrgency = urgencyStats.reduce((top, item) => item.time > top.time ? item : top, urgencyStats[0]);
+
   const categoryMap = {};
   for (const event of currentStats.events.filter((item) => item.type === 'task' && item.categoryId)) {
     if (!categoryMap[event.categoryId]) categoryMap[event.categoryId] = { id: event.categoryId, time: 0 };
@@ -59,14 +77,38 @@ export default function ReportScreen({ state, actions }) {
 
   const taskEvents = currentStats.events.filter((event) => event.type === 'task' && event.taskId);
   const uniqueTaskIds = [...new Set(taskEvents.map((event) => event.taskId))];
-  const completedInRange = uniqueTaskIds.filter((id) => {
-    const task = state.tasks.find((item) => item.id === id);
-    return task?.isCompleted && task.completedAt >= bounds.since && task.completedAt < bounds.until;
-  }).length;
+  const taskTimeById = taskEvents.reduce((map, event) => {
+    map.set(event.taskId, (map.get(event.taskId) ?? 0) + event.durationMs);
+    return map;
+  }, new Map());
+  const taskReportRows = uniqueTaskIds
+    .map((id) => {
+      const task = state.tasks.find((item) => item.id === id);
+      const firstEvent = taskEvents.find((event) => event.taskId === id);
+      const category = state.categories.find((item) => item.id === (task?.categoryId ?? firstEvent?.categoryId));
+      const completedInRange = Boolean(task?.isCompleted && task.completedAt >= bounds.since && task.completedAt < bounds.until);
+      return {
+        id,
+        name: task?.name ?? firstEvent?.label ?? 'タスク',
+        categoryName: category?.name ?? '',
+        categoryColor: category?.color ?? 'var(--task)',
+        time: taskTimeById.get(id) ?? 0,
+        completedAt: task?.completedAt ?? null,
+        completedInRange,
+      };
+    })
+    .sort((a, b) => {
+      if (a.completedInRange !== b.completedInRange) return a.completedInRange ? -1 : 1;
+      return b.time - a.time || a.name.localeCompare(b.name, 'ja');
+    });
+  const completedTasks = taskReportRows.filter((task) => task.completedInRange);
+  const incompleteTasks = taskReportRows.filter((task) => !task.completedInRange);
+  const completedInRange = completedTasks.length;
   const taskRate = uniqueTaskIds.length > 0 ? Math.round((completedInRange / uniqueTaskIds.length) * 100) : 0;
 
   const peakHour = hourly.indexOf(Math.max(...hourly));
   const quietHour = hourly.indexOf(Math.min(...hourly));
+  const hasInterruptTrend = hourly.some((value) => value >= 60000);
 
   return (
     <div className="il-screen il-fade">
@@ -158,13 +200,45 @@ export default function ReportScreen({ state, actions }) {
                   );
                 })}
               </div>
-              {currentStats.interrupt > 0 && (
+              {hasInterruptTrend ? (
                 <div className="il-report-meta">
                   <span>ピーク: <strong className="peak">{9 + peakHour}時</strong> · {fmtDurationShort(hourly[peakHour])}</span>
                   <span>静かな時間: {9 + quietHour}時</span>
                 </div>
+              ) : (
+                <div className="il-report-emptytrend">
+                  まだ傾向を出せるほど割り込み記録がありません
+                </div>
               )}
             </div>
+
+            {currentStats.interrupt > 0 && (
+              <div className="il-card">
+                <h3>緊急度別の割り込み</h3>
+                <div className="il-urgency-report">
+                  {urgencyStats.map((item) => (
+                    <div key={item.key} className="il-urgency-report-row">
+                      <div className="main">
+                        <span className={'il-chip sm urg-' + item.key}>{item.label}</span>
+                        <span className="copy">{item.copy}</span>
+                      </div>
+                      <div className="meter">
+                        <div style={{ width: `${(item.time / maxUrgencyTime) * 100}%`, background: item.color }} />
+                      </div>
+                      <div className="value">
+                        <span>{item.count}件</span>
+                        <strong className="il-mono">{fmtDurationShort(item.time)}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="il-report-emptytrend">
+                  {topUrgency.time > 0
+                    ? `${topUrgency.label}の割り込みが一番長めです。${topUrgency.key === 'low' ? 'まとめて聞く時間を作る候補です。' : topUrgency.key === 'high' ? '一次対応や通知設計を見直す候補です。' : '共有不足や確認フローを見直す候補です。'}`
+                    : '緊急度の傾向は、割り込み記録が増えると見えてきます。'}
+                </div>
+              </div>
+            )}
 
             <div className="il-card">
               <h3>曜日別の傾向</h3>
@@ -230,6 +304,12 @@ export default function ReportScreen({ state, actions }) {
                 <TaskStat label="未完了" value={uniqueTaskIds.length - completedInRange} />
                 <TaskStat label="処理率" value={`${taskRate}%`} accent />
               </div>
+              {taskReportRows.length > 0 && (
+                <div className="il-report-tasklists">
+                  <TaskReportList title="完了したタスク" empty="この期間に完了したタスクはありません" tasks={completedTasks} />
+                  <TaskReportList title="未完了のタスク" empty="未完了の記録タスクはありません" tasks={incompleteTasks} />
+                </div>
+              )}
             </div>
 
             <div className="il-report-export">
@@ -243,4 +323,37 @@ export default function ReportScreen({ state, actions }) {
       )}
     </div>
   );
+}
+
+function TaskReportList({ title, empty, tasks }) {
+  return (
+    <div className="il-report-tasklist">
+      <div className="il-report-tasklist-title">
+        <span>{title}</span>
+        <span className="count">{tasks.length}</span>
+      </div>
+      {tasks.length === 0 ? (
+        <div className="il-report-taskempty">{empty}</div>
+      ) : (
+        tasks.map((task) => (
+          <div key={task.id} className="il-report-taskrow">
+            <span className="swatch" style={{ background: task.categoryColor }} />
+            <div className="main">
+              <div className="name">{task.name}</div>
+              <div className="meta">
+                {task.categoryName && <span>{task.categoryName}</span>}
+                <span>{fmtDurationShort(task.time)}</span>
+                {task.completedInRange && task.completedAt && <span>{formatReportTaskDate(task.completedAt)} 完了</span>}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function formatReportTaskDate(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }

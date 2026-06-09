@@ -27,15 +27,16 @@ export default function TaskCard({
   const hasDueAt = dueAt != null && dueAt > 0;
   const overdue = hasDueAt && dueAt < now;
   const actualSummary = plannedMs > 0 ? (
-    <span>
+    <span className="meta-stat">
+      <span className="muted">実績</span>
       <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
-      <span className="muted"> / </span>
+      <span className="muted">/ 予定</span>
       <span className="il-mono">{fmtDurationMin(plannedMs / 60000)}</span>
     </span>
   ) : (
-    <span>
+    <span className="meta-stat">
+      <span className="muted">累計</span>
       <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
-      <span className="muted"> 累計</span>
     </span>
   );
   const cardStyle = {
@@ -54,13 +55,13 @@ export default function TaskCard({
         <div className="task-main">
           <div className="task-head">
             <div className="title">{task.name}</div>
-            <span className="il-chip sm">{category?.name}</span>
+            <span className="il-chip task-cat-label">{category?.name}</span>
           </div>
           <div className="il-meta">
             <span className="il-chip sm subtle">{completedNote || (task.completedAt ? `完了 ${fmtRel(task.completedAt)}` : '完了')}</span>
-            <span>
+            <span className="meta-stat">
+              <span className="muted">累計</span>
               <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
-              <span className="muted"> 累計</span>
             </span>
           </div>
         </div>
@@ -97,7 +98,7 @@ export default function TaskCard({
           <div className="title">{task.name}</div>
         </div>
         <div className="il-meta">
-          <span className="il-chip sm" style={{ color: category?.color }}>{category?.name}</span>
+          <span className="il-chip task-cat-label" style={{ color: category?.color }}>{category?.name}</span>
           {actualSummary}
           {running && (
             <span className="il-mono subtle">{fmtDuration(now - runningStart, { showSec: true })}</span>

@@ -40,10 +40,7 @@ export default function ResolveEventSheet({ resolution, onBack, onConfirm }) {
               <span className={`il-chip ${change.action === 'remove' ? 'danger' : 'accent'}`}>{CHANGE_LABELS[change.action] ?? change.action}</span>
               <span className="event">{(change.before?.label ?? firstAfterLabel(change.after) ?? 'イベント')}</span>
             </div>
-            {change.before && <div className="before">{formatEventLine(change.before)}</div>}
-            <div className="after">
-              {renderAfter(change.after)}
-            </div>
+            <ChangePreview before={change.before} after={change.after} />
           </div>
         ))}
       </div>
@@ -61,6 +58,22 @@ const CHANGE_LABELS = {
   insert: '追加',
 };
 
+function ChangePreview({ before, after }) {
+  return (
+    <div className="il-resolution-compare">
+      <div className="side before">
+        <div className="label">整理前</div>
+        {before ? <div className="line">{formatEventLine(before)}</div> : <div className="line muted">新しく追加されます</div>}
+      </div>
+      <div className="arrow" aria-hidden="true">→</div>
+      <div className="side after">
+        <div className="label">整理後{afterCount(after) > 1 ? ` · ${afterCount(after)}本` : ''}</div>
+        {renderAfter(after)}
+      </div>
+    </div>
+  );
+}
+
 function renderAfter(after) {
   if (!after) return <div className="line muted">削除されます</div>;
   if (Array.isArray(after)) {
@@ -73,6 +86,11 @@ function renderAfter(after) {
     );
   }
   return <div className="line">{formatEventLine(after)}</div>;
+}
+
+function afterCount(after) {
+  if (!after) return 0;
+  return Array.isArray(after) ? after.length : 1;
 }
 
 function firstAfterLabel(after) {

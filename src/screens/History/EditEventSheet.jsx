@@ -77,23 +77,23 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           <div className="il-field">
             <label>発信者</label>
             <div className="il-chiprow">
-              {state.whoChips.map((item) => (
-                <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
-              ))}
               <input
                 className="c il-chipinput compact"
                 placeholder="+ 新規"
                 value={who && !state.whoChips.includes(who) ? who : ''}
                 onChange={(current) => setWho(current.target.value)}
               />
+              {state.whoChips.map((item) => (
+                <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
+              ))}
             </div>
           </div>
 
           <div className="il-field">
             <label>カテゴリ</label>
-            <div className="il-seg full">
+            <div className="il-chiprow">
               {state.interruptCats.map((category) => (
-                <button key={category.id} className={categoryId === category.id ? 'active' : ''} onClick={() => setCategoryId(category.id)}>
+                <button key={category.id} className={'c' + (categoryId === category.id ? ' sel' : '')} onClick={() => setCategoryId(category.id)}>
                   {category.name}
                 </button>
               ))}

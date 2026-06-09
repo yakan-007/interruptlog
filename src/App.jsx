@@ -44,11 +44,11 @@ export default function App() {
   }, []);
 
   const openSheet = useCallback((nextSheet, arg) => {
-    if (nextSheet === 'interrupt') app.actions.beginInterrupt();
-    else if (nextSheet === 'break') app.actions.beginBreak();
+    if (nextSheet === 'interrupt' && app.state.running?.type !== 'interrupt') app.actions.beginInterrupt();
+    else if (nextSheet === 'break' && app.state.running?.type !== 'break') app.actions.beginBreak();
     setSheet(nextSheet);
     setSheetArg(arg);
-  }, [app.actions]);
+  }, [app.actions, app.state.running?.type]);
 
   const showToast = useCallback((message) => {
     setToast(message);
@@ -140,7 +140,7 @@ export default function App() {
             {tab === 'report' && <ReportScreen state={state} actions={actions} />}
             {tab === 'settings' && <SettingsScreen state={state} actions={actions} />}
 
-            {state.running && (
+            {state.running && !activeSheet && (
               <RunningBar
                 state={state}
                 actions={actions}
@@ -165,7 +165,7 @@ export default function App() {
               />
             )}
             {activeSheet === 'editTask' && <AddTaskSheet state={state} actions={actions} onClose={closeSheet} editing={activeSheetArg} />}
-            {activeSheet === 'addMissed' && <AddMissedSheet actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
+            {activeSheet === 'addMissed' && <AddMissedSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
             {activeSheet === 'editEvent' && <EditEventSheet event={activeSheetArg} state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'resolveEvent' && <ResolveEventSheet resolution={activeSheetArg} onBack={handleResolutionBack} onConfirm={handleResolutionConfirm} />}
             {activeSheet === 'repairOverlaps' && <RepairOverlapsSheet preview={activeSheetArg ?? state.overlapRepair.pending} onDefer={handleRepairDefer} onApply={handleRepairApply} />}

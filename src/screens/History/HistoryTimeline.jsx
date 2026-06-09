@@ -1,6 +1,7 @@
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../history';
 
 const TYPE_LABELS = { task: 'タスク', interrupt: '割り込み', break: '休憩', unknown: '未分類時間' };
+const URGENCY_LABELS = { low: '低', med: '中', high: '高' };
 
 export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, onEdit }) {
   const { axis, items, nowY } = timeline;
@@ -51,6 +52,9 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                   {event.startsBeforeDay && <span className="il-chip sm accent">前日から</span>}
                   {event.endsAfterDay && <span className="il-chip sm accent">翌日に続く</span>}
                   {event.longEvent && <span className="il-chip sm warn">長時間</span>}
+                  {event.type === 'interrupt' && event.urgency && (
+                    <span className={'il-chip sm urg-' + event.urgency}>{URGENCY_LABELS[event.urgency] ?? event.urgency}</span>
+                  )}
                 </div>
               </button>
             );

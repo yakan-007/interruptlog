@@ -5,6 +5,7 @@ import SheetShell from './SheetShell';
 
 export default function InterruptSheet({ state, actions, onClose }) {
   const [who, setWho] = useState('');
+  const [saveWhoChip, setSaveWhoChip] = useState(false);
   const [label, setLabel] = useState('');
   const [urgency, setUrgency] = useState('med');
   const [categoryId, setCategoryId] = useState(state.interruptCats[0]?.id ?? '');
@@ -13,9 +14,10 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
   const elapsed = Math.max(0, now - (state.running?.start ?? now));
+  const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
 
   const save = (resume) => {
-    actions.saveInterrupt({ who, label: label || (who ? `${who}から` : '割り込み'), urgency, categoryId, memo, resume });
+    actions.saveInterrupt({ who, saveWhoChip, label: label || (who ? `${who}から` : '割り込み'), urgency, categoryId, memo, resume });
   };
 
   return (
@@ -44,18 +46,24 @@ export default function InterruptSheet({ state, actions, onClose }) {
       <div className="il-field">
         <label>発信者</label>
         <div className="il-chiprow">
+          <input
+            className="c il-chipinput"
+            placeholder="一時入力"
+            value={who && !state.whoChips.includes(who) ? who : ''}
+            onChange={(event) => setWho(event.target.value)}
+          />
           {state.whoChips.map((item) => (
             <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>
               {Icons.user(12)} {item}
             </button>
           ))}
-          <input
-            className="c il-chipinput"
-            placeholder="+ 新規"
-            value={who && !state.whoChips.includes(who) ? who : ''}
-            onChange={(event) => setWho(event.target.value)}
-          />
         </div>
+        {customWho && (
+          <label className="il-inline-check">
+            <input type="checkbox" checked={saveWhoChip} onChange={(event) => setSaveWhoChip(event.target.checked)} />
+            <span>次回も使う発信者として保存</span>
+          </label>
+        )}
       </div>
 
       <div className="il-field">
@@ -75,11 +83,10 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
       <div className="il-field">
         <label>カテゴリ</label>
-        <div className="il-seg full">
+        <div className="il-chiprow">
           {state.interruptCats.map((category) => (
-            <button key={category.id} className={categoryId === category.id ? 'active' : ''} onClick={() => setCategoryId(category.id)}>
-              {category.icon && Icons[category.icon] ? Icons[category.icon](12) : null}
-              <span className="il-segicon-label">{category.name}</span>
+            <button key={category.id} className={'c' + (categoryId === category.id ? ' sel' : '')} onClick={() => setCategoryId(category.id)}>
+              {category.name}
             </button>
           ))}
         </div>

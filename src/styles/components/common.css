@@ -37,6 +37,9 @@
 .il-chip.danger,
 .il-chip.warn { background: color-mix(in oklch, var(--urg-high) 15%, transparent); color: var(--urg-high); }
 .il-chip.warn { color: oklch(0.45 0.10 80); background: color-mix(in oklch, var(--urg-med) 16%, transparent); }
+.il-chip.urg-low { background: color-mix(in oklch, var(--urg-low) 13%, transparent); color: var(--urg-low); }
+.il-chip.urg-med { background: color-mix(in oklch, var(--urg-med) 16%, transparent); color: oklch(0.45 0.10 80); }
+.il-chip.urg-high { background: color-mix(in oklch, var(--urg-high) 15%, transparent); color: var(--urg-high); }
 
 .btn {
   height: 44px;
@@ -131,6 +134,23 @@
   margin: 4px 0 12px;
 }
 
+.il-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.il-inline-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
 .il-inline-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -177,6 +197,13 @@
   color: color-mix(in oklch, var(--chip-cat, var(--accent)) 74%, var(--ink) 26%);
   border-color: color-mix(in oklch, var(--chip-cat, var(--accent)) 28%, var(--hair));
   box-shadow: inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+}
+
+.il-chiprow .c .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .il-chipinput {

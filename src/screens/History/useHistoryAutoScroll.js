@@ -2,8 +2,12 @@ import { useEffect, useRef } from 'react';
 
 export default function useHistoryAutoScroll({ bodyRef, stickyRef, timelineRef, timeline, viewMode, isTodaySelected, selectedDate }) {
   const autoScrolledKeyRef = useRef(null);
-  const autoScrollKey = viewMode === 'timeline' && isTodaySelected && timeline.nowY != null
-    ? `${viewMode}:${selectedDate}`
+  const latestItem = timeline.items?.length
+    ? timeline.items.reduce((latest, item) => item.clippedEnd > latest.clippedEnd ? item : latest, timeline.items[0])
+    : null;
+  const focusY = latestItem?.endY ?? (isTodaySelected ? timeline.nowY : null);
+  const autoScrollKey = viewMode === 'timeline' && focusY != null
+    ? `${viewMode}:${selectedDate}:${latestItem?.id ?? 'now'}`
     : null;
 
   useEffect(() => {
@@ -23,14 +27,14 @@ export default function useHistoryAutoScroll({ bodyRef, stickyRef, timelineRef, 
     let frameB = 0;
     frameA = requestAnimationFrame(() => {
       frameB = requestAnimationFrame(() => {
-        if (timeline.nowY == null) return;
+        if (focusY == null) return;
         const stickyHeight = sticky?.offsetHeight ?? 0;
         const bodyRect = body.getBoundingClientRect();
         const timelineRect = timelineEl.getBoundingClientRect();
         const timelineTop = timelineRect.top - bodyRect.top + body.scrollTop;
         const availableHeight = Math.max(160, body.clientHeight - stickyHeight);
-        const preferredOffset = Math.max(72, availableHeight * 0.38);
-        const target = timelineTop + timeline.nowY - stickyHeight - preferredOffset;
+        const preferredOffset = Math.max(96, availableHeight * 0.58);
+        const target = timelineTop + focusY - stickyHeight - preferredOffset;
         const maxScroll = Math.max(0, body.scrollHeight - body.clientHeight);
         body.scrollTo({
           top: Math.max(0, Math.min(target, maxScroll)),
@@ -43,5 +47,5 @@ export default function useHistoryAutoScroll({ bodyRef, stickyRef, timelineRef, 
       cancelAnimationFrame(frameA);
       cancelAnimationFrame(frameB);
     };
-  }, [autoScrollKey, bodyRef, stickyRef, timelineRef, timeline.nowY]);
+  }, [autoScrollKey, bodyRef, stickyRef, timelineRef, focusY]);
 }

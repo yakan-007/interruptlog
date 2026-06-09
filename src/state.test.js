@@ -593,7 +593,9 @@ describe('state model', () => {
     expect(state.events).toHaveLength(3);
     expect(state.events.every((event) => event.end !== null)).toBe(true);
     expect(state.events.map((event) => event.type)).toEqual(['task', 'interrupt', 'task']);
-    expect(state.whoChips).toContain('佐藤');
+    expect(state.whoChips).not.toContain('佐藤');
+    const savedSenderState = saveInterruptInState(state, { who: '佐藤', saveWhoChip: true, label: '追加確認', urgency: 'med', categoryId: 'int-chat', memo: '', resume: false }, 12_000);
+    expect(savedSenderState.whoChips).toContain('佐藤');
   });
 
   it('saves breaks without requiring a break type selection', () => {

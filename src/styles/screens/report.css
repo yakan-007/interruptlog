@@ -105,6 +105,81 @@
 
 .il-report-meta .peak { color: var(--interrupt); }
 
+.il-report-emptytrend {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-sunken);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.il-urgency-report {
+  display: grid;
+  gap: 9px;
+}
+
+.il-urgency-report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-urgency-report-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.il-urgency-report-row .main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.il-urgency-report-row .copy {
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.il-urgency-report-row .meter {
+  grid-column: 1;
+  height: 5px;
+  background: var(--bg-sunken);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.il-urgency-report-row .meter > div {
+  height: 100%;
+  min-width: 2px;
+}
+
+.il-urgency-report-row .value {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.il-urgency-report-row .value strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .il-report-weekday {
   height: 100%;
 }
@@ -248,6 +323,80 @@
 }
 
 .il-taskstat .value.accent { color: var(--accent); }
+
+.il-report-tasklists {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-report-tasklist-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.il-report-tasklist-title .count {
+  color: var(--ink-4);
+  font-weight: 600;
+}
+
+.il-report-taskrow {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-report-taskrow:first-of-type {
+  border-top: none;
+}
+
+.il-report-taskrow .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.il-report-taskrow .main {
+  min-width: 0;
+  flex: 1;
+}
+
+.il-report-taskrow .name {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.il-report-taskrow .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.il-report-taskempty {
+  color: var(--ink-4);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 4px 0 2px;
+}
 
 .il-report-export {
   padding: 20px 20px 8px;

@@ -99,6 +99,29 @@
   cursor: pointer;
 }
 
+.il-history-missedbtn {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklch, var(--accent) 18%, var(--hair));
+  background: color-mix(in oklch, var(--accent) 7%, var(--bg-elevated));
+  color: color-mix(in oklch, var(--accent) 72%, var(--ink) 28%);
+  box-shadow: var(--sh-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.il-history-missedbtn:active {
+  transform: scale(0.98);
+}
+
 .il-history-toolbar {
   padding: 8px 16px 10px;
   display: flex;

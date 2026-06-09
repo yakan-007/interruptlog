@@ -53,7 +53,7 @@ export function saveInterruptInState(state, data, now = Date.now()) {
   const next = {
     ...state,
     events: [...state.events, event],
-    whoChips: event.who && !state.whoChips.includes(event.who) ? [...state.whoChips, event.who] : state.whoChips,
+    whoChips: data.saveWhoChip && event.who && !state.whoChips.includes(event.who) ? [...state.whoChips, event.who] : state.whoChips,
   };
   return resumeOrStopInState(next, data.resume, state.running?.preTaskId, now);
 }

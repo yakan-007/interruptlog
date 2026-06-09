@@ -71,7 +71,6 @@ export default function SettingsScreen({ state, actions }) {
         <div className="il-settings-group">
           {state.interruptCats.map((category) => (
             <button key={category.id} className="il-setrow il-setbutton" onClick={() => setPanel({ type: 'interruptCategory', category })}>
-              <span className="il-settings-noteicon" aria-hidden="true">{category.icon ? (Icons[category.icon]?.(14) ?? Icons.dots(14)) : Icons.circle(14)}</span>
               <span className="tg"><span className="t">{category.name}</span></span>
               {Icons.chevR(14)}
             </button>

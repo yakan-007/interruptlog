@@ -63,7 +63,7 @@ export default function HistoryScreen({ state, actions }) {
 
   return (
     <div className="il-screen il-fade">
-      <HistoryHeader onAddMissed={() => actions.openSheet('addMissed')} />
+      <HistoryHeader />
 
       <div
         className={
@@ -87,6 +87,7 @@ export default function HistoryScreen({ state, actions }) {
               if (timestamp != null) setSelectedDate(timestamp);
             }}
             onSelectView={(value) => actions.setHistoryView(value)}
+            onAddMissed={() => actions.openSheet('addMissed')}
           />
         </div>
 
@@ -118,9 +119,10 @@ export default function HistoryScreen({ state, actions }) {
         {dayItems.length === 0 && (
           <div className="il-empty">
             <div className="t">この日の履歴はありません</div>
-            <div className="s">あとから記録して、一日の流れを埋められます。</div>
-            <button className="btn secondary il-empty-action" onClick={() => actions.openSheet('addMissed')}>
-              押し忘れを記録
+            <div className="s">タスク画面で記録を始めるか、押し忘れた時間をあとから補えます。</div>
+            <button className="il-history-missedbtn il-empty-action" onClick={() => actions.openSheet('addMissed')}>
+              {Icons.plus(14)}
+              <span>押し忘れを記録</span>
             </button>
           </div>
         )}

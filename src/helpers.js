@@ -24,6 +24,7 @@ export function fmtDurationShort(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
+  if (total < 60) return `${total}秒`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }

@@ -11,6 +11,7 @@ export default function HistoryToolbar({
   onToday,
   onSelectDate,
   onSelectView,
+  onAddMissed,
 }) {
   return (
     <>
@@ -39,6 +40,10 @@ export default function HistoryToolbar({
               onChange={(event) => onSelectDate(event.target.value)}
             />
           </label>
+          <button className="il-history-missedbtn" onClick={onAddMissed}>
+            {Icons.plus(14)}
+            <span>押し忘れ</span>
+          </button>
         </div>
       </div>
 

@@ -33,7 +33,14 @@ export function deleteEventInState(state, eventId) {
 export function addMissedEventInState(state, event, options = {}, now = Date.now()) {
   const result = previewAddMissedEventInState(state, event, options, now);
   if (result.error || !result.preview) return { state, error: result.error ?? '入力を確認してください' };
-  return { state: applyResolutionPreviewInState(state, result.preview), error: null };
+  const nextState = applyResolutionPreviewInState(state, result.preview);
+  const who = cleanText(event.who);
+  return {
+    state: options.saveWhoChip && who && !nextState.whoChips.includes(who)
+      ? { ...nextState, whoChips: [...nextState.whoChips, who] }
+      : nextState,
+    error: null,
+  };
 }
 
 export function previewSaveEventInState(state, updated, now = Date.now()) {

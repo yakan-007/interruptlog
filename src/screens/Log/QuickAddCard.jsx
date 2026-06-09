@@ -82,6 +82,7 @@ export default function QuickAddCard({ state, actions }) {
       return;
     }
     resetDraft(selectedCategoryId);
+    if (mode === 'start') inputRef.current?.blur();
     revealAddedTask();
   };
 

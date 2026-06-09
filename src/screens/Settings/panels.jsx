@@ -42,19 +42,8 @@ export function CategorySheet({ category, onClose, onSave, onDelete }) {
   );
 }
 
-const INTERRUPT_ICON_OPTIONS = [
-  [null, 'なし'],
-  ['phone', '電話'],
-  ['chat', 'チャット'],
-  ['q', '質問'],
-  ['user', '人'],
-  ['bolt', '急ぎ'],
-  ['dots', 'その他'],
-];
-
 export function InterruptCategorySheet({ category, onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
-  const [icon, setIcon] = useState(category?.icon ?? null);
   const [error, setError] = useState('');
 
   const save = () => {
@@ -62,7 +51,7 @@ export function InterruptCategorySheet({ category, onClose, onSave, onDelete }) 
       setError('カテゴリ名を入力してください');
       return;
     }
-    onSave({ id: category?.id, name, icon });
+    onSave({ id: category?.id, name, icon: null });
   };
 
   return (
@@ -76,22 +65,6 @@ export function InterruptCategorySheet({ category, onClose, onSave, onDelete }) 
       <div className="il-field">
         <label>カテゴリ名</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
-      </div>
-      <div className="il-field">
-        <label>アイコン</label>
-        <div className="il-iconpick">
-          {INTERRUPT_ICON_OPTIONS.map(([value, label]) => (
-            <button
-              key={value ?? 'none'}
-              className={icon === value ? 'sel' : ''}
-              onClick={() => { setIcon(value); setError(''); }}
-              aria-label={`${label}アイコンを選択`}
-            >
-              {value ? (Icons[value]?.(16) ?? Icons.dots(16)) : <span className="il-iconpick-none" />}
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
