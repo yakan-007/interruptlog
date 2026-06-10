@@ -20,6 +20,14 @@ export default function InterruptSheet({ state, actions, onClose }) {
     actions.saveInterrupt({ who, saveWhoChip, label: label || (who ? `${who}から` : '割り込み'), urgency, categoryId, memo, resume });
   };
 
+  const scrollChipRow = (event) => {
+    const row = event.currentTarget;
+    if (row.scrollWidth <= row.clientWidth) return;
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    row.scrollLeft += event.deltaY;
+    event.preventDefault();
+  };
+
   return (
     <SheetShell title="割り込み記録" onClose={onClose} footer={
       <>
@@ -45,7 +53,7 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
       <div className="il-field">
         <label>発信者</label>
-        <div className="il-chiprow">
+        <div className="il-chiprow" onWheel={scrollChipRow}>
           <input
             className="c il-chipinput"
             placeholder="一時入力"
@@ -68,7 +76,7 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
       <div className="il-field">
         <label>件名</label>
-        <div className="il-chiprow">
+        <div className="il-chiprow" onWheel={scrollChipRow}>
           {state.subjectChips.map((item) => (
             <button key={item} className={'c' + (label === item ? ' sel' : '')} onClick={() => setLabel(item)}>{item}</button>
           ))}
@@ -83,7 +91,7 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
       <div className="il-field">
         <label>カテゴリ</label>
-        <div className="il-chiprow">
+        <div className="il-chiprow" onWheel={scrollChipRow}>
           {state.interruptCats.map((category) => (
             <button key={category.id} className={'c' + (categoryId === category.id ? ' sel' : '')} onClick={() => setCategoryId(category.id)}>
               {category.name}

@@ -161,12 +161,37 @@
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   margin: 0 -20px;
   padding: 4px 20px 8px;
   scrollbar-width: none;
+  max-width: calc(100% + 40px);
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .il-chiprow::-webkit-scrollbar { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .il-chiprow {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--ink) 18%, transparent) transparent;
+  }
+
+  .il-chiprow::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .il-chiprow::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .il-chiprow::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--ink) 18%, transparent);
+    border-radius: 999px;
+  }
+}
 
 .il-chiprow .c {
   flex-shrink: 0;
