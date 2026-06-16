@@ -20,12 +20,13 @@ import OnboardingScreen from './screens/Onboarding';
 import ReportScreen from './screens/Report';
 import SettingsScreen from './screens/Settings';
 import { useAppState } from './useAppState';
+import { t, translateMessage } from './i18n';
 
 const TABS = [
-  { id: 'log', label: 'タスク', icon: Icons.tasks },
-  { id: 'history', label: '履歴', icon: Icons.history },
-  { id: 'report', label: 'レポート', icon: Icons.report },
-  { id: 'settings', label: '設定', icon: Icons.settings },
+  { id: 'log', labelKey: 'tabs.log', icon: Icons.tasks },
+  { id: 'history', labelKey: 'tabs.history', icon: Icons.history },
+  { id: 'report', labelKey: 'tabs.report', icon: Icons.report },
+  { id: 'settings', labelKey: 'tabs.settings', icon: Icons.settings },
 ];
 
 export default function App() {
@@ -102,16 +103,16 @@ export default function App() {
   const handleResolutionConfirm = useCallback((resolution) => {
     actions.applyResolution(resolution.preview);
     closeSheet();
-    showToast(resolution.successMessage ?? 'イベントを保存しました');
-  }, [actions, closeSheet, showToast]);
+    showToast(translateMessage(state.preferences.locale, resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved')));
+  }, [actions, closeSheet, showToast, state.preferences.locale]);
 
   const handleRepairApply = useCallback(() => {
     if (!activeSheetArg?.nextEvents && !state.overlapRepair.pending) return;
     const preview = activeSheetArg?.nextEvents ? activeSheetArg : state.overlapRepair.pending;
     actions.applyResolution(preview);
     closeSheet();
-    showToast('重複イベントを整理しました');
-  }, [actions, activeSheetArg, closeSheet, showToast, state.overlapRepair.pending]);
+    showToast(t(state.preferences.locale, 'toasts.repaired'));
+  }, [actions, activeSheetArg, closeSheet, showToast, state.overlapRepair.pending, state.preferences.locale]);
 
   const handleRepairDefer = useCallback(() => {
     actions.deferOverlapRepair();
@@ -131,7 +132,7 @@ export default function App() {
   return (
     <div ref={containerRef} className="il il-appshell" data-theme={state.preferences.dark ? 'dark' : 'light'}>
       {showOnboarding ? (
-        <OnboardingScreen actions={actions} />
+        <OnboardingScreen actions={actions} locale={state.preferences.locale} />
       ) : (
         <>
           <div className="il-appcontent">
@@ -146,6 +147,7 @@ export default function App() {
                 actions={actions}
                 raised={tab === 'log'}
                 compact={tab !== 'log'}
+                locale={state.preferences.locale}
               />
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
@@ -167,13 +169,13 @@ export default function App() {
             {activeSheet === 'editTask' && <AddTaskSheet state={state} actions={actions} onClose={closeSheet} editing={activeSheetArg} />}
             {activeSheet === 'addMissed' && <AddMissedSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
             {activeSheet === 'editEvent' && <EditEventSheet event={activeSheetArg} state={state} actions={actions} onClose={closeSheet} />}
-            {activeSheet === 'resolveEvent' && <ResolveEventSheet resolution={activeSheetArg} onBack={handleResolutionBack} onConfirm={handleResolutionConfirm} />}
-            {activeSheet === 'repairOverlaps' && <RepairOverlapsSheet preview={activeSheetArg ?? state.overlapRepair.pending} onDefer={handleRepairDefer} onApply={handleRepairApply} />}
+            {activeSheet === 'resolveEvent' && <ResolveEventSheet resolution={activeSheetArg} locale={state.preferences.locale} onBack={handleResolutionBack} onConfirm={handleResolutionConfirm} />}
+            {activeSheet === 'repairOverlaps' && <RepairOverlapsSheet preview={activeSheetArg ?? state.overlapRepair.pending} locale={state.preferences.locale} onDefer={handleRepairDefer} onApply={handleRepairApply} />}
           </div>
 
           <nav className="il-tabbar">
             {TABS.map((item) => (
-              <TabButton key={item.id} icon={item.icon} label={item.label} active={tab === item.id} onClick={() => setTab(item.id)} />
+              <TabButton key={item.id} icon={item.icon} label={t(state.preferences.locale, item.labelKey)} active={tab === item.id} onClick={() => setTab(item.id)} />
             ))}
           </nav>
         </>

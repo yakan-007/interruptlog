@@ -1,5 +1,6 @@
 import Icons from '../../icons';
-import { isSameHistoryDay, toHistoryDateInputValue } from '../../history';
+import { isSameHistoryDay, toHistoryDateInputValue } from '../../lib/history';
+import { t, tx } from '../../i18n';
 
 export default function HistoryToolbar({
   selectedDate,
@@ -12,6 +13,7 @@ export default function HistoryToolbar({
   onSelectDate,
   onSelectView,
   onAddMissed,
+  locale = 'ja-JP',
 }) {
   return (
     <>
@@ -29,10 +31,10 @@ export default function HistoryToolbar({
         </div>
 
         <div className="il-history-navactions">
-          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(-1)} aria-label="前日へ">{Icons.chevL(18)}</button>
-          <button className={'il-history-todaybtn' + (isSameHistoryDay(selectedDate, now) ? ' active' : '')} onClick={onToday}>今日</button>
-          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(1)} aria-label="翌日へ">{Icons.chevR(18)}</button>
-          <label className="il-iconbtn il-history-navbtn il-history-datepick" aria-label="日付を選ぶ">
+          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(-1)} aria-label={t(locale, 'history.previous')}>{Icons.chevL(18)}</button>
+          <button className={'il-history-todaybtn' + (isSameHistoryDay(selectedDate, now) ? ' active' : '')} onClick={onToday}>{t(locale, 'history.today')}</button>
+          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(1)} aria-label={t(locale, 'history.next')}>{Icons.chevR(18)}</button>
+          <label className="il-iconbtn il-history-navbtn il-history-datepick" aria-label={t(locale, 'history.pickDate')}>
             {Icons.calendar(18)}
             <input
               type="date"
@@ -42,17 +44,17 @@ export default function HistoryToolbar({
           </label>
           <button className="il-history-missedbtn" onClick={onAddMissed}>
             {Icons.plus(14)}
-            <span>押し忘れ</span>
+            <span>{t(locale, 'history.missedShort')}</span>
           </button>
         </div>
       </div>
 
       <div className="il-history-toolbar">
-        <div className="il-seg" role="tablist" aria-label="履歴表示モード">
-          <button className={viewMode === 'list' ? 'active' : ''} onClick={() => onSelectView('list')} aria-pressed={viewMode === 'list'}>リスト</button>
-          <button className={viewMode === 'timeline' ? 'active' : ''} onClick={() => onSelectView('timeline')} aria-pressed={viewMode === 'timeline'}>タイムライン</button>
+        <div className="il-seg" role="tablist" aria-label={t(locale, 'history.viewMode')}>
+          <button className={viewMode === 'list' ? 'active' : ''} onClick={() => onSelectView('list')} aria-pressed={viewMode === 'list'}>{t(locale, 'history.list')}</button>
+          <button className={viewMode === 'timeline' ? 'active' : ''} onClick={() => onSelectView('timeline')} aria-pressed={viewMode === 'timeline'}>{t(locale, 'history.timeline')}</button>
         </div>
-        <div className="il-history-summary">{summary.count}件 / 合計 {summary.totalLabel}</div>
+        <div className="il-history-summary">{tx(locale, 'history.summary', { count: summary.count, total: summary.totalLabel })}</div>
       </div>
     </>
   );

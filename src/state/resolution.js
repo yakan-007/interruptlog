@@ -3,7 +3,7 @@ import { startOfDay } from './utils';
 
 const COMPARE_OMIT_KEYS = new Set(['id', 'start', 'end']);
 
-export function getEventEnd(event, now = Date.now()) {
+function getEventEnd(event, now = Date.now()) {
   return event.end ?? now;
 }
 
@@ -109,7 +109,7 @@ export function buildOverlapRepairPreview(events, now = Date.now()) {
   };
 }
 
-export function mergeEquivalentEvents(events, now = Date.now()) {
+function mergeEquivalentEvents(events, now = Date.now()) {
   const segments = events.map((event, priority) => ({
     event: normalizeEvent(event),
     priority,
@@ -228,7 +228,11 @@ function canMergeSegments(a, b, now) {
 function sameEventPayload(a, b) {
   if (a.type !== b.type) return false;
   const keys = uniqueIds([...Object.keys(a), ...Object.keys(b)]).filter((key) => !COMPARE_OMIT_KEYS.has(key));
-  return keys.every((key) => (a[key] ?? null) === (b[key] ?? null));
+  return keys.every((key) => comparableField(a[key]) === comparableField(b[key]));
+}
+
+function comparableField(value) {
+  return value == null || value === '' ? null : value;
 }
 
 function uniqueIds(values) {

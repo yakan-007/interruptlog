@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../helpers';
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
+import { categoryLabel, interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
 
 export default function EditEventSheet({ event, state, actions, onClose }) {
   const [label, setLabel] = useState(event.label ?? '');
@@ -14,6 +15,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end));
+  const locale = state.preferences.locale;
 
   const handleTypeChange = (nextType) => {
     setError('');
@@ -24,7 +26,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     const start = fromDateTimeLocalValue(startAt);
     const end = fromDateTimeLocalValue(endAt);
     if (start == null || end == null) {
-      setError('日時を確認してください');
+      setError(t(locale, 'sheets.dateCheck'));
       return;
     }
     const extra = {
@@ -40,7 +42,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     const draft = { ...event, type, label, memo, start, end, ...extra };
     const previewResult = actions.previewSaveEvent(draft);
     if (previewResult.error) {
-      setError(previewResult.error ?? '終了は開始より後にしてください');
+      setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.invalidWindow')));
       return;
     }
 
@@ -50,44 +52,44 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         preview: previewResult.preview,
         returnSheet: 'editEvent',
         returnArg: draft,
-        confirmLabel: '保存する',
-        successMessage: 'イベントを保存しました',
+        confirmLabel: t(locale, 'sheets.save'),
+        successMessage: t(locale, 'toasts.eventSaved'),
       });
       return;
     }
 
     const result = actions.saveEvent(draft);
     if (result.ok) onClose();
-    else setError(result.error ?? '終了は開始より後にしてください');
+    else setError(translateMessage(locale, result.error ?? t(locale, 'errors.invalidWindow')));
   };
 
   return (
-    <SheetShell title="イベントを編集" onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.editEvent')} onClose={onClose} footer={
       <>
-        <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); }}>{Icons.trash(14)} 削除</button>
-        <button className="btn tert" onClick={onClose}>キャンセル</button>
-        <button className="btn primary" onClick={handleSave}>保存</button>
+        <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); }}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
+        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
+        <button className="btn primary" onClick={handleSave}>{t(locale, 'sheets.save')}</button>
       </>
     }>
       <div className="il-field">
-        <label>種別</label>
+        <label>{t(locale, 'sheets.type')}</label>
         <div className="il-seg full">
-          {[['task', 'タスク'], ['interrupt', '割り込み'], ['break', '休憩']].map(([value, text]) => (
+          {['task', 'interrupt', 'break'].map((value) => (
             <button key={value} className={type === value ? 'active' : ''} onClick={() => handleTypeChange(value)}>
-              {text}
+              {typeLabel(locale, value)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="il-field">
-        <label>ラベル</label>
+        <label>{t(locale, 'sheets.label')}</label>
         <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
       </div>
 
       {type === 'task' && (
         <div className="il-field">
-          <label>カテゴリ</label>
+          <label>{t(locale, 'sheets.category')}</label>
           <div className="il-chiprow">
             {state.categories.map((category) => (
               <button
@@ -96,7 +98,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
                 onClick={() => setTaskCategoryId(category.id)}
                 style={{ '--chip-cat': category.color, borderLeft: `3px solid ${category.color}` }}
               >
-                {category.name}
+                {categoryLabel(locale, category)}
               </button>
             ))}
           </div>
@@ -106,11 +108,11 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       {type === 'interrupt' && (
         <>
           <div className="il-field">
-            <label>発信者</label>
+            <label>{t(locale, 'sheets.sender')}</label>
             <div className="il-chiprow">
               <input
                 className="c il-chipinput compact"
-                placeholder="+ 新規"
+                placeholder={t(locale, 'sheets.newSender')}
                 value={who && !state.whoChips.includes(who) ? who : ''}
                 onChange={(current) => setWho(current.target.value)}
               />
@@ -121,21 +123,21 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           </div>
 
           <div className="il-field">
-            <label>カテゴリ</label>
+            <label>{t(locale, 'sheets.category')}</label>
             <div className="il-chiprow">
               {state.interruptCats.map((category) => (
                 <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
-                  {category.name}
+                  {interruptCategoryLabel(locale, category)}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="il-field">
-            <label>緊急度</label>
+            <label>{t(locale, 'sheets.urgency')}</label>
             <div className="il-urg">
-              {[['low', '低'], ['med', '中'], ['high', '高']].map(([value, text]) => (
-                <button key={value} className={urgency === value ? `sel ${value}` : ''} onClick={() => setUrgency(value)}>{text}</button>
+              {['low', 'med', 'high'].map((value) => (
+                <button key={value} className={urgency === value ? `sel ${value}` : ''} onClick={() => setUrgency(value)}>{urgencyLabel(locale, value)}</button>
               ))}
             </div>
           </div>
@@ -144,17 +146,17 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
 
       <div className="il-inline-fields">
         <div className="il-field">
-          <label>開始</label>
+          <label>{t(locale, 'sheets.start')}</label>
           <input className="il-input il-mono" type="datetime-local" value={startAt} onChange={(current) => setStartAt(current.target.value)} />
         </div>
         <div className="il-field">
-          <label>終了</label>
+          <label>{t(locale, 'sheets.end')}</label>
           <input className="il-input il-mono" type="datetime-local" value={endAt} onChange={(current) => setEndAt(current.target.value)} />
         </div>
       </div>
 
       <div className="il-field">
-        <label>メモ</label>
+        <label>{t(locale, 'sheets.memo')}</label>
         <textarea className="il-textarea" value={memo} onChange={(current) => setMemo(current.target.value)} />
       </div>
 

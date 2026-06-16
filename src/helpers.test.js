@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fmtDurationShort } from './helpers';
+import { fmtDurationShort } from './lib/formatters';
 
 describe('duration helpers', () => {
   it('shows seconds for sub-minute durations', () => {

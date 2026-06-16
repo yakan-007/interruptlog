@@ -1,4 +1,4 @@
-import { STATE_KEY } from './state';
+import { STATE_KEY } from '../constants';
 
 function canUseLocalStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -25,8 +25,4 @@ export async function loadPersistedState() {
 
 export async function savePersistedState(state) {
   writeLocalJson(STATE_KEY, state);
-}
-
-export async function clearPersistedState() {
-  if (canUseLocalStorage()) window.localStorage.removeItem(STATE_KEY);
 }

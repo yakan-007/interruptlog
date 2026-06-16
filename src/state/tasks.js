@@ -13,6 +13,7 @@ function buildTask(state, data, taskId, now) {
     isCompleted: false,
     order: getNextTaskOrder(state),
     categoryId: data.categoryId ?? state.categories[0]?.id ?? null,
+    memo: cleanText(data.memo),
     sourceTaskId: cleanText(data.sourceTaskId) || null,
     taskTemplateId: cleanText(data.taskTemplateId) || null,
     packVersion: cleanText(data.packVersion) || null,
@@ -74,6 +75,7 @@ export function saveTaskInState(state, data, now = Date.now()) {
   if (error) return { state, taskId: data.id ?? null, error };
   if (!data.id) return createTaskInState(state, data, now);
 
+  const memo = cleanText(data.memo);
   return {
     state: {
       ...state,
@@ -81,12 +83,27 @@ export function saveTaskInState(state, data, now = Date.now()) {
         ...task,
         name: cleanText(data.name) || task.name,
         categoryId: data.categoryId ?? null,
+        memo,
         planning: {
           ...task.planning,
           plannedDurationMinutes: Math.max(0, asNumber(data.plannedDurationMinutes, 0) ?? 0),
           dueAt: asNumber(data.dueAt, null),
         },
       } : task),
+      events: state.events.map((event) =>
+        event.type === 'task' &&
+        event.taskId === data.id &&
+        event.end === null &&
+        state.running?.type === 'task' &&
+        state.running.taskId === data.id
+          ? {
+              ...event,
+              label: cleanText(data.name) || event.label,
+              categoryId: data.categoryId ?? null,
+              memo,
+            }
+          : event
+      ),
     },
     taskId: data.id,
     error: null,
@@ -104,6 +121,7 @@ export function startTaskInState(state, taskId, now = Date.now()) {
     taskId,
     label: task.name,
     categoryId: task.categoryId,
+    memo: task.memo ?? '',
     sourceTaskId: task.sourceTaskId ?? null,
     taskTemplateId: task.taskTemplateId ?? null,
     packVersion: task.packVersion ?? null,
@@ -159,6 +177,7 @@ export function closeTaskSessionInState(state, now = Date.now()) {
       taskId: running.taskId,
       label: task?.name ?? 'タスク',
       categoryId: task?.categoryId ?? null,
+      memo: task?.memo ?? '',
       sourceTaskId: task?.sourceTaskId ?? null,
       taskTemplateId: task?.taskTemplateId ?? null,
       packVersion: task?.packVersion ?? null,

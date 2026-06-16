@@ -6,6 +6,7 @@ const TEAM_SETTINGS_KIND = 'team-settings';
 const TASK_PACK_KIND = 'task-pack';
 const TEAM_ARCHIVE_KIND = 'team-archive';
 const TEAM_PAYLOAD_VERSION = 1;
+const PRESENCE_STATUSES = ['focus', 'interrupt', 'break', 'idle'];
 
 export function buildTeamSettingsExport(state, now = Date.now()) {
   return {
@@ -18,6 +19,8 @@ export function buildTeamSettingsExport(state, now = Date.now()) {
     interruptCats: state.interruptCats,
     whoChips: state.whoChips,
     subjectChips: state.subjectChips,
+    focusWindow: state.teamWorkspace?.focusWindow,
+    questionMode: state.teamWorkspace?.questionMode,
   };
 }
 
@@ -60,6 +63,8 @@ export function applyTeamSettingsImport(state, input) {
       teamWorkspace: {
         ...state.teamWorkspace,
         taxonomyVersion: cleanText(payload.taxonomyVersion) || state.teamWorkspace.taxonomyVersion,
+        focusWindow: normalizeFocusWindowInput(payload.focusWindow ?? state.teamWorkspace.focusWindow),
+        questionMode: normalizeQuestionModeInput(payload.questionMode ?? state.teamWorkspace.questionMode),
       },
     },
     error: null,
@@ -217,6 +222,26 @@ export function addReportRowsToArchive(state, rows, now = Date.now()) {
   };
 }
 
+export function addTeamDemoArchiveInState(state, now = Date.now()) {
+  const day = new Date(now);
+  day.setHours(9, 0, 0, 0);
+  const isoAt = (minutes) => new Date(day.getTime() + minutes * 60000).toISOString();
+  const reportDate = isoAt(0).slice(0, 10);
+  const demoRows = [
+    { member: 'Light A', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(0), end: isoAt(85), type: 'task', label: 'Focus block', category: 'Development', categoryId: 'cat-dev', durationMinutes: 85, source: 'demo' },
+    { member: 'Light A', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(95), end: isoAt(118), type: 'interrupt', label: 'Request', category: 'Support', categoryId: 'cat-sup', who: 'Team', urgency: 'med', durationMinutes: 23, source: 'demo' },
+    { member: 'Light A', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(135), end: isoAt(210), type: 'task', label: 'Review', category: 'Documentation', categoryId: 'cat-doc', durationMinutes: 75, source: 'demo' },
+    { member: 'Light B', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(20), end: isoAt(70), type: 'task', label: 'Build', category: 'Development', categoryId: 'cat-dev', durationMinutes: 50, source: 'demo' },
+    { member: 'Light B', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(75), end: isoAt(105), type: 'break', label: 'Break', category: '', categoryId: '', durationMinutes: 30, source: 'demo' },
+    { member: 'Light B', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(120), end: isoAt(190), type: 'task', label: 'Implementation', category: 'Development', categoryId: 'cat-dev', durationMinutes: 70, source: 'demo' },
+    { member: 'Light C', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(10), end: isoAt(35), type: 'interrupt', label: 'Question', category: 'Meeting', categoryId: 'cat-mtg', who: 'Client', urgency: 'high', durationMinutes: 25, source: 'demo' },
+    { member: 'Light C', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(50), end: isoAt(160), type: 'task', label: 'Support work', category: 'Support', categoryId: 'cat-sup', durationMinutes: 110, source: 'demo' },
+    { member: 'Light D', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(45), end: isoAt(140), type: 'task', label: 'Ops', category: 'Admin', categoryId: 'cat-adm', durationMinutes: 95, source: 'demo' },
+    { member: 'Light D', reportDate, range: 'day', timezone: 'Asia/Tokyo', start: isoAt(150), end: isoAt(175), type: 'interrupt', label: 'Chat', category: 'Support', categoryId: 'cat-sup', who: 'Team', urgency: 'low', durationMinutes: 25, source: 'demo' },
+  ];
+  return addReportRowsToArchive(state, demoRows, now);
+}
+
 export function buildTeamArchiveExport(state, now = Date.now()) {
   return {
     appName: APP_NAME,
@@ -263,12 +288,138 @@ export function compareArchivePeriods(entries, grain = 'month') {
   };
 }
 
+export function buildPublicPresence(state, now = Date.now()) {
+  const settings = state.teamWorkspace?.presence ?? {};
+  const status = state.running?.type === 'task'
+    ? 'focus'
+    : state.running?.type === 'interrupt'
+      ? 'interrupt'
+      : state.running?.type === 'break'
+        ? 'break'
+        : 'idle';
+  const startedAt = state.running?.start ?? now;
+  const elapsedMinutes = Math.max(0, (now - startedAt) / 60000);
+  return {
+    teamId: cleanText(settings.teamId),
+    anonymousMemberId: cleanText(settings.anonymousMemberId) || 'anonymous',
+    status,
+    intensity: Math.max(0.25, Math.min(1, status === 'idle' ? 0.25 : 0.45 + elapsedMinutes / 90)),
+    colorSeed: cleanText(settings.colorSeed) || 'seed',
+    updatedAt: new Date(now).toISOString(),
+  };
+}
+
+export function buildAmbientReplay(entries) {
+  const rows = asArray(entries).filter((entry) => entry.start && entry.end && entry.type);
+  if (rows.length === 0) return { members: [], frames: [], summary: { focus: 0, interrupt: 0, break: 0, idle: 0 } };
+  const sorted = [...rows].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+  const validTimes = sorted.flatMap((entry) => [Date.parse(entry.start), Date.parse(entry.end)]).filter(Number.isFinite);
+  if (validTimes.length === 0) return { members: [], frames: [], summary: { focus: 0, interrupt: 0, break: 0, idle: 0 } };
+  const since = Math.min(...validTimes);
+  const until = Math.max(...validTimes);
+  const memberNames = [...new Set(sorted.map((entry) => cleanText(entry.member) || '未設定'))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const members = memberNames.map((member, index) => ({
+    id: `member-${index + 1}`,
+    label: `Light ${index + 1}`,
+    colorSeed: `${member}:${index}`,
+  }));
+  const step = Math.max(5 * 60000, Math.ceil((until - since) / 72));
+  const frames = [];
+  for (let ts = since; ts <= until; ts += step) {
+    const states = members.map((member) => {
+      const name = memberNames[members.indexOf(member)];
+      const active = sorted.find((entry) => (cleanText(entry.member) || '未設定') === name && Date.parse(entry.start) <= ts && Date.parse(entry.end) > ts);
+      return {
+        memberId: member.id,
+        status: active ? eventTypeToPresence(active.type) : 'idle',
+        intensity: active ? Math.min(1, 0.45 + Number(active.durationMinutes || 0) / 180) : 0.2,
+      };
+    });
+    frames.push({ at: new Date(ts).toISOString(), states });
+  }
+  const summary = rows.reduce((totals, entry) => {
+    const key = eventTypeToPresence(entry.type);
+    totals[key] = (totals[key] ?? 0) + Number(entry.durationMinutes || 0) * 60000;
+    return totals;
+  }, { focus: 0, interrupt: 0, break: 0, idle: 0 });
+  return { members, frames, summary };
+}
+
+export function addInterruptionQueueItemInState(state, item, now = Date.now()) {
+  const queueItem = {
+    id: item.id || newId('q', now),
+    priority: ['now', 'today', 'later'].includes(item.priority) ? item.priority : 'later',
+    subject: cleanText(item.subject) || '相談',
+    createdAt: item.createdAt ?? now,
+    done: Boolean(item.done),
+  };
+  return {
+    ...state,
+    teamWorkspace: {
+      ...state.teamWorkspace,
+      interruptionQueue: [...(state.teamWorkspace.interruptionQueue ?? []), queueItem],
+    },
+  };
+}
+
+export function updateInterruptionQueueItemInState(state, id, patch) {
+  return {
+    ...state,
+    teamWorkspace: {
+      ...state.teamWorkspace,
+      interruptionQueue: (state.teamWorkspace.interruptionQueue ?? []).map((item) =>
+        item.id === id ? { ...item, ...patch } : item
+      ),
+    },
+  };
+}
+
+export function deleteInterruptionQueueItemInState(state, id) {
+  return {
+    ...state,
+    teamWorkspace: {
+      ...state.teamWorkspace,
+      interruptionQueue: (state.teamWorkspace.interruptionQueue ?? []).filter((item) => item.id !== id),
+    },
+  };
+}
+
+export function updateTeamWorkspaceInState(state, patch) {
+  return {
+    ...state,
+    teamWorkspace: {
+      ...state.teamWorkspace,
+      ...patch,
+      focusWindow: patch.focusWindow ? normalizeFocusWindowInput(patch.focusWindow) : state.teamWorkspace.focusWindow,
+      questionMode: patch.questionMode ? normalizeQuestionModeInput(patch.questionMode) : state.teamWorkspace.questionMode,
+      presence: patch.presence ? { ...state.teamWorkspace.presence, ...patch.presence } : state.teamWorkspace.presence,
+    },
+  };
+}
+
 function parsePayload(input) {
   try {
     return typeof input === 'string' ? JSON.parse(input) : input;
   } catch {
     return null;
   }
+}
+
+function eventTypeToPresence(type) {
+  if (type === 'task') return 'focus';
+  if (type === 'interrupt') return 'interrupt';
+  if (type === 'break') return 'break';
+  return 'idle';
+}
+
+function normalizeFocusWindowInput(raw = {}) {
+  const start = /^\d{2}:\d{2}$/.test(cleanText(raw.start)) ? cleanText(raw.start) : '10:00';
+  const end = /^\d{2}:\d{2}$/.test(cleanText(raw.end)) ? cleanText(raw.end) : '12:00';
+  return { start, end };
+}
+
+function normalizeQuestionModeInput(value) {
+  return ['open', 'ask-later', 'focus', 'break'].includes(value) ? value : 'ask-later';
 }
 
 function archiveEntryKey(entry) {

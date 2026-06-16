@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import Icons from '../../icons';
-import { fmtDurationShort, useTicker } from '../../helpers';
+import { fmtDurationShort } from '../../lib/formatters';
+import { useTicker } from '../../lib/ticker';
+import { t, tx } from '../../i18n';
 import {
   buildHistoryTimelineModel,
   formatHistoryDateParts,
@@ -9,7 +11,7 @@ import {
   isSuspiciousHistoryEvent,
   shiftHistoryDay,
   startOfHistoryDay,
-} from '../../history';
+} from '../../lib/history';
 import { selectHistoryDaySummary } from '../../state';
 import HistoryHeader from './HistoryHeader';
 import HistoryList from './HistoryList';
@@ -31,8 +33,8 @@ export default function HistoryScreen({ state, actions }) {
   );
   const summary = useMemo(() => {
     const base = selectHistoryDaySummary(dayItems);
-    return { ...base, totalLabel: fmtDurationShort(base.totalMs) };
-  }, [dayItems]);
+    return { ...base, totalLabel: fmtDurationShort(base.totalMs, state.preferences.locale) };
+  }, [dayItems, state.preferences.locale]);
   const anomalies = useMemo(
     () => dayItems.filter((event) => isSuspiciousHistoryEvent(event, {
       type: state.running?.type,
@@ -63,7 +65,7 @@ export default function HistoryScreen({ state, actions }) {
 
   return (
     <div className="il-screen il-fade">
-      <HistoryHeader />
+      <HistoryHeader locale={state.preferences.locale} />
 
       <div
         className={
@@ -88,6 +90,7 @@ export default function HistoryScreen({ state, actions }) {
             }}
             onSelectView={(value) => actions.setHistoryView(value)}
             onAddMissed={() => actions.openSheet('addMissed')}
+            locale={state.preferences.locale}
           />
         </div>
 
@@ -96,8 +99,8 @@ export default function HistoryScreen({ state, actions }) {
             <div className="il-warn">
               {Icons.alert(14)}
               <div>
-                <div className="title">{anomalies.length}件の要確認イベント</div>
-                <div className="copy">未終了または時刻が不整合なイベントがあります</div>
+                <div className="title">{tx(state.preferences.locale, 'history.anomaliesTitle', anomalies.length)}</div>
+                <div className="copy">{t(state.preferences.locale, 'history.anomaliesCopy')}</div>
               </div>
             </div>
           </div>
@@ -108,21 +111,21 @@ export default function HistoryScreen({ state, actions }) {
             <div className="il-warn">
               {Icons.alert(14)}
               <div>
-                <div className="title">{state.overlapRepair.warning.conflicts.length}件の重複イベントが未整理です</div>
-                <div className="copy">集計や表示に重複が含まれる可能性があります</div>
+                <div className="title">{tx(state.preferences.locale, 'history.overlapTitle', state.overlapRepair.warning.conflicts.length)}</div>
+                <div className="copy">{t(state.preferences.locale, 'history.overlapCopy')}</div>
               </div>
-              <button className="btn secondary sm" onClick={() => actions.openOverlapRepair()}>重複を整理</button>
+              <button className="btn secondary sm" onClick={() => actions.openOverlapRepair()}>{t(state.preferences.locale, 'history.repair')}</button>
             </div>
           </div>
         )}
 
         {dayItems.length === 0 && (
           <div className="il-empty">
-            <div className="t">この日の履歴はありません</div>
-            <div className="s">タスク画面で記録を始めるか、押し忘れた時間をあとから補えます。</div>
+            <div className="t">{t(state.preferences.locale, 'history.emptyTitle')}</div>
+            <div className="s">{t(state.preferences.locale, 'history.emptyCopy')}</div>
             <button className="il-history-missedbtn il-empty-action" onClick={() => actions.openSheet('addMissed')}>
               {Icons.plus(14)}
-              <span>押し忘れを記録</span>
+              <span>{t(state.preferences.locale, 'history.addMissed')}</span>
             </button>
           </div>
         )}
@@ -134,6 +137,7 @@ export default function HistoryScreen({ state, actions }) {
             now={now}
             selectedDate={selectedDate}
             onEdit={(event) => actions.openSheet('editEvent', toEditableEvent(event, now))}
+            locale={state.preferences.locale}
           />
         )}
 
@@ -144,6 +148,7 @@ export default function HistoryScreen({ state, actions }) {
             selectedDate={selectedDate}
             now={now}
             state={state}
+            locale={state.preferences.locale}
             onEdit={(event) => actions.openSheet('editEvent', toEditableEvent(event, now))}
           />
         )}

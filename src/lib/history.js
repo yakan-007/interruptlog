@@ -16,7 +16,7 @@ export function startOfHistoryDay(ts = Date.now()) {
   return d.getTime();
 }
 
-export function getHistoryDayBounds(ts = Date.now()) {
+function getHistoryDayBounds(ts = Date.now()) {
   const dayStart = startOfHistoryDay(ts);
   return { dayStart, dayEnd: dayStart + DAY_MS };
 }
@@ -74,7 +74,7 @@ export function isSuspiciousHistoryEvent(event, running, now = Date.now()) {
   );
 }
 
-export function projectEventIntoHistoryDay(event, selectedDate, now = Date.now()) {
+function projectEventIntoHistoryDay(event, selectedDate, now = Date.now()) {
   const { dayStart, dayEnd } = getHistoryDayBounds(selectedDate);
   const actualEnd = event.end ?? now;
   const invalid = !Number.isFinite(event.start) || !Number.isFinite(actualEnd) || actualEnd <= event.start;
@@ -125,14 +125,7 @@ export function getHistoryDayItems(events, selectedDate, now = Date.now()) {
     );
 }
 
-export function summarizeHistoryDay(items) {
-  return {
-    count: items.length,
-    totalMs: items.reduce((sum, item) => sum + item.clippedDurationMs, 0),
-  };
-}
-
-export function shouldShowHistorySeconds(event) {
+function shouldShowHistorySeconds(event) {
   return (event.clippedDurationMs ?? 0) < SECOND_EVENT_MS;
 }
 
@@ -143,7 +136,7 @@ export function formatHistoryTimeRange(event, options = {}) {
   return `${startLabel} – ${endLabel}`;
 }
 
-export function assignHistoryLanes(items) {
+function assignHistoryLanes(items) {
   const sorted = [...items].sort((a, b) =>
     (a.clippedStart - b.clippedStart) ||
     (a.clippedEnd - b.clippedEnd) ||
@@ -194,7 +187,7 @@ export function assignHistoryLanes(items) {
   });
 }
 
-export function buildHistoryAnchors(items, selectedDate, now = Date.now()) {
+function buildHistoryAnchors(items, selectedDate, now = Date.now()) {
   const { dayStart, dayEnd } = getHistoryDayBounds(selectedDate);
   const timeSet = new Set([dayStart, dayEnd]);
 
@@ -218,7 +211,7 @@ export function buildHistoryAnchors(items, selectedDate, now = Date.now()) {
   return { dayStart, dayEnd, times, indexByTime, hourMarkers, nowTs: inDayNow };
 }
 
-export function solveHistoryAxis(anchors, items, options = {}) {
+function solveHistoryAxis(anchors, items, options = {}) {
   const basePxPerHour = options.basePxPerHour ?? 52;
   const outgoing = Array.from({ length: anchors.times.length }, () => []);
 
@@ -340,12 +333,6 @@ export function buildHistoryTimelineModel(items, selectedDate, now = Date.now(),
     nowY: axis.nowTs != null ? getHistoryTimePosition(axis, axis.nowTs) : null,
   };
 }
-
-export {
-  DAY_MS,
-  HOUR_MS,
-  LONG_EVENT_MS,
-};
 
 function formatHistoryClock(ts, showSeconds) {
   const d = new Date(ts);

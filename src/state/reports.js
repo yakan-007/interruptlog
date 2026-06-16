@@ -12,7 +12,7 @@ export function getRangeBounds(range, now = Date.now()) {
   return { since: now - (365 * DAY_MS), until: now, prevSince: now - (730 * DAY_MS), prevUntil: now - (365 * DAY_MS) };
 }
 
-export function getEventOverlap(event, since, until, now = Date.now()) {
+function getEventOverlap(event, since, until, now = Date.now()) {
   const end = event.end ?? now;
   const start = Math.max(event.start, since);
   const clippedEnd = Math.min(end, until);
@@ -69,7 +69,7 @@ export function buildReportCsv(state, range, now = Date.now()) {
           taxonomyVersion,
           event.who ?? '',
           event.urgency ?? '',
-          event.memo ?? '',
+          event.memo ?? task?.memo ?? '',
           (event.durationMs / 60000).toFixed(1),
         ];
       }),
@@ -77,7 +77,7 @@ export function buildReportCsv(state, range, now = Date.now()) {
   return rows.map((row) => row.map(csvCell).join(',')).join('\n');
 }
 
-export function parseReportCsv(text, source = '') {
+function parseReportCsv(text, source = '') {
   const records = parseCsv(text);
   if (records.length === 0) return { rows: [], skipped: 0, source };
   const headers = records[0].map((cell) => cleanText(cell));
@@ -175,6 +175,59 @@ export function aggregateTeamReportRows(rows) {
     senders: [...senders.values()].sort((a, b) => b.time - a.time || b.count - a.count).slice(0, 8),
     hourly,
     rowCount: rows.length,
+  };
+}
+
+export function buildWeeklyReview(state, now = Date.now()) {
+  const until = now;
+  const since = now - (7 * DAY_MS);
+  const stats = calcStats(state.events, since, until, now);
+  const hourly = Array(24).fill(0);
+  const senders = new Map();
+  const categories = new Map();
+
+  for (const event of stats.events) {
+    if (event.type !== 'interrupt') continue;
+    const hour = new Date(event.clippedStart).getHours();
+    hourly[hour] += event.durationMs;
+    const who = cleanText(event.who);
+    if (who) {
+      if (!senders.has(who)) senders.set(who, { label: who, time: 0, count: 0 });
+      senders.get(who).time += event.durationMs;
+      senders.get(who).count += 1;
+    }
+    const category = cleanText(event.categoryId || event.category);
+    if (category) categories.set(category, (categories.get(category) ?? 0) + event.durationMs);
+  }
+
+  const peakHour = hourly.reduce((best, value, index) => value > hourly[best] ? index : best, 0);
+  const quietHour = hourly.reduce((best, value, index) => value < hourly[best] ? index : best, 0);
+  const topSender = [...senders.values()].sort((a, b) => b.time - a.time || b.count - a.count)[0] ?? null;
+  const topCategoryId = [...categories.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const categoryName = topCategoryId
+    ? state.categories.find((category) => category.id === topCategoryId)?.name ?? topCategoryId
+    : '';
+  const focusRate = stats.focus + stats.interrupt + stats.break > 0
+    ? Math.round((stats.focus / (stats.focus + stats.interrupt + stats.break)) * 100)
+    : 0;
+  const suggestion = stats.interrupt > 0
+    ? topSender
+      ? `${topSender.label}からの相談をまとめる時間を作る候補です`
+      : `${peakHour}時台の割り込みをまとめる候補です`
+    : '割り込み記録が増えると、来週の改善候補を出せます';
+
+  return {
+    since,
+    until,
+    focus: stats.focus,
+    interrupt: stats.interrupt,
+    break: stats.break,
+    focusRate,
+    peakHour,
+    quietHour,
+    topSender,
+    categoryName,
+    suggestion,
   };
 }
 

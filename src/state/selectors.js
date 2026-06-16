@@ -29,41 +29,6 @@ export function partitionCompletedTasks(tasks, now = Date.now()) {
   return { today, archived };
 }
 
-export function selectTodayStripSummary(state, now = Date.now()) {
-  const dayStart = startOfDay(now);
-  let task = 0;
-  let interrupt = 0;
-  let breakMs = 0;
-  let unknown = 0;
-
-  for (const event of state.events) {
-    const end = event.end ?? now;
-    if (end < dayStart) continue;
-    const from = Math.max(event.start, dayStart);
-    const duration = end - from;
-    if (event.type === 'task') task += duration;
-    else if (event.type === 'interrupt') interrupt += duration;
-    else if (event.type === 'break') breakMs += duration;
-    else if (event.type === 'unknown') unknown += duration;
-  }
-
-  const total = task + interrupt + breakMs;
-  const percent = (value) => total ? (value / total) * 100 : 0;
-  return {
-    task,
-    interrupt,
-    break: breakMs,
-    unknown,
-    total,
-    percentages: {
-      task: percent(task),
-      interrupt: percent(interrupt),
-      break: percent(breakMs),
-      unknown: percent(unknown),
-    },
-  };
-}
-
 export function selectRunningTaskMeta(state) {
   const running = state.running;
   if (!running) return null;

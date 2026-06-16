@@ -1,46 +1,46 @@
 import SheetShell from './SheetShell';
-import { TYPE_LABELS } from '../../state';
+import { t, tx, typeLabel } from '../../i18n';
 
-export default function ResolveEventSheet({ resolution, onBack, onConfirm }) {
-  const { preview, confirmLabel = '保存する' } = resolution;
+export default function ResolveEventSheet({ resolution, locale = 'ja-JP', onBack, onConfirm }) {
+  const { preview, confirmLabel = t(locale, 'sheets.save') } = resolution;
 
   return (
     <SheetShell
-      title="重なりを確認"
+      title={t(locale, 'sheets.overlapTitle')}
       onClose={onBack}
       footer={(
         <>
-          <button className="btn tert" onClick={onBack}>戻る</button>
+          <button className="btn tert" onClick={onBack}>{t(locale, 'sheets.back')}</button>
           <button className="btn primary" onClick={() => onConfirm(resolution)}>{confirmLabel}</button>
         </>
       )}
     >
       <div className="il-sheet-copy">
-        保存するイベントが既存の履歴と重なっています。確定すると、重なったイベントを分割・短縮して単一のタイムラインに整えます。
+        {t(locale, 'sheets.overlapCopy')}
       </div>
 
       <div className="il-resolution-focus">
-        <div className="eyebrow">保存するイベント</div>
+        <div className="eyebrow">{t(locale, 'sheets.eventToSave')}</div>
         <div className="title">{preview.candidate.label}</div>
         <div className="meta">
-          <span>{TYPE_LABELS[preview.candidate.type] ?? 'イベント'}</span>
+          <span>{typeLabel(locale, preview.candidate.type)}</span>
           <span>{formatEventWindow(preview.candidate)}</span>
         </div>
       </div>
 
       <div className="il-resolution-summary">
-        <span className="il-chip warn">{preview.conflicts.length}件の重複</span>
-        <span className="il-chip">{preview.changes.length}件の変更</span>
+        <span className="il-chip warn">{tx(locale, 'sheets.overlapCount', preview.conflicts.length)}</span>
+        <span className="il-chip">{tx(locale, 'sheets.changeCount', preview.changes.length)}</span>
       </div>
 
       <div className="il-resolution-list">
         {preview.changes.map((change) => (
           <div key={`${change.sourceEventId}-${change.action}`} className="il-resolution-card">
             <div className="top">
-              <span className={`il-chip ${change.action === 'remove' ? 'danger' : 'accent'}`}>{CHANGE_LABELS[change.action] ?? change.action}</span>
-              <span className="event">{(change.before?.label ?? firstAfterLabel(change.after) ?? 'イベント')}</span>
+              <span className={`il-chip ${change.action === 'remove' ? 'danger' : 'accent'}`}>{changeLabel(locale, change.action)}</span>
+              <span className="event">{(change.before?.label ?? firstAfterLabel(change.after) ?? typeLabel(locale, 'unknown'))}</span>
             </div>
-            <ChangePreview before={change.before} after={change.after} />
+            <ChangePreview before={change.before} after={change.after} locale={locale} />
           </div>
         ))}
       </div>
@@ -48,7 +48,7 @@ export default function ResolveEventSheet({ resolution, onBack, onConfirm }) {
   );
 }
 
-const CHANGE_LABELS = {
+const CHANGE_LABELS_JA = {
   'trim-start': '開始を短縮',
   'trim-end': '終了を短縮',
   'trim-both': '前後を短縮',
@@ -57,25 +57,34 @@ const CHANGE_LABELS = {
   merge: '前後を統合',
   insert: '追加',
 };
+const CHANGE_LABELS_EN = {
+  'trim-start': 'Trim start',
+  'trim-end': 'Trim end',
+  'trim-both': 'Trim both',
+  split: 'Split',
+  remove: 'Remove',
+  merge: 'Merge',
+  insert: 'Add',
+};
 
-function ChangePreview({ before, after }) {
+function ChangePreview({ before, after, locale }) {
   return (
     <div className="il-resolution-compare">
       <div className="side before">
-        <div className="label">整理前</div>
-        {before ? <div className="line">{formatEventLine(before)}</div> : <div className="line muted">新しく追加されます</div>}
+        <div className="label">{t(locale, 'sheets.before')}</div>
+        {before ? <div className="line">{formatEventLine(before)}</div> : <div className="line muted">{t(locale, 'sheets.added')}</div>}
       </div>
       <div className="arrow" aria-hidden="true">→</div>
       <div className="side after">
-        <div className="label">整理後{afterCount(after) > 1 ? ` · ${afterCount(after)}本` : ''}</div>
-        {renderAfter(after)}
+        <div className="label">{t(locale, 'sheets.after')}{afterCount(after) > 1 ? ` · ${afterCount(after)}` : ''}</div>
+        {renderAfter(after, locale)}
       </div>
     </div>
   );
 }
 
-function renderAfter(after) {
-  if (!after) return <div className="line muted">削除されます</div>;
+function renderAfter(after, locale) {
+  if (!after) return <div className="line muted">{t(locale, 'sheets.removed')}</div>;
   if (Array.isArray(after)) {
     return (
       <>
@@ -125,4 +134,8 @@ function formatMonthDayTime(date) {
 
 function padTime(value) {
   return String(value).padStart(2, '0');
+}
+
+function changeLabel(locale, action) {
+  return (locale === 'ja-JP' ? CHANGE_LABELS_JA : CHANGE_LABELS_EN)[action] ?? action;
 }

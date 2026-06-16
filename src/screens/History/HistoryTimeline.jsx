@@ -1,9 +1,7 @@
-import { formatHistoryTimeRange, isSameHistoryDay } from '../../history';
+import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
+import { categoryLabel, interruptCategoryLabel, t, typeLabel, urgencyLabel } from '../../i18n';
 
-const TYPE_LABELS = { task: 'タスク', interrupt: '割り込み', break: '休憩', unknown: '記録' };
-const URGENCY_LABELS = { low: '低', med: '中', high: '高' };
-
-export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, onEdit }) {
+export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, locale = 'ja-JP', onEdit }) {
   const { axis, items, nowY } = timeline;
   const showNowLine = isSameHistoryDay(selectedDate, now);
 
@@ -45,15 +43,16 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                   <div className="title">{event.label}</div>
                 </div>
                 <div className="meta">
-                  <span>{TYPE_LABELS[event.type]}</span>
-                  {category && <span>{category.name}</span>}
+                  <span>{typeLabel(locale, event.type)}</span>
+                  {category && <span>{event.type === 'interrupt' ? interruptCategoryLabel(locale, category) : categoryLabel(locale, category)}</span>}
                 </div>
+                {event.memo && <div className="il-history-memo">{event.memo}</div>}
                 <div className="chips">
-                  {event.startsBeforeDay && <span className="il-chip sm accent">前日から</span>}
-                  {event.endsAfterDay && <span className="il-chip sm accent">翌日に続く</span>}
-                  {event.longEvent && <span className="il-chip sm warn">長時間</span>}
+                  {event.startsBeforeDay && <span className="il-chip sm accent">{t(locale, 'history.previousDay')}</span>}
+                  {event.endsAfterDay && <span className="il-chip sm accent">{t(locale, 'history.nextDay')}</span>}
+                  {event.longEvent && <span className="il-chip sm warn">{t(locale, 'history.longEvent')}</span>}
                   {event.type === 'interrupt' && event.urgency && (
-                    <span className={'il-chip sm urg-' + event.urgency}>{URGENCY_LABELS[event.urgency] ?? event.urgency}</span>
+                    <span className={'il-chip sm urg-' + event.urgency}>{urgencyLabel(locale, event.urgency) ?? event.urgency}</span>
                   )}
                 </div>
               </button>

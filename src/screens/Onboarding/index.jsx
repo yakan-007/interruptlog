@@ -1,27 +1,28 @@
 import Icons from '../../icons';
+import { t, tx } from '../../i18n';
 
 const FEATURES = [
   {
     icon: Icons.bolt,
     color: 'var(--interrupt)',
-    title: 'ワンタップで割り込みを記録',
-    subtitle: '電話・チャット・質問を正確にログ',
+    key: 'interrupt',
   },
   {
     icon: Icons.clock,
     color: 'var(--task)',
-    title: '押し忘れもあとから編集OK',
-    subtitle: '履歴の時間は自由に直せます',
+    key: 'edit',
   },
   {
     icon: Icons.report,
     color: 'oklch(0.5 0.12 280)',
-    title: '時間の行方が見える',
-    subtitle: '集中・割り込み・休憩を可視化',
+    key: 'review',
   },
 ];
 
-export default function OnboardingScreen({ actions }) {
+export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
+  const hero = tx(locale, 'onboarding.hero');
+  const storageCopy = tx(locale, 'onboarding.storageCopy');
+
   return (
     <div className="il-screen il-onboarding il-fade">
       <div className="il-onboarding-main">
@@ -33,19 +34,18 @@ export default function OnboardingScreen({ actions }) {
           </svg>
         </div>
 
-        <div className="il-onboarding-eyebrow">割り込みログ</div>
+        <div className="il-onboarding-eyebrow">{t(locale, 'onboarding.eyebrow')}</div>
         <h1>InterruptLog</h1>
         <p className="il-onboarding-copy">
-          仕事は割り込みで分断される。<br />
-          その現実を前提にした、<br />
-          正確な作業時間トラッカー。
+          {hero.map((line) => <span key={line}>{line}<br /></span>)}
         </p>
 
         <div className="il-onboarding-features">
           {FEATURES.map((feature) => {
             const Icon = feature.icon;
+            const copy = tx(locale, `onboarding.features.${feature.key}`);
             return (
-              <div key={feature.title} className="il-onboarding-feature">
+              <div key={feature.key} className="il-onboarding-feature">
                 <div
                   className="il-onboarding-featureicon"
                   style={{
@@ -57,8 +57,8 @@ export default function OnboardingScreen({ actions }) {
                   {Icon(15)}
                 </div>
                 <div className="il-onboarding-featurecopy">
-                  <div className="title">{feature.title}</div>
-                  <div className="subtitle">{feature.subtitle}</div>
+                  <div className="title">{copy.title}</div>
+                  <div className="subtitle">{copy.subtitle}</div>
                 </div>
               </div>
             );
@@ -66,20 +66,18 @@ export default function OnboardingScreen({ actions }) {
         </div>
 
         <div className="il-onboarding-storage">
-          <div className="title">この Web 版について</div>
+          <div className="title">{t(locale, 'onboarding.storageTitle')}</div>
           <div className="copy">
-            データはこのブラウザに保存されます。別端末には自動同期されません。
-            <br />
-            大事なログは、あとで設定から JSON バックアップしておけます。
+            {storageCopy.map((line) => <span key={line}>{line}<br /></span>)}
           </div>
         </div>
       </div>
 
       <div className="il-onboarding-footer">
         <button className="btn primary fill il-onboarding-cta" onClick={() => actions.finishOnboarding()}>
-          はじめる
+          {t(locale, 'onboarding.start')}
         </button>
-        <div className="il-onboarding-note">このブラウザに保存・アカウント不要</div>
+        <div className="il-onboarding-note">{t(locale, 'onboarding.note')}</div>
       </div>
     </div>
   );

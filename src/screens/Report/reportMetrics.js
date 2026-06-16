@@ -1,16 +1,18 @@
 import { selectReportInputs } from '../../state';
+import { categoryLabel, normalizeLocale } from '../../i18n';
 
-export const URGENCY_META = {
-  low: { label: '低', color: 'var(--urg-low)', copy: '後回しにできた割り込み' },
-  med: { label: '中', color: 'var(--urg-med)', copy: 'その場で扱う相談' },
-  high: { label: '高', color: 'var(--urg-high)', copy: '即対応が必要だった割り込み' },
+const URGENCY_META = {
+  low: { color: 'var(--urg-low)' },
+  med: { color: 'var(--urg-med)' },
+  high: { color: 'var(--urg-high)' },
 };
 
 export function buildReportMetrics(state, currentStats, bounds, now) {
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
   const hourly = buildHourlyInterrupts(currentStats.events);
   const maxHourly = Math.max(...hourly, 1);
-  const dayStats = buildDayStats(state, now);
+  const locale = state.preferences.locale;
+  const dayStats = buildDayStats(state, now, locale);
   const maxDay = Math.max(...dayStats.map((day) => day.focus + day.interrupt), 1);
   const senders = buildSenders(currentStats.events);
   const maxSenderTime = Math.max(...senders.map((sender) => sender.time), 1);
@@ -53,15 +55,15 @@ function buildHourlyInterrupts(events) {
   return hourly;
 }
 
-function buildDayStats(state, now) {
-  const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+function buildDayStats(state, now, locale) {
+  const weekdayFormatter = new Intl.DateTimeFormat(normalizeLocale(locale), { weekday: 'narrow' });
   return Array(7).fill(null).map((_, index) => {
     const dayStart = now - (6 - index) * 86400000;
     const base = new Date(dayStart);
     base.setHours(0, 0, 0, 0);
     const dayInput = selectReportInputs(state, 'day', base.getTime() + 86399999);
     return {
-      day: weekDays[new Date(dayStart).getDay()],
+      day: weekdayFormatter.format(new Date(dayStart)),
       focus: dayInput.currentStats.focus,
       interrupt: dayInput.currentStats.interrupt,
     };
@@ -114,8 +116,8 @@ function buildTaskReport(state, events, bounds) {
       const completedInRange = Boolean(task?.isCompleted && task.completedAt >= bounds.since && task.completedAt < bounds.until);
       return {
         id,
-        name: task?.name ?? firstEvent?.label ?? 'タスク',
-        categoryName: category?.name ?? '',
+        name: task?.name ?? firstEvent?.label ?? 'Task',
+        categoryName: categoryLabel(state.preferences.locale, category),
         categoryColor: category?.color ?? 'var(--task)',
         time: taskTimeById.get(id) ?? 0,
         completedAt: task?.completedAt ?? null,

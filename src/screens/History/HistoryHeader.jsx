@@ -1,9 +1,11 @@
-export default function HistoryHeader() {
+import { t } from '../../i18n';
+
+export default function HistoryHeader({ locale }) {
   return (
     <div className="il-topbar">
       <div>
-        <div className="sub">HISTORY</div>
-        <h1>イベント履歴</h1>
+        <div className="sub">{t(locale, 'history.eyebrow')}</div>
+        <h1>{t(locale, 'history.title')}</h1>
       </div>
     </div>
   );

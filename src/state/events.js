@@ -8,7 +8,7 @@ import {
   sortEventsByWindow,
 } from './resolution';
 
-export function validateEventWindow({ start, end }) {
+function validateEventWindow({ start, end }) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return '開始と終了を正しく入力してください';
   if (end <= start) return '終了は開始より後にしてください';
   return null;
@@ -51,6 +51,7 @@ export function previewSaveEventInState(state, updated, now = Date.now()) {
     ...updated,
     id: previous.id,
     label: cleanText(updated.label) || TYPE_LABELS[updated.type] || previous.label || 'イベント',
+    memo: cleanText(updated.memo),
     start: asNumber(updated.start, null),
     end: asNumber(updated.end, null),
   };
@@ -71,6 +72,7 @@ export function previewAddMissedEventInState(state, event, options = {}, now = D
     ...event,
     id: newId('ev', now),
     label: cleanText(event.label) || TYPE_LABELS[event.type] || 'イベント',
+    memo: cleanText(event.memo),
     start: asNumber(event.start, null),
     end: asNumber(event.end, null),
   };

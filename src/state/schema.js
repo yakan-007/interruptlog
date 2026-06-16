@@ -1,18 +1,33 @@
-import { categories as defaultCategories, interruptCats as defaultInterruptCats } from '../data';
+import { normalizeLocale } from '../i18n';
 import { asArray, asNumber, cleanText, clone, isObject, uniqueTexts } from './utils';
 
 export const APP_NAME = 'InterruptLog';
 export const SCHEMA_VERSION = 2;
-export const STATE_KEY = 'interruptlog_state_v2';
 
-export const defaultPreferences = {
+const defaultCategories = [
+  { id: 'cat-dev', name: '開発', color: 'oklch(0.58 0.12 240)' },
+  { id: 'cat-doc', name: 'ドキュメント', color: 'oklch(0.60 0.10 160)' },
+  { id: 'cat-mtg', name: '会議', color: 'oklch(0.55 0.12 300)' },
+  { id: 'cat-sup', name: 'サポート', color: 'oklch(0.60 0.13 35)' },
+  { id: 'cat-adm', name: '雑務', color: 'oklch(0.62 0.04 80)' },
+];
+
+const defaultInterruptCats = [
+  { id: 'int-call', name: '電話', icon: 'phone' },
+  { id: 'int-chat', name: 'チャット', icon: 'chat' },
+  { id: 'int-q', name: '質問', icon: 'q' },
+  { id: 'int-other', name: 'その他', icon: 'dots' },
+];
+
+const defaultPreferences = {
   dark: false,
   accent: 'oklch(0.35 0.03 250)',
   memberName: '',
+  locale: 'ja-JP',
   teamModeEnabled: false,
+  teamLightsEnabled: true,
   topAdd: true,
   sortDue: false,
-  showTodayStrip: true,
   historyView: 'timeline',
   onboardingDone: false,
 };
@@ -38,6 +53,16 @@ export function createEmptyState() {
     teamWorkspace: {
       taxonomyVersion: defaultTaxonomyVersion(now),
       archiveImportedAt: null,
+      focusWindow: { start: '10:00', end: '12:00' },
+      questionMode: 'ask-later',
+      interruptionQueue: [],
+      presence: {
+        enabled: false,
+        teamId: '',
+        anonymousMemberId: defaultAnonymousMemberId(now),
+        colorSeed: defaultColorSeed(now),
+        shareKeyHint: '',
+      },
     },
     teamArchive: {
       entries: [],
@@ -75,29 +100,31 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
   };
 }
 
-export function normalizePreferences(raw = {}, options = {}) {
+function normalizePreferences(raw = {}, options = {}) {
   return {
     dark: Boolean(raw.dark ?? defaultPreferences.dark),
     accent: cleanText(raw.accent) || defaultPreferences.accent,
     memberName: cleanText(raw.memberName),
+    locale: normalizeLocale(raw.locale ?? defaultPreferences.locale),
     teamModeEnabled: Boolean(raw.teamModeEnabled ?? defaultPreferences.teamModeEnabled),
+    teamLightsEnabled: Boolean(raw.teamLightsEnabled ?? defaultPreferences.teamLightsEnabled),
     topAdd: Boolean(raw.topAdd ?? defaultPreferences.topAdd),
     sortDue: Boolean(raw.sortDue ?? defaultPreferences.sortDue),
-    showTodayStrip: Boolean(raw.showTodayStrip ?? defaultPreferences.showTodayStrip),
     historyView: normalizeHistoryView(raw.historyView),
     onboardingDone: Boolean(raw.onboardingDone ?? options.assumeOnboarded ?? defaultPreferences.onboardingDone),
   };
 }
 
-export function normalizeHistoryView(value) {
+function normalizeHistoryView(value) {
   return value === 'list' ? 'list' : 'timeline';
 }
 
-export function normalizeTask(task) {
+function normalizeTask(task) {
   if (!isObject(task) || !task.id) return null;
   return {
     id: String(task.id),
     name: cleanText(task.name) || '無題のタスク',
+    memo: cleanText(task.memo),
     isCompleted: Boolean(task.isCompleted),
     order: asNumber(task.order, 0),
     categoryId: task.categoryId ? String(task.categoryId) : null,
@@ -164,7 +191,7 @@ export function normalizeEvent(event) {
   };
 }
 
-export function normalizeRunning(running, taskIds) {
+function normalizeRunning(running, taskIds) {
   if (!isObject(running) || !running.type || running.start == null) return null;
   if (running.type === 'task' && (!running.taskId || !taskIds.has(running.taskId))) return null;
   if (!['task', 'interrupt', 'break'].includes(running.type)) return null;
@@ -180,14 +207,18 @@ export function normalizeRunning(running, taskIds) {
   };
 }
 
-export function normalizeTeamWorkspace(raw = {}, now = Date.now()) {
+function normalizeTeamWorkspace(raw = {}, now = Date.now()) {
   return {
     taxonomyVersion: cleanText(raw?.taxonomyVersion) || defaultTaxonomyVersion(now),
     archiveImportedAt: asNumber(raw?.archiveImportedAt, null),
+    focusWindow: normalizeFocusWindow(raw?.focusWindow),
+    questionMode: normalizeQuestionMode(raw?.questionMode),
+    interruptionQueue: asArray(raw?.interruptionQueue).map(normalizeQueueItem).filter(Boolean),
+    presence: normalizePresenceSettings(raw?.presence, now),
   };
 }
 
-export function normalizeTeamArchive(raw = {}) {
+function normalizeTeamArchive(raw = {}) {
   return {
     entries: asArray(raw?.entries).map(normalizeArchiveEntry).filter(Boolean),
   };
@@ -221,14 +252,59 @@ export function normalizeArchiveEntry(entry) {
   };
 }
 
-export function defaultTaxonomyVersion(now = Date.now()) {
+function defaultTaxonomyVersion(now = Date.now()) {
   const date = new Date(now);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `local-${year}-${month}`;
 }
 
-export function resolveOpenEvents(events, running, now = Date.now()) {
+function defaultAnonymousMemberId(now = Date.now()) {
+  return `anon-${Math.abs(Math.sin(now) * 1e9).toString(36).slice(0, 8)}`;
+}
+
+function defaultColorSeed(now = Date.now()) {
+  return `seed-${Math.abs(Math.cos(now) * 1e9).toString(36).slice(0, 8)}`;
+}
+
+function normalizeFocusWindow(raw = {}) {
+  return {
+    start: normalizeClockText(raw.start, '10:00'),
+    end: normalizeClockText(raw.end, '12:00'),
+  };
+}
+
+function normalizeClockText(value, fallback) {
+  const text = cleanText(value);
+  return /^\d{2}:\d{2}$/.test(text) ? text : fallback;
+}
+
+function normalizeQuestionMode(value) {
+  return ['open', 'ask-later', 'focus', 'break'].includes(value) ? value : 'ask-later';
+}
+
+function normalizeQueueItem(item) {
+  if (!isObject(item)) return null;
+  return {
+    id: cleanText(item.id),
+    priority: ['now', 'today', 'later'].includes(item.priority) ? item.priority : 'later',
+    subject: cleanText(item.subject) || '相談',
+    createdAt: asNumber(item.createdAt, Date.now()),
+    done: Boolean(item.done),
+  };
+}
+
+function normalizePresenceSettings(raw = {}, now = Date.now()) {
+  return {
+    enabled: Boolean(raw.enabled),
+    teamId: cleanText(raw.teamId),
+    anonymousMemberId: cleanText(raw.anonymousMemberId) || defaultAnonymousMemberId(now),
+    colorSeed: cleanText(raw.colorSeed) || defaultColorSeed(now),
+    shareKeyHint: cleanText(raw.shareKeyHint),
+  };
+}
+
+function resolveOpenEvents(events, running, now = Date.now()) {
   return events.map((event) => {
     if (event.end !== null) return event;
     const matchesRunningTask =

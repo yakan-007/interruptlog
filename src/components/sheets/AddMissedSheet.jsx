@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { categoryLabel, interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
 import SheetShell from './SheetShell';
 
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
@@ -9,6 +10,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [saveWhoChip, setSaveWhoChip] = useState(Boolean(initialDraft?.saveWhoChip));
   const [urgency, setUrgency] = useState(initialDraft?.urgency ?? 'med');
   const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? state.interruptCats[0]?.id ?? '');
+  const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
   const [initial] = useState(() => new Date());
   const [startH, setStartH] = useState(initialDraft?.startH ?? String(initial.getHours()).padStart(2, '0'));
@@ -16,6 +18,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [endH, setEndH] = useState(initialDraft?.endH ?? String(initial.getHours()).padStart(2, '0'));
   const [endM, setEndM] = useState(initialDraft?.endM ?? String(Math.min(initial.getMinutes() + 30, 59)).padStart(2, '0'));
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
+  const locale = state.preferences.locale;
 
   const handleAdd = () => {
     const base = new Date();
@@ -26,21 +29,22 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
     end.setHours(Number(endH), Number(endM), 0, 0);
 
     if (end <= start) {
-      setError('終了は開始より後にしてください');
+      setError(t(locale, 'errors.invalidWindow'));
       return;
     }
 
     const draft = {
       type,
-      label: label || (type === 'interrupt' && who ? `${who}から` : ''),
+      label: label || (type === 'interrupt' && who ? (locale === 'ja-JP' ? `${who}から` : `From ${who}`) : ''),
       start: start.getTime(),
       end: end.getTime(),
+      memo,
       ...(type === 'task' ? { categoryId: taskCategoryId } : {}),
       ...(type === 'interrupt' ? { who, urgency, categoryId: interruptCategoryId } : {}),
     };
     const previewResult = actions.previewAddMissedEvent(draft, { createGap: false });
     if (previewResult.error) {
-      setError(previewResult.error ?? '入力を確認してください');
+      setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.checkInput')));
       return;
     }
 
@@ -49,40 +53,40 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, startH, startM, endH, endM },
-        confirmLabel: '追加する',
-        successMessage: 'イベントを追加しました',
+        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM },
+        confirmLabel: t(locale, 'sheets.add'),
+        successMessage: t(locale, 'toasts.eventAdded'),
       });
       return;
     }
 
     const result = actions.addMissedEvent(draft, { createGap: false, saveWhoChip });
-    if (!result.ok) setError(result.error ?? '入力を確認してください');
+    if (!result.ok) setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
   };
 
   return (
-    <SheetShell title="過去のイベントを追加" onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.addMissedTitle')} onClose={onClose} footer={
       <>
-        <button className="btn tert" onClick={onClose}>キャンセル</button>
-        <button className="btn primary" onClick={handleAdd}>追加</button>
+        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
+        <button className="btn primary" onClick={handleAdd}>{t(locale, 'sheets.add')}</button>
       </>
     }>
       <div className="il-field">
-        <label>種別</label>
+        <label>{t(locale, 'sheets.type')}</label>
         <div className="il-seg full">
-          <button className={type === 'task' ? 'active' : ''} onClick={() => setType('task')}>タスク</button>
-          <button className={type === 'interrupt' ? 'active' : ''} onClick={() => setType('interrupt')}>割り込み</button>
-          <button className={type === 'break' ? 'active' : ''} onClick={() => setType('break')}>休憩</button>
+          <button className={type === 'task' ? 'active' : ''} onClick={() => setType('task')}>{typeLabel(locale, 'task')}</button>
+          <button className={type === 'interrupt' ? 'active' : ''} onClick={() => setType('interrupt')}>{typeLabel(locale, 'interrupt')}</button>
+          <button className={type === 'break' ? 'active' : ''} onClick={() => setType('break')}>{typeLabel(locale, 'break')}</button>
         </div>
       </div>
       <div className="il-field">
-        <label>ラベル</label>
-        <input className="il-input" placeholder="何をしていたか" value={label} onChange={(event) => setLabel(event.target.value)} />
+        <label>{t(locale, 'sheets.label')}</label>
+        <input className="il-input" placeholder={t(locale, 'sheets.labelPlaceholder')} value={label} onChange={(event) => setLabel(event.target.value)} />
       </div>
 
       {type === 'task' && (
         <div className="il-field">
-          <label>カテゴリ</label>
+          <label>{t(locale, 'sheets.category')}</label>
           <div className="il-chiprow">
             {state.categories.map((category) => (
               <button
@@ -92,7 +96,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
                 style={{ '--chip-cat': category.color }}
               >
                 <span className="dot" style={{ background: category.color }} />
-                {category.name}
+                {categoryLabel(locale, category)}
               </button>
             ))}
           </div>
@@ -102,11 +106,11 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       {type === 'interrupt' && (
         <>
           <div className="il-field">
-            <label>発信者</label>
+            <label>{t(locale, 'sheets.sender')}</label>
             <div className="il-chiprow">
               <input
                 className="c il-chipinput compact"
-                placeholder="一時入力"
+                placeholder={t(locale, 'sheets.temporaryInput')}
                 value={who && !state.whoChips.includes(who) ? who : ''}
                 onChange={(event) => setWho(event.target.value)}
               />
@@ -117,28 +121,28 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
             {customWho && (
               <label className="il-inline-check">
                 <input type="checkbox" checked={saveWhoChip} onChange={(event) => setSaveWhoChip(event.target.checked)} />
-                <span>次回も使う発信者として保存</span>
+                <span>{t(locale, 'sheets.saveSender')}</span>
               </label>
             )}
           </div>
 
           <div className="il-field">
-            <label>カテゴリ</label>
+            <label>{t(locale, 'sheets.category')}</label>
             <div className="il-chiprow">
               {state.interruptCats.map((category) => (
                 <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
-                  {category.name}
+                  {interruptCategoryLabel(locale, category)}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="il-field">
-            <label>緊急度</label>
+            <label>{t(locale, 'sheets.urgency')}</label>
             <div className="il-urg">
-              <button className={urgency === 'low' ? 'sel low' : ''} onClick={() => setUrgency('low')}>低</button>
-              <button className={urgency === 'med' ? 'sel med' : ''} onClick={() => setUrgency('med')}>中</button>
-              <button className={urgency === 'high' ? 'sel high' : ''} onClick={() => setUrgency('high')}>高</button>
+              <button className={urgency === 'low' ? 'sel low' : ''} onClick={() => setUrgency('low')}>{urgencyLabel(locale, 'low')}</button>
+              <button className={urgency === 'med' ? 'sel med' : ''} onClick={() => setUrgency('med')}>{urgencyLabel(locale, 'med')}</button>
+              <button className={urgency === 'high' ? 'sel high' : ''} onClick={() => setUrgency('high')}>{urgencyLabel(locale, 'high')}</button>
             </div>
           </div>
         </>
@@ -146,31 +150,35 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
 
       <div className="il-inline-fields">
         <div className="il-field">
-          <label>開始</label>
-          <div className="il-hourinput-row labeled" aria-label={`開始 ${startH}:${startM}`}>
+          <label>{t(locale, 'sheets.start')}</label>
+          <div className="il-hourinput-row labeled" aria-label={`${t(locale, 'sheets.start')} ${startH}:${startM}`}>
             <label className="il-timepart">
               <input className="il-input" value={startH} onChange={(event) => setStartH(event.target.value)} inputMode="numeric" />
-              <span>時</span>
+              <span>{t(locale, 'sheets.hour')}</span>
             </label>
             <label className="il-timepart">
               <input className="il-input" value={startM} onChange={(event) => setStartM(event.target.value)} inputMode="numeric" />
-              <span>分</span>
+              <span>{t(locale, 'sheets.minute')}</span>
             </label>
           </div>
         </div>
         <div className="il-field">
-          <label>終了</label>
-          <div className="il-hourinput-row labeled" aria-label={`終了 ${endH}:${endM}`}>
+          <label>{t(locale, 'sheets.end')}</label>
+          <div className="il-hourinput-row labeled" aria-label={`${t(locale, 'sheets.end')} ${endH}:${endM}`}>
             <label className="il-timepart">
               <input className="il-input" value={endH} onChange={(event) => setEndH(event.target.value)} inputMode="numeric" />
-              <span>時</span>
+              <span>{t(locale, 'sheets.hour')}</span>
             </label>
             <label className="il-timepart">
               <input className="il-input" value={endM} onChange={(event) => setEndM(event.target.value)} inputMode="numeric" />
-              <span>分</span>
+              <span>{t(locale, 'sheets.minute')}</span>
             </label>
           </div>
         </div>
+      </div>
+      <div className="il-field">
+        <label>{t(locale, 'sheets.memo')}</label>
+        <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} aria-label={t(locale, 'sheets.memo')} />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

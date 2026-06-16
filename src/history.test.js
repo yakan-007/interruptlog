@@ -10,7 +10,7 @@ import {
   shiftHistoryDay,
   startOfHistoryDay,
   toHistoryDateInputValue,
-} from './history';
+} from './lib/history';
 
 const at = (day, hour, minute = 0, second = 0) =>
   new Date(2026, 3, day, hour, minute, second).getTime();

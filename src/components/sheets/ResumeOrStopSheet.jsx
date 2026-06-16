@@ -1,19 +1,21 @@
 import SheetShell from './SheetShell';
+import { t, tx } from '../../i18n';
 
 export default function ResumeOrStopSheet({ state, actions, onClose }) {
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
+  const locale = state.preferences.locale;
 
   return (
-    <SheetShell title={state.running?.type === 'interrupt' ? '割り込みを終了' : '休憩を終了'} onClose={onClose} footer={
+    <SheetShell title={state.running?.type === 'interrupt' ? t(locale, 'sheets.endInterrupt') : t(locale, 'sheets.endBreak')} onClose={onClose} footer={
       <>
-        <button className="btn secondary" onClick={() => actions.stopInterrupt(false)}>終了だけ</button>
+        <button className="btn secondary" onClick={() => actions.stopInterrupt(false)}>{t(locale, 'sheets.endOnly')}</button>
         <button className="btn primary" onClick={() => actions.stopInterrupt(true)} disabled={!runTask}>
-          再開 {runTask && `→ ${runTask.name.slice(0, 10)}${runTask.name.length > 10 ? '…' : ''}`}
+          {t(locale, 'sheets.resume')} {runTask && `→ ${runTask.name.slice(0, 10)}${runTask.name.length > 10 ? '…' : ''}`}
         </button>
       </>
     }>
       <div className="il-sheet-copy">
-        {runTask ? (<><span className="strong">{runTask.name}</span> に戻りますか？</>) : '再開するタスクがありません。終了のみ可能です。'}
+        {runTask ? tx(locale, 'sheets.resumeQuestion', runTask.name) : t(locale, 'sheets.noResumeTask')}
       </div>
     </SheetShell>
   );

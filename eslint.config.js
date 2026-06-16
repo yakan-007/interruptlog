@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'ios', 'node_modules']),
+  globalIgnores(['coverage', 'dist', 'ios', 'node_modules']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -24,6 +24,32 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  {
+    files: ['src/state/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../screens/*', '../components/*', '../app/*', '../useAppState*', '../persistence/*'],
+            message: 'State modules must stay UI- and persistence-independent.',
+          },
+        ],
+      }],
+    },
+  },
+  {
+    files: ['src/lib/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../screens/*', '../components/*', '../app/*', '../useAppState*', '../persistence/*', '../state/*'],
+            message: 'Lib modules should not depend on app, screen, persistence, or state layers.',
+          },
+        ],
+      }],
     },
   },
 ])

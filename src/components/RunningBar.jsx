@@ -1,5 +1,6 @@
 import Icons from '../icons';
-import { useTicker } from '../helpers';
+import { useTicker } from '../lib/ticker';
+import { t, translateMessage } from '../i18n';
 
 function fmtRunbarDuration(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
@@ -10,7 +11,7 @@ function fmtRunbarDuration(ms) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-export default function RunningBar({ state, actions, raised = false, compact = false }) {
+export default function RunningBar({ state, actions, raised = false, compact = false, locale = 'ja-JP' }) {
   const now = useTicker(1000);
   const running = state.running;
   const meta = state.runningTaskMeta;
@@ -29,43 +30,45 @@ export default function RunningBar({ state, actions, raised = false, compact = f
   const style = running.type === 'task'
     ? { '--runbar-accent': taskAccent, '--task-cat': taskAccent }
     : undefined;
-  const reopenPauseSheet = () => {
-    if (running.type === 'interrupt') actions.openSheet('interrupt');
+  const openRunningDetails = () => {
+    if (running.type === 'task' && meta.task) actions.openSheet('editTask', meta.task);
+    else if (running.type === 'interrupt') actions.openSheet('interrupt');
     else if (running.type === 'break') actions.openSheet('break');
   };
   const stopEvent = (event) => event.stopPropagation();
   const handleKeyDown = (event) => {
-    if (running.type === 'task') return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      reopenPauseSheet();
+      openRunningDetails();
     }
   };
+  const label = translateMessage(locale, meta.label);
+  const subLabel = translateMessage(locale, meta.subLabel);
 
   return (
     <div
-      className={'il-runbar ' + (meta.variant || 'task') + (raised ? ' raised' : '') + (compact ? ' compact' : '') + (running.type === 'break' ? breakTone : '') + (running.type !== 'task' ? ' reopenable' : '')}
+      className={'il-runbar ' + (meta.variant || 'task') + (raised ? ' raised' : '') + (compact ? ' compact' : '') + (running.type === 'break' ? breakTone : '') + ' reopenable'}
       style={style}
-      onClick={running.type !== 'task' ? reopenPauseSheet : undefined}
-      onKeyDown={running.type !== 'task' ? handleKeyDown : undefined}
-      role={running.type !== 'task' ? 'button' : undefined}
-      tabIndex={running.type !== 'task' ? 0 : undefined}
-      aria-label={running.type === 'interrupt' ? '割り込み記録を開く' : running.type === 'break' ? '休憩記録を開く' : undefined}
+      onClick={openRunningDetails}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={running.type === 'task' ? t(locale, 'sheets.taskEdit') : running.type === 'interrupt' ? t(locale, 'sheets.interruptTitle') : t(locale, 'sheets.breakTitle')}
     >
       <div className="dot" />
       <div className={'label' + (running.type === 'task' ? ' single' : '')}>
-        {running.type !== 'task' && <div className="top">{meta.subLabel}</div>}
-        <div className="name">{meta.label}</div>
+        {running.type !== 'task' && <div className="top">{subLabel}</div>}
+        <div className="name">{label}</div>
       </div>
       <div className="time il-mono">{fmtRunbarDuration(elapsedMs)}</div>
       {running.type === 'task' ? (
         <div className="rb-actions">
           <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('interrupt'); }}>{Icons.bolt(16)}</button>
           <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('break'); }}>{Icons.coffee(16)}</button>
-          <button className="rb-btn stop" aria-label="停止" onClick={(event) => { stopEvent(event); actions.openSheet('confirmStop'); }}>{Icons.stop(14)}</button>
+          <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('confirmStop'); }}>{Icons.stop(14)}</button>
         </div>
       ) : (
-        <button className="rb-btn stop" aria-label="停止" onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
+        <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
       )}
     </div>
   );

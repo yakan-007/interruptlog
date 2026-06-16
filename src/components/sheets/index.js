@@ -6,4 +6,3 @@ export { default as InterruptSheet } from './InterruptSheet';
 export { default as RepairOverlapsSheet } from './RepairOverlapsSheet';
 export { default as ResolveEventSheet } from './ResolveEventSheet';
 export { default as ResumeOrStopSheet } from './ResumeOrStopSheet';
-export { default as SheetShell } from './SheetShell';

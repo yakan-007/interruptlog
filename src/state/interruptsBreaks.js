@@ -29,7 +29,7 @@ export function setBreakTargetInState(state, minutes) {
   };
 }
 
-export function resumeOrStopInState(state, resume, preTaskId, now = Date.now()) {
+function resumeOrStopInState(state, resume, preTaskId, now = Date.now()) {
   const base = { ...state, running: null };
   if (resume && preTaskId && base.tasks.some((task) => task.id === preTaskId)) {
     return startTaskInState(base, preTaskId, now);

@@ -1,6 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
 import Icons from '../../icons';
-import { fmtDateHeader, useTicker } from '../../helpers';
+import { fmtDateHeader } from '../../lib/formatters';
+import { useTicker } from '../../lib/ticker';
+import { t } from '../../i18n';
 import { partitionCompletedTasks, selectTaskPriorSpentMs } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import TaskCard from './TaskCard';
@@ -41,16 +43,16 @@ export default function LogScreen({ state, actions }) {
         }
       >
         <div className="il-section-h">
-          <span>タスク</span>
+          <span>{t(state.preferences.locale, 'log.title')}</span>
           <span className="count">{state.activeTasks.length}</span>
         </div>
 
         {state.activeTasks.length === 0 ? (
           <div className="il-empty">
-            <div className="t">今日のタスクはまだありません</div>
-            <div className="s">下の入力から、軽くメモするように追加できます。</div>
+            <div className="t">{t(state.preferences.locale, 'log.emptyTitle')}</div>
+            <div className="s">{t(state.preferences.locale, 'log.emptyCopy')}</div>
             <button className="btn tert il-empty-action" onClick={() => actions.openSheet('addMissed')}>
-              押し忘れを記録
+              {t(state.preferences.locale, 'log.addMissed')}
             </button>
           </div>
         ) : (
@@ -76,6 +78,7 @@ export default function LogScreen({ state, actions }) {
                   runningStart={state.running?.start}
                   priorSpent={selectTaskPriorSpentMs(state, task.id)}
                   now={now}
+                  locale={state.preferences.locale}
                   onStart={() => actions.startTask(task.id)}
                   onStop={() => actions.openSheet('confirmStop')}
                   onComplete={() => actions.completeTask(task.id)}
@@ -94,7 +97,7 @@ export default function LogScreen({ state, actions }) {
         {completed.today.length > 0 && (
           <>
             <div className="il-section-h">
-              <span>今日完了</span>
+              <span>{t(state.preferences.locale, 'log.completedToday')}</span>
               <span className="count">{completed.today.length}</span>
             </div>
             {completed.today.map((task) => (
@@ -104,7 +107,8 @@ export default function LogScreen({ state, actions }) {
                 category={categoriesById[task.categoryId]}
                 priorSpent={selectTaskPriorSpentMs(state, task.id)}
                 now={now}
-                completedNote={task.completedAt ? `完了 ${fmtDateHeader(task.completedAt)}` : '完了'}
+                completedNote={task.completedAt ? `${t(state.preferences.locale, 'log.completed')} ${fmtDateHeader(task.completedAt, state.preferences.locale)}` : t(state.preferences.locale, 'log.completed')}
+                locale={state.preferences.locale}
                 onToggle={() => actions.restoreTask(task.id)}
                 onRestart={() => actions.restoreTaskAndStart(task.id)}
                 onEdit={() => actions.openSheet('editTask', task)}
@@ -116,7 +120,7 @@ export default function LogScreen({ state, actions }) {
         {completed.archived.length > 0 && (
           <>
             <button className="il-archivehead" onClick={() => setShowArchive((current) => !current)} aria-expanded={showArchive}>
-              <span className="label">完了アーカイブ</span>
+              <span className="label">{t(state.preferences.locale, 'log.completedArchive')}</span>
               <span className="meta">
                 <span className="count">{completed.archived.length}</span>
                 <span className={'chev' + (showArchive ? ' open' : '')}>{Icons.chevD(16)}</span>
@@ -124,7 +128,7 @@ export default function LogScreen({ state, actions }) {
             </button>
             {showArchive && (
               <div className="il-archivecopy">
-                過去に完了したタスクです。メイン一覧からは外れますが、再開すると同じタスクとして時間を続けて記録できます。
+                {t(state.preferences.locale, 'log.archiveCopy')}
               </div>
             )}
             {showArchive && completed.archived.map((task) => (
@@ -134,7 +138,8 @@ export default function LogScreen({ state, actions }) {
                 category={categoriesById[task.categoryId]}
                 priorSpent={selectTaskPriorSpentMs(state, task.id)}
                 now={now}
-                completedNote={task.completedAt ? `${fmtDateHeader(task.completedAt)}に完了` : '過去に完了'}
+                completedNote={task.completedAt ? `${fmtDateHeader(task.completedAt, state.preferences.locale)} ${t(state.preferences.locale, 'log.completed')}` : t(state.preferences.locale, 'log.completed')}
+                locale={state.preferences.locale}
                 onToggle={() => actions.restoreTask(task.id)}
                 onRestart={() => actions.restoreTaskAndStart(task.id)}
                 onEdit={() => actions.openSheet('editTask', task)}
@@ -153,6 +158,7 @@ export default function LogScreen({ state, actions }) {
             runningStart={state.running?.start}
             priorSpent={selectTaskPriorSpentMs(state, draggedTask.id)}
             now={now}
+            locale={state.preferences.locale}
             floating
             dragState={{
               isDragging: true,

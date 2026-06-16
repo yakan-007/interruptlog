@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSerializedPersistenceController } from './persistence';
+import { createSerializedPersistenceController } from './persistence/controller';
 
 function createDeferred() {
   let resolve;

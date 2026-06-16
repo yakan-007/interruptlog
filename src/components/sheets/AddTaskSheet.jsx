@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import Icons from '../../icons';
-import { fromDateTimeLocalValue, getTaskDuePresets, toDateTimeLocalValue } from '../../helpers';
+import { getTaskDuePresets } from '../../lib/formatters';
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
+import { categoryLabel, t, translateMessage } from '../../i18n';
 import SheetShell from './SheetShell';
 
 export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit }) {
-  const duePresets = getTaskDuePresets();
+  const locale = state.preferences.locale;
+  const duePresets = getTaskDuePresets(new Date(), locale);
   const [name, setName] = useState(editing?.name ?? draft?.name ?? '');
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? draft?.categoryId ?? state.categories[0]?.id ?? null);
   const [plannedDurationMinutes, setPlannedDurationMinutes] = useState(editing?.planning?.plannedDurationMinutes ?? draft?.plannedDurationMinutes ?? 0);
   const [dueAt, setDueAt] = useState(editing?.planning?.dueAt ?? draft?.dueAt ?? null);
+  const [memo, setMemo] = useState(editing?.memo ?? draft?.memo ?? '');
   const [error, setError] = useState('');
   const selectedCategory = state.categories.find((category) => category.id === categoryId) ?? null;
   const taskAccent = selectedCategory?.color ?? 'var(--accent)';
@@ -16,8 +20,8 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
 
   useEffect(() => {
     if (editing || !onDraftChange) return;
-    onDraftChange({ name, categoryId, plannedDurationMinutes, dueAt });
-  }, [categoryId, dueAt, editing, name, onDraftChange, plannedDurationMinutes]);
+    onDraftChange({ name, categoryId, plannedDurationMinutes, dueAt, memo });
+  }, [categoryId, dueAt, editing, memo, name, onDraftChange, plannedDurationMinutes]);
 
   const update = (setter) => (value) => {
     setError('');
@@ -31,6 +35,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
       categoryId,
       plannedDurationMinutes,
       dueAt,
+      memo,
     };
     const result = editing
       ? actions.saveTask(payload)
@@ -38,35 +43,35 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
         ? actions.createTaskAndStart(payload)
         : actions.createTask(payload);
     if (!result.ok) {
-      setError(result.error ?? '入力を確認してください');
+      setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
       return;
     }
     setError('');
-    if (!editing) onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt });
+    if (!editing) onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt, memo });
     onClose();
   };
 
   return (
-    <SheetShell title={editing ? 'タスクを編集' : '詳細追加'} onClose={onClose} footer={
+    <SheetShell title={editing ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.taskDetails')} onClose={onClose} footer={
       <>
-        {editing && <button className="btn danger" onClick={() => actions.deleteTask(editing.id)}>{Icons.trash(14)} 削除</button>}
-        <button className="btn tert" onClick={onClose}>キャンセル</button>
+        {editing && <button className="btn danger" onClick={() => actions.deleteTask(editing.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
+        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         {editing ? (
-          <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('save')}>保存</button>
+          <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('save')}>{t(locale, 'sheets.save')}</button>
         ) : (
           <>
-            <button className="btn secondary" onClick={() => submit('create')}>追加</button>
-            <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('start')} disabled={isPaused}>{Icons.play(12)} 追加して開始</button>
+            <button className="btn secondary" onClick={() => submit('create')}>{t(locale, 'sheets.add')}</button>
+            <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('start')} disabled={isPaused}>{Icons.play(12)} {t(locale, 'sheets.addAndStart')}</button>
           </>
         )}
       </>
     }>
       <div className="il-field">
-        <label>タスク名</label>
-        <input className="il-input" placeholder="例: 見積APIの修正" value={name} onChange={(event) => update(setName)(event.target.value)} autoFocus />
+        <label>{t(locale, 'sheets.taskName')}</label>
+        <input className="il-input" placeholder={t(locale, 'sheets.taskPlaceholder')} value={name} onChange={(event) => update(setName)(event.target.value)} autoFocus />
       </div>
       <div className="il-field">
-        <label>カテゴリ</label>
+        <label>{t(locale, 'sheets.category')}</label>
         <div className="il-chiprow">
           {state.categories.map((category) => (
             <button
@@ -75,13 +80,13 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
               onClick={() => update(setCategoryId)(category.id)}
               style={{ '--chip-cat': category.color, borderLeft: `3px solid ${category.color}` }}
             >
-              {category.name}
+              {categoryLabel(locale, category)}
             </button>
           ))}
         </div>
       </div>
       <div className="il-field">
-        <label>予定時間</label>
+        <label>{t(locale, 'sheets.plannedTime')}</label>
         <div className="il-sheet-planrow">
           <input
             className="il-input short"
@@ -89,15 +94,15 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
             value={plannedDurationMinutes}
             onChange={(event) => update(setPlannedDurationMinutes)(Number(event.target.value) || 0)}
           />
-          <span className="suffix">分</span>
+          <span className="suffix">{t(locale, 'sheets.minutes')}</span>
           <div className="spacer" />
-          {[['未定', 0], ['15', 15], ['30', 30], ['60', 60], ['120', 120]].map(([label, minutes]) => (
+          {[[t(locale, 'sheets.unset'), 0], ['15', 15], ['30', 30], ['60', 60], ['120', 120]].map(([label, minutes]) => (
             <button key={minutes} className="btn sm secondary" onClick={() => update(setPlannedDurationMinutes)(minutes)}>{label}</button>
           ))}
         </div>
       </div>
       <div className="il-field">
-        <label>期限</label>
+        <label>{t(locale, 'sheets.due')}</label>
         <div className="il-sheet-presetrow">
           {duePresets.map((option) => (
             <button key={option.label} className={'btn sm ' + (dueAt === option.value ? 'primary' : 'secondary')} onClick={() => update(setDueAt)(option.value)}>
@@ -110,8 +115,12 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
           type="datetime-local"
           value={toDateTimeLocalValue(dueAt)}
           onChange={(event) => update(setDueAt)(fromDateTimeLocalValue(event.target.value))}
-          aria-label="期限日時"
+          aria-label={t(locale, 'sheets.dueDateTime')}
         />
+      </div>
+      <div className="il-field">
+        <label>{t(locale, 'sheets.memo')}</label>
+        <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => update(setMemo)(event.target.value)} aria-label={t(locale, 'sheets.memo')} />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

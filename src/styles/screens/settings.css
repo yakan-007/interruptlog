@@ -62,6 +62,18 @@
   color: var(--ink-4);
 }
 
+.il-settings-select {
+  width: 132px;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
 .il-setbutton {
   width: 100%;
   border: none;

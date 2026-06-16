@@ -1,5 +1,6 @@
 import Icons from '../../icons';
-import { fmtDuration, fmtDurationMin, fmtRel } from '../../helpers';
+import { fmtDuration, fmtDurationMin, fmtRel } from '../../lib/formatters';
+import { categoryLabel, t } from '../../i18n';
 
 export default function TaskCard({
   task,
@@ -17,6 +18,7 @@ export default function TaskCard({
   onToggle,
   onRestart,
   completedNote,
+  locale = 'ja-JP',
   floating = false,
 }) {
   const taskAccent = category?.color ?? 'var(--accent)';
@@ -28,14 +30,14 @@ export default function TaskCard({
   const overdue = hasDueAt && dueAt < now;
   const actualSummary = plannedMs > 0 ? (
     <span className="meta-stat">
-      <span className="muted">実績</span>
+      <span className="muted">{t(locale, 'log.actual')}</span>
       <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
-      <span className="muted">/ 予定</span>
+      <span className="muted">/ {t(locale, 'log.planned')}</span>
       <span className="il-mono">{fmtDurationMin(plannedMs / 60000)}</span>
     </span>
   ) : (
     <span className="meta-stat">
-      <span className="muted">累計</span>
+      <span className="muted">{t(locale, 'log.total')}</span>
       <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
     </span>
   );
@@ -55,18 +57,18 @@ export default function TaskCard({
         <div className="task-main">
           <div className="task-head">
             <div className="title">{task.name}</div>
-            <span className="il-chip task-cat-label">{category?.name}</span>
+            <span className="il-chip task-cat-label">{categoryLabel(locale, category)}</span>
           </div>
           <div className="il-meta">
-            <span className="il-chip sm subtle">{completedNote || (task.completedAt ? `完了 ${fmtRel(task.completedAt)}` : '完了')}</span>
+            <span className="il-chip sm subtle">{completedNote || (task.completedAt ? `${t(locale, 'log.completed')} ${fmtRel(task.completedAt, locale, now)}` : t(locale, 'log.completed'))}</span>
             <span className="meta-stat">
-              <span className="muted">累計</span>
+              <span className="muted">{t(locale, 'log.total')}</span>
               <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
             </span>
           </div>
         </div>
         {onRestart && (
-          <button className="il-task-action start icon-only" onClick={onRestart} aria-label="再開">
+          <button className="il-task-action start icon-only" onClick={onRestart} aria-label={t(locale, 'log.restart')}>
             {Icons.play(13)}
           </button>
         )}
@@ -98,26 +100,26 @@ export default function TaskCard({
           <div className="title">{task.name}</div>
         </div>
         <div className="il-meta">
-          <span className="il-chip task-cat-label" style={{ color: category?.color }}>{category?.name}</span>
+          <span className="il-chip task-cat-label" style={{ color: category?.color }}>{categoryLabel(locale, category)}</span>
           {actualSummary}
           {running && (
-            <span className="il-mono subtle">{fmtDuration(now - runningStart, { showSec: true })}</span>
+            <span className="il-mono subtle">{fmtDuration(now - runningStart, { showSec: true, locale })}</span>
           )}
           {hasDueAt && (
             <>
               <span className="sep">•</span>
-              <span className={overdue ? 'danger strong' : 'subtle'}>{fmtRel(dueAt)}</span>
+              <span className={overdue ? 'danger strong' : 'subtle'}>{fmtRel(dueAt, locale, now)}</span>
             </>
           )}
         </div>
       </div>
       <div className="task-actions">
         {running ? (
-          <button className="il-task-action running icon-only" onClick={onStop} aria-label="停止">
+          <button className="il-task-action running icon-only" onClick={onStop} aria-label={t(locale, 'log.stop')}>
             {Icons.stop(13)}
           </button>
         ) : (
-          <button className="il-task-action start icon-only" onClick={onStart} aria-label="開始">
+          <button className="il-task-action start icon-only" onClick={onStart} aria-label={t(locale, 'log.start')}>
             {Icons.play(13)}
           </button>
         )}

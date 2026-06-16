@@ -29,15 +29,18 @@ npm install
 npm run dev
 npm run lint
 npm test
+npm run check
 npm run build
 npm run preview
 ```
 
 ## 公開対象
 
-- 日本語 UI 前提の Web v1
+- 個人運用に絞った Web v1
+- 日本語 UI 前提
+- 英語 UI は将来対応に向けた準備中
 - 静的ホスティング前提
-- PWA、ログイン、同期、ネイティブ版、ネイティブ固有の改善は範囲外
+- PWA、ログイン、同期、共同利用、ネイティブ版、ネイティブ固有の改善は範囲外
 
 ## ビルド成果物
 

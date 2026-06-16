@@ -1,24 +1,15 @@
 import { useMemo } from 'react';
+import { FEATURES } from '../features';
+import { formatDate, t, translateMessage, tx } from '../i18n';
 
-const DATE_LABEL_OPTIONS = { month: 'long', day: 'numeric', weekday: 'short' };
 const PAUSED_START_MESSAGE = '先に現在の割り込みや休憩を処理してください';
 
 export function buildViewState(app) {
   return {
+    ...app.state,
     ready: app.ready,
     lastError: app.lastError,
-    todayLabel: new Date().toLocaleDateString('ja-JP', DATE_LABEL_OPTIONS),
-    interruptCats: app.state.interruptCats,
-    tasks: app.state.tasks,
-    taskTemplates: app.state.taskTemplates,
-    events: app.state.events,
-    categories: app.state.categories,
-    whoChips: app.state.whoChips,
-    subjectChips: app.state.subjectChips,
-    teamWorkspace: app.state.teamWorkspace,
-    teamArchive: app.state.teamArchive,
-    preferences: app.state.preferences,
-    running: app.state.running,
+    todayLabel: formatDate(Date.now(), app.state.preferences.locale, { month: 'long', weekday: 'short' }),
     activeTasks: app.derived.activeTasks,
     completedTasks: app.derived.completedTasks,
     runningTaskMeta: app.derived.runningTaskMeta,
@@ -29,7 +20,15 @@ export function buildViewState(app) {
   };
 }
 
-export function createViewActions({ app, showToast, openSheet, closeSheet }) {
+function createViewActions({ app, showToast, openSheet, closeSheet }) {
+  const locale = app.state.preferences.locale;
+  const toast = (message) => showToast(translateMessage(locale, message));
+  const call = (action) => (...args) => action(...args);
+  const callAndClose = (action) => (...args) => {
+    const result = action(...args);
+    closeSheet();
+    return result;
+  };
   return {
     openSheet,
     closeSheet,
@@ -37,32 +36,18 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
       app.actions.startTask(id);
       return { ok: true, error: null };
     },
-    stopTask(complete) {
-      app.actions.stopTask(complete);
-      closeSheet();
-    },
-    completeTask(id) {
-      app.actions.completeTask(id);
-    },
-    restoreTask(id) {
-      app.actions.restoreTask(id);
-    },
+    stopTask: callAndClose(app.actions.stopTask),
+    completeTask: call(app.actions.completeTask),
+    restoreTask: call(app.actions.restoreTask),
     restoreTaskAndStart(id) {
       const result = app.actions.restoreTaskAndStart(id);
-      if (!result.ok && result.error) showToast(result.error);
+      if (!result.ok && result.error) toast(result.error);
       return result;
     },
     uncompleteTask: app.actions.uncompleteTask,
-    deleteTask(id) {
-      app.actions.deleteTask(id);
-      closeSheet();
-    },
-    reorderTask(id, direction) {
-      app.actions.reorderTask(id, direction);
-    },
-    moveTaskToIndex(id, targetIndex) {
-      app.actions.moveTaskToIndex(id, targetIndex);
-    },
+    deleteTask: callAndClose(app.actions.deleteTask),
+    reorderTask: call(app.actions.reorderTask),
+    moveTaskToIndex: call(app.actions.moveTaskToIndex),
     saveTask(data) {
       const result = app.actions.saveTask(data);
       if (result.ok) closeSheet();
@@ -74,32 +59,18 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
     },
     createTaskAndStart(data) {
       if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
-        showToast(PAUSED_START_MESSAGE);
+        toast(PAUSED_START_MESSAGE);
         return { ok: false, error: PAUSED_START_MESSAGE };
       }
       const result = app.actions.createTaskAndStart(data);
-      if (!result.ok && result.error) showToast(result.error);
+      if (!result.ok && result.error) toast(result.error);
       return result;
     },
-    saveInterrupt(data) {
-      app.actions.saveInterrupt(data);
-      closeSheet();
-    },
-    cancelInterrupt() {
-      app.actions.cancelInterrupt();
-      closeSheet();
-    },
-    stopInterrupt(resume) {
-      app.actions.stopInterrupt(resume);
-      closeSheet();
-    },
-    saveBreak(data) {
-      app.actions.saveBreak(data);
-      closeSheet();
-    },
-    setBreakTarget(minutes) {
-      app.actions.setBreakTarget(minutes);
-    },
+    saveInterrupt: callAndClose(app.actions.saveInterrupt),
+    cancelInterrupt: callAndClose(app.actions.cancelInterrupt),
+    stopInterrupt: callAndClose(app.actions.stopInterrupt),
+    saveBreak: callAndClose(app.actions.saveBreak),
+    setBreakTarget: call(app.actions.setBreakTarget),
     previewSaveEvent: app.actions.previewSaveEvent,
     saveEvent: app.actions.saveEvent,
     deleteEvent: app.actions.deleteEvent,
@@ -107,9 +78,9 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
       const result = app.actions.addMissedEvent(event, options);
       if (result.ok) {
         closeSheet();
-        showToast('イベントを追加しました');
+        toast(t(locale, 'toasts.eventAdded'));
       } else {
-        showToast(result.error ?? '入力を確認してください');
+        toast(result.error ?? t(locale, 'errors.checkInput'));
       }
       return result;
     },
@@ -120,30 +91,16 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
     openOverlapRepair() {
       return app.actions.openOverlapRepair();
     },
-    deferOverlapRepair() {
-      app.actions.deferOverlapRepair();
-    },
-    saveCategory(category) {
-      app.actions.saveCategory(category);
-    },
-    deleteCategory(id) {
-      app.actions.deleteCategory(id);
-    },
-    saveInterruptCategory(category) {
-      app.actions.saveInterruptCategory(category);
-    },
-    deleteInterruptCategory(id) {
-      app.actions.deleteInterruptCategory(id);
-    },
-    saveChips(kind, chips) {
-      app.actions.saveChips(kind, chips);
-    },
+    deferOverlapRepair: call(app.actions.deferOverlapRepair),
+    saveCategory: call(app.actions.saveCategory),
+    deleteCategory: call(app.actions.deleteCategory),
+    saveInterruptCategory: call(app.actions.saveInterruptCategory),
+    deleteInterruptCategory: call(app.actions.deleteInterruptCategory),
+    saveChips: call(app.actions.saveChips),
     saveTaskTemplate(template) {
       return app.actions.saveTaskTemplate(template);
     },
-    deleteTaskTemplate(id) {
-      app.actions.deleteTaskTemplate(id);
-    },
+    deleteTaskTemplate: call(app.actions.deleteTaskTemplate),
     async exportJson() {
       try {
         await shareOrDownloadText(
@@ -151,9 +108,9 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
           app.actions.exportJson(),
           'application/json'
         );
-        showToast('JSONを書き出しました');
+        toast(t(locale, 'toasts.jsonExported'));
       } catch {
-        showToast('書き出しをキャンセルしました');
+        toast(t(locale, 'toasts.exportCanceled'));
       }
     },
     async exportTeamSettings() {
@@ -163,15 +120,15 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
           app.actions.exportTeamSettings(),
           'application/json'
         );
-        showToast('チーム設定を書き出しました');
+        toast(t(locale, 'toasts.teamSettingsExported'));
       } catch {
-        showToast('書き出しをキャンセルしました');
+        toast(t(locale, 'toasts.exportCanceled'));
       }
     },
     importTeamSettings(payload) {
       const result = app.actions.importTeamSettings(payload);
-      showToast(result.ok
-        ? `チーム設定を読み込みました (${result.addedCategories}件追加)`
+      toast(result.ok
+        ? `${t(locale, 'settings.importTeamSettings')} (${result.addedCategories})`
         : result.error);
       return result;
     },
@@ -182,23 +139,28 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
           app.actions.exportTaskPack(),
           'application/json'
         );
-        showToast('タスクパックを書き出しました');
+        toast(t(locale, 'toasts.taskPackExported'));
       } catch {
-        showToast('書き出しをキャンセルしました');
+        toast(t(locale, 'toasts.exportCanceled'));
       }
     },
     importTaskPack(payload) {
       const result = app.actions.importTaskPack(payload);
-      showToast(result.ok
-        ? `タスクパックを読み込みました (${result.addedTasks}件追加)`
+      toast(result.ok
+        ? `${t(locale, 'team.distribution')} (${result.addedTasks})`
         : result.error);
       return result;
     },
     addRowsToTeamArchive(rows) {
       const result = app.actions.addRowsToTeamArchive(rows);
-      showToast(result.ok
-        ? `アーカイブに保存しました (${result.addedEntries}行)`
+      toast(result.ok
+        ? tx(locale, 'toasts.archiveSaved', result.addedEntries)
         : result.error);
+      return result;
+    },
+    addTeamDemoArchive() {
+      const result = app.actions.addTeamDemoArchive();
+      toast(result.ok ? t(locale, 'toasts.demoAdded') : result.error);
       return result;
     },
     async exportTeamArchive() {
@@ -208,29 +170,29 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
           app.actions.exportTeamArchive(),
           'application/json'
         );
-        showToast('チームアーカイブを書き出しました');
+        toast(t(locale, 'toasts.teamArchiveExported'));
       } catch {
-        showToast('書き出しをキャンセルしました');
+        toast(t(locale, 'toasts.exportCanceled'));
       }
     },
     importTeamArchive(payload) {
       const result = app.actions.importTeamArchive(payload);
-      showToast(result.ok
-        ? `チームアーカイブを読み込みました (${result.addedEntries}行追加)`
+      toast(result.ok
+        ? `${t(locale, 'settings.importTeamArchive')} (${result.addedEntries})`
         : result.error);
       return result;
     },
     importJson(payload) {
       const result = app.actions.importJson(payload);
-      showToast(result.ok ? 'JSONを読み込みました' : result.error);
+      toast(result.ok ? t(locale, 'toasts.jsonImported') : result.error);
       return result;
     },
     finishOnboarding() {
       app.actions.finishOnboarding();
     },
     async exportReportCsv(range) {
-      if (app.state.preferences.teamModeEnabled && !app.state.preferences.memberName.trim()) {
-        showToast('設定で表示名を入力してください');
+      if (FEATURES.teamUi && app.state.preferences.teamModeEnabled && !app.state.preferences.memberName.trim()) {
+        toast(t(locale, 'toasts.memberNameRequired'));
         return;
       }
       try {
@@ -239,9 +201,9 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
           app.actions.exportReportCsv(range),
           'text/csv;charset=utf-8'
         );
-        showToast('CSVを書き出しました');
+        toast(t(locale, 'toasts.csvExported'));
       } catch {
-        showToast('書き出しをキャンセルしました');
+        toast(t(locale, 'toasts.exportCanceled'));
       }
     },
     resetAll() {
@@ -250,11 +212,16 @@ export function createViewActions({ app, showToast, openSheet, closeSheet }) {
     setDark: app.actions.setDark,
     setAccent: app.actions.setAccent,
     setMemberName: app.actions.setMemberName,
+    setLocale: app.actions.setLocale,
     setTeamModeEnabled: app.actions.setTeamModeEnabled,
+    setTeamLightsEnabled: app.actions.setTeamLightsEnabled,
     setTopAdd: app.actions.setTopAdd,
     setSortDue: app.actions.setSortDue,
-    setShowTodayStrip: app.actions.setShowTodayStrip,
     setHistoryView: app.actions.setHistoryView,
+    updateTeamWorkspace: app.actions.updateTeamWorkspace,
+    addInterruptionQueueItem: app.actions.addInterruptionQueueItem,
+    updateInterruptionQueueItem: app.actions.updateInterruptionQueueItem,
+    deleteInterruptionQueueItem: app.actions.deleteInterruptionQueueItem,
   };
 }
 
@@ -266,7 +233,7 @@ export function useViewActions(args) {
   );
 }
 
-export async function shareOrDownloadText(filename, content, type) {
+async function shareOrDownloadText(filename, content, type) {
   const file = new File([content], filename, { type });
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({ files: [file], title: filename });
