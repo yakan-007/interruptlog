@@ -25,6 +25,9 @@ export {
 export {
   deleteCategoryInState,
   deleteInterruptCategoryInState,
+  moveCategoryToIndexInState,
+  moveChipToIndexInState,
+  moveInterruptCategoryToIndexInState,
   saveCategoryInState,
   saveChipsInState,
   saveInterruptCategoryInState,

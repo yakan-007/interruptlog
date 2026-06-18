@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Icons from '../../icons';
 import SheetShell from '../../components/sheets/SheetShell';
 import { CATEGORY_COLORS } from './constants';
 import { t, translateMessage } from '../../i18n';
+import { useListReorderDrag } from '../../lib/useListReorderDrag';
 
 export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
@@ -74,7 +75,14 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
 export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
   const [items, setItems] = useState(chips);
   const [draft, setDraft] = useState('');
+  const [reorderMode, setReorderMode] = useState(false);
   const label = kind === 'subject' ? t(locale, 'settings.subjectChips') : t(locale, 'settings.whoChips');
+  const moveChip = useCallback((chip, targetIndex) => {
+    setItems((current) => moveItemToIndex(current, chip, targetIndex));
+  }, []);
+  const chipReorder = useListReorderDrag({
+    onMove: moveChip,
+  });
   const placeholder = kind === 'subject'
     ? (locale === 'ja-JP' ? '例: 見積確認\n例: 定例会\n改行やカンマでまとめて追加できます' : 'Example: Estimate review\nExample: Weekly sync\nAdd multiple items with line breaks or commas')
     : (locale === 'ja-JP' ? '例: 田中\n例: 佐藤\n改行やカンマでまとめて追加できます' : 'Example: Alex\nExample: Morgan\nAdd multiple items with line breaks or commas');
@@ -112,16 +120,38 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
         <button className="btn secondary fill" onClick={addDraft} disabled={!draft.trim()}>{Icons.plus(14)} {locale === 'ja-JP' ? '候補を追加' : 'Add candidates'}</button>
       </div>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? `登録済み ${items.length}件` : `Saved ${items.length}`}</label>
+        <div className="il-sheet-listhead">
+          <label>{locale === 'ja-JP' ? `登録済み ${items.length}件` : `Saved ${items.length}`}</label>
+          {items.length > 1 && (
+            <button
+              type="button"
+              className={'il-sheet-reorder-toggle' + (reorderMode ? ' active' : '')}
+              onClick={() => setReorderMode((value) => !value)}
+            >
+              {reorderMode ? t(locale, 'settings.reorderDone') : t(locale, 'settings.reorder')}
+            </button>
+          )}
+        </div>
         {items.length === 0 ? (
           <div className="il-sheet-emptyhint">{locale === 'ja-JP' ? 'まだ登録はありません。' : 'Nothing saved yet.'}</div>
         ) : (
-          <div className="il-sheet-chiplist">
-            {items.map((chip) => (
-              <button key={chip} className="il-sheet-chipbutton" onClick={() => removeItem(chip)}>
+          <div className={'il-sheet-chiplist reorder' + (reorderMode ? ' active' : '')}>
+            {items.map((chip, index) => (
+              <div
+                key={chip}
+                className={getChipItemClass(chipReorder, chip, index, items.length, reorderMode)}
+                {...(reorderMode ? chipReorder.getRowProps(chip, index) : undefined)}
+              >
+                {reorderMode && (
+                  <button className="il-reorder-handle" aria-label={t(locale, 'settings.reorder')} {...chipReorder.getHandleProps(chip, index)}>
+                    {Icons.grip(14)}
+                  </button>
+                )}
                 <span>{chip}</span>
-                <span className="x" aria-hidden="true">{Icons.close(12)}</span>
-              </button>
+                <button className="il-sheet-chipremove" onClick={() => removeItem(chip)} aria-label={locale === 'ja-JP' ? `${chip}を削除` : `Remove ${chip}`} disabled={reorderMode}>
+                  {Icons.close(12)}
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -177,10 +207,33 @@ export function ConfirmResetSheet({ locale = 'ja-JP', onClose, onConfirm }) {
   );
 }
 
+function getChipItemClass(chipReorder, chip, index, count, reorderMode) {
+  const dropPosition = reorderMode ? chipReorder.getDropPosition(chip, index, count) : null;
+  return [
+    'il-sheet-chipitem',
+    reorderMode ? 'is-reordering' : '',
+    chipReorder.drag?.id === chip ? 'dragging' : '',
+    dropPosition ? `drop-${dropPosition}` : '',
+  ].filter(Boolean).join(' ');
+}
+
 function splitChipDraft(value) {
   return uniqueChipTexts(String(value ?? '').split(/[\n,、]/));
 }
 
 function uniqueChipTexts(values) {
   return [...new Set(values.map((value) => String(value ?? '').trim()).filter(Boolean))];
+}
+
+function moveItemToIndex(items, item, targetIndex) {
+  const from = items.indexOf(item);
+  if (from < 0 || items.length < 2) return items;
+  const withoutItem = items.filter((_, index) => index !== from);
+  const safeIndex = Math.max(0, Math.min(withoutItem.length, Number(targetIndex) || 0));
+  const next = [
+    ...withoutItem.slice(0, safeIndex),
+    item,
+    ...withoutItem.slice(safeIndex),
+  ];
+  return next.every((nextItem, index) => nextItem === items[index]) ? items : next;
 }

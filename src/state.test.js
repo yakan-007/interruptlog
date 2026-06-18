@@ -24,6 +24,9 @@ import {
   deleteInterruptCategoryInState,
   deleteTaskInState,
   findOverlappingEvents,
+  moveCategoryToIndexInState,
+  moveChipToIndexInState,
+  moveInterruptCategoryToIndexInState,
   moveTaskToIndexInState,
   normalizeState,
   parseBackup,
@@ -404,6 +407,37 @@ describe('state model', () => {
     expect(selectActiveTasks(moved).map((task) => task.id)).toEqual(['b', 'c', 'a']);
   });
 
+  it('moves personal categories and chips without changing referenced ids', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [{
+        id: 't1',
+        name: 'カテゴリつき',
+        isCompleted: false,
+        order: 0,
+        categoryId: 'cat-dev',
+        planning: { plannedDurationMinutes: 0, dueAt: null },
+        createdAt: 0,
+        completedAt: null,
+      }],
+      events: [{ id: 'e1', type: 'interrupt', label: '相談', categoryId: 'int-chat', who: '佐藤', start: 1000, end: 2000 }],
+      whoChips: ['佐藤', '田中', '鈴木'],
+      subjectChips: ['相談', '確認', '会議'],
+    };
+
+    const categoriesMoved = moveCategoryToIndexInState(state, 'cat-dev', 2);
+    const interruptsMoved = moveInterruptCategoryToIndexInState(categoriesMoved, 'int-chat', 3);
+    const whoMoved = moveChipToIndexInState(interruptsMoved, 'who', '佐藤', 2);
+    const subjectMoved = moveChipToIndexInState(whoMoved, 'subject', '相談', 2);
+
+    expect(categoriesMoved.categories.map((category) => category.id).slice(0, 3)).toEqual(['cat-doc', 'cat-mtg', 'cat-dev']);
+    expect(interruptsMoved.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-q', 'int-other', 'int-chat']);
+    expect(whoMoved.whoChips).toEqual(['田中', '鈴木', '佐藤']);
+    expect(subjectMoved.subjectChips).toEqual(['確認', '会議', '相談']);
+    expect(subjectMoved.tasks[0].categoryId).toBe('cat-dev');
+    expect(subjectMoved.events[0].categoryId).toBe('int-chat');
+  });
+
   it('creates unknown gaps only for actual empty time after normalization', () => {
     const overlappingState = {
       ...createEmptyState(),
@@ -486,6 +520,29 @@ describe('state model', () => {
     expect(row[7]).toBe('仕様確認');
     expect(row[13]).toBeTruthy();
     expect(row.slice(14)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+  });
+
+  it('protects CSV cells that could be interpreted as spreadsheet formulas', () => {
+    const state = {
+      ...createEmptyState(),
+      events: [{
+        id: 'int-1',
+        type: 'interrupt',
+        label: '=IMPORTXML("https://example.com")',
+        who: '+田中',
+        urgency: 'med',
+        memo: '@確認',
+        start: at(11, 10),
+        end: at(11, 10, 30),
+      }],
+    };
+
+    const csv = buildReportCsv(state, 'day', at(11, 18));
+    const row = csv.split('\n')[1].split(',');
+
+    expect(row[7]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
+    expect(row[14]).toBe("'+田中");
+    expect(row[16]).toBe("'@確認");
   });
 
   it('parses and aggregates multiple team report CSV files', () => {

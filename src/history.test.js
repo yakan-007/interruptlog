@@ -64,6 +64,36 @@ describe('history helpers', () => {
     expect(timeline.items.find((item) => item.id === 'a')?.laneCount).toBe(2);
   });
 
+  it('builds touchable gaps only for empty recorded time', () => {
+    const selectedDate = at(24, 0);
+    const items = getHistoryDayItems([
+      { id: 'a', type: 'task', label: '朝会', start: at(24, 9), end: at(24, 10) },
+      { id: 'b', type: 'interrupt', label: '電話', start: at(24, 9, 30), end: at(24, 10, 30) },
+      { id: 'c', type: 'task', label: '実装', start: at(24, 11), end: at(24, 12) },
+    ], selectedDate, at(25, 9));
+    const timeline = buildHistoryTimelineModel(items, selectedDate, at(25, 9));
+
+    expect(timeline.gaps.map((gap) => [gap.start, gap.end])).toEqual([
+      [at(24, 0), at(24, 9)],
+      [at(24, 10, 30), at(24, 11)],
+      [at(24, 12), at(25, 0)],
+    ]);
+    expect(timeline.gaps.every((gap) => gap.heightPx >= 24)).toBe(true);
+  });
+
+  it('does not create a history gap in future time today', () => {
+    const selectedDate = at(24, 0);
+    const items = getHistoryDayItems([
+      { id: 'a', type: 'task', label: '朝会', start: at(24, 9), end: at(24, 10) },
+    ], selectedDate, at(24, 12));
+    const timeline = buildHistoryTimelineModel(items, selectedDate, at(24, 12));
+
+    expect(timeline.gaps.map((gap) => [gap.start, gap.end])).toEqual([
+      [at(24, 0), at(24, 9)],
+      [at(24, 10), at(24, 12)],
+    ]);
+  });
+
   it('keeps time positions strictly monotonic across an hour boundary', () => {
     const selectedDate = at(24, 0);
     const items = getHistoryDayItems([

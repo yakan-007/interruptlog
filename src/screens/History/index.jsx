@@ -89,7 +89,7 @@ export default function HistoryScreen({ state, actions }) {
               if (timestamp != null) setSelectedDate(timestamp);
             }}
             onSelectView={(value) => actions.setHistoryView(value)}
-            onAddMissed={() => actions.openSheet('addMissed')}
+            onAddMissed={() => actions.openSheet('addMissed', createDefaultMissedDraft(selectedDate, now))}
             locale={state.preferences.locale}
           />
         </div>
@@ -123,7 +123,7 @@ export default function HistoryScreen({ state, actions }) {
           <div className="il-empty">
             <div className="t">{t(state.preferences.locale, 'history.emptyTitle')}</div>
             <div className="s">{t(state.preferences.locale, 'history.emptyCopy')}</div>
-            <button className="il-history-missedbtn il-empty-action" onClick={() => actions.openSheet('addMissed')}>
+            <button className="il-history-missedbtn il-empty-action" onClick={() => actions.openSheet('addMissed', createDefaultMissedDraft(selectedDate, now))}>
               {Icons.plus(14)}
               <span>{t(state.preferences.locale, 'history.addMissed')}</span>
             </button>
@@ -150,6 +150,7 @@ export default function HistoryScreen({ state, actions }) {
             state={state}
             locale={state.preferences.locale}
             onEdit={(event) => actions.openSheet('editEvent', toEditableEvent(event, now))}
+            onGapClick={(gap) => actions.openSheet('addMissed', createMissedDraftFromRange(gap.start, gap.end))}
           />
         )}
 
@@ -157,6 +158,42 @@ export default function HistoryScreen({ state, actions }) {
       </div>
     </div>
   );
+}
+
+const DAY_MS = 86400000;
+const HOUR_MS = 3600000;
+const MINUTE_MS = 60000;
+
+function createDefaultMissedDraft(selectedDate, now) {
+  const dayStart = startOfHistoryDay(selectedDate);
+  const dayEnd = dayStart + DAY_MS;
+  const todaySelected = startOfHistoryDay(now) === dayStart;
+  const latestStart = dayEnd - 2 * MINUTE_MS;
+  const start = Math.min(todaySelected ? now : dayStart + 9 * HOUR_MS, latestStart);
+  const end = Math.min(start + 30 * MINUTE_MS, dayEnd);
+  return createMissedDraftFromRange(start, end);
+}
+
+function createMissedDraftFromRange(start, end) {
+  const dayStart = startOfHistoryDay(start);
+  const dayEnd = dayStart + DAY_MS;
+  const safeStart = Math.min(Math.max(start, dayStart), dayEnd - 2 * MINUTE_MS);
+  const safeEnd = Math.min(Math.max(end, safeStart + MINUTE_MS), dayEnd - MINUTE_MS);
+  return {
+    dayStart,
+    startH: formatHour(safeStart),
+    startM: formatMinute(safeStart),
+    endH: formatHour(safeEnd),
+    endM: formatMinute(safeEnd),
+  };
+}
+
+function formatHour(timestamp) {
+  return String(new Date(timestamp).getHours()).padStart(2, '0');
+}
+
+function formatMinute(timestamp) {
+  return String(new Date(timestamp).getMinutes()).padStart(2, '0');
 }
 
 function toEditableEvent(event, now) {

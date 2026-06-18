@@ -12,7 +12,8 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? state.interruptCats[0]?.id ?? '');
   const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
-  const [initial] = useState(() => new Date());
+  const [initial] = useState(() => new Date(initialDraft?.dayStart ?? Date.now()));
+  const [dayStart] = useState(() => startOfDay(initialDraft?.dayStart ?? Date.now()));
   const [startH, setStartH] = useState(initialDraft?.startH ?? String(initial.getHours()).padStart(2, '0'));
   const [startM, setStartM] = useState(initialDraft?.startM ?? String(initial.getMinutes()).padStart(2, '0'));
   const [endH, setEndH] = useState(initialDraft?.endH ?? String(initial.getHours()).padStart(2, '0'));
@@ -21,8 +22,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const locale = state.preferences.locale;
 
   const handleAdd = () => {
-    const base = new Date();
-    base.setHours(0, 0, 0, 0);
+    const base = new Date(dayStart);
     const start = new Date(base);
     const end = new Date(base);
     start.setHours(Number(startH), Number(startM), 0, 0);
@@ -53,7 +53,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM },
+        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
         confirmLabel: t(locale, 'sheets.add'),
         successMessage: t(locale, 'toasts.eventAdded'),
       });
@@ -183,4 +183,10 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );
+}
+
+function startOfDay(timestamp) {
+  const date = new Date(timestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
 }

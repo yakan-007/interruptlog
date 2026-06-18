@@ -10,23 +10,60 @@ export function ToggleSetting({ title, note, value, onToggle, ariaLabel }) {
   );
 }
 
-export function CategoryRow({ category, locale, onClick }) {
-  return (
-    <button className="il-setrow il-setbutton" onClick={onClick}>
+export function CategoryRow({ category, locale, onClick, rowProps, dragHandleProps, dragging = false, dropPosition = null, reorderMode = false }) {
+  const content = (
+    <>
       <span className="il-settings-catdot" style={{ background: category.color }} />
       <span className="tg"><span className="t">{categoryLabel(locale, category)}</span></span>
-      {Icons.chevR(14)}
-    </button>
+    </>
+  );
+  return (
+    <div className={getReorderRowClass(dragging, dropPosition, reorderMode)} {...rowProps}>
+      {reorderMode && (
+        <button className="il-reorder-handle" aria-label={t(locale, 'settings.reorder')} {...dragHandleProps}>
+          {Icons.grip(15)}
+        </button>
+      )}
+      {reorderMode ? (
+        <div className="il-setrow-main il-setrow-main-static">{content}</div>
+      ) : (
+        <button className="il-setbutton il-setrow-main" onClick={onClick}>
+          {content}
+          {Icons.chevR(14)}
+        </button>
+      )}
+    </div>
   );
 }
 
-export function InterruptCategoryRow({ category, locale, onClick }) {
+export function InterruptCategoryRow({ category, locale, onClick, rowProps, dragHandleProps, dragging = false, dropPosition = null, reorderMode = false }) {
+  const content = <span className="tg"><span className="t">{interruptCategoryLabel(locale, category)}</span></span>;
   return (
-    <button className="il-setrow il-setbutton" onClick={onClick}>
-      <span className="tg"><span className="t">{interruptCategoryLabel(locale, category)}</span></span>
-      {Icons.chevR(14)}
-    </button>
+    <div className={getReorderRowClass(dragging, dropPosition, reorderMode)} {...rowProps}>
+      {reorderMode && (
+        <button className="il-reorder-handle" aria-label={t(locale, 'settings.reorder')} {...dragHandleProps}>
+          {Icons.grip(15)}
+        </button>
+      )}
+      {reorderMode ? (
+        <div className="il-setrow-main il-setrow-main-static">{content}</div>
+      ) : (
+        <button className="il-setbutton il-setrow-main" onClick={onClick}>
+          {content}
+          {Icons.chevR(14)}
+        </button>
+      )}
+    </div>
   );
+}
+
+function getReorderRowClass(dragging, dropPosition, reorderMode) {
+  return [
+    'il-setrow il-settings-reorderrow',
+    reorderMode ? 'is-reordering' : '',
+    dragging ? 'dragging' : '',
+    dropPosition ? `drop-${dropPosition}` : '',
+  ].filter(Boolean).join(' ');
 }
 
 export function AddRowButton({ label, onClick }) {

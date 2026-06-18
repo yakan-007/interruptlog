@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icons from '../../icons';
 import { FEATURES } from '../../features';
 import { SUPPORTED_LOCALES, t, tx } from '../../i18n';
+import { useListReorderDrag } from '../../lib/useListReorderDrag';
 import SettingRow from './SettingRow';
 import { ACCENTS } from './constants';
 import {
@@ -25,8 +26,17 @@ import {
 
 export default function SettingsScreen({ state, actions }) {
   const [panel, setPanel] = useState(null);
+  const [reorderMode, setReorderMode] = useState(null);
   const teamModeEnabled = FEATURES.teamUi && state.preferences.teamModeEnabled;
   const locale = state.preferences.locale;
+  const categoryReordering = reorderMode === 'categories';
+  const interruptCategoryReordering = reorderMode === 'interruptCategories';
+  const categoryReorder = useListReorderDrag({
+    onMove: actions.moveCategoryToIndex,
+  });
+  const interruptCategoryReorder = useListReorderDrag({
+    onMove: actions.moveInterruptCategoryToIndex,
+  });
 
   return (
     <div className="il-screen il-fade">
@@ -72,20 +82,52 @@ export default function SettingsScreen({ state, actions }) {
           <ToggleSetting title={t(locale, 'settings.sortDue')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
         </div>
 
-        <div className="il-section-h"><span>{t(locale, 'settings.categories')}</span><span className="count">{state.categories.length}</span></div>
+        <SettingsSectionHeader
+          title={t(locale, 'settings.categories')}
+          count={state.categories.length}
+          locale={locale}
+          reorderActive={categoryReordering}
+          onToggleReorder={() => setReorderMode(categoryReordering ? null : 'categories')}
+        />
         <div className="il-settings-group">
-          {state.categories.map((category) => (
-            <CategoryRow key={category.id} category={category} locale={locale} onClick={() => setPanel({ type: 'category', category })} />
+          {state.categories.map((category, index) => (
+            <CategoryRow
+              key={category.id}
+              category={category}
+              locale={locale}
+              onClick={() => setPanel({ type: 'category', category })}
+              rowProps={categoryReordering ? categoryReorder.getRowProps(category.id, index) : undefined}
+              dragHandleProps={categoryReordering ? categoryReorder.getHandleProps(category.id, index) : undefined}
+              dragging={categoryReorder.drag?.id === category.id}
+              dropPosition={categoryReordering ? categoryReorder.getDropPosition(category.id, index, state.categories.length) : null}
+              reorderMode={categoryReordering}
+            />
           ))}
-          <AddRowButton label={t(locale, 'settings.addCategory')} onClick={() => setPanel({ type: 'category' })} />
+          {!categoryReordering && <AddRowButton label={t(locale, 'settings.addCategory')} onClick={() => setPanel({ type: 'category' })} />}
         </div>
 
-        <div className="il-section-h"><span>{t(locale, 'settings.interruptCategories')}</span><span className="count">{state.interruptCats.length}</span></div>
+        <SettingsSectionHeader
+          title={t(locale, 'settings.interruptCategories')}
+          count={state.interruptCats.length}
+          locale={locale}
+          reorderActive={interruptCategoryReordering}
+          onToggleReorder={() => setReorderMode(interruptCategoryReordering ? null : 'interruptCategories')}
+        />
         <div className="il-settings-group">
-          {state.interruptCats.map((category) => (
-            <InterruptCategoryRow key={category.id} category={category} locale={locale} onClick={() => setPanel({ type: 'interruptCategory', category })} />
+          {state.interruptCats.map((category, index) => (
+            <InterruptCategoryRow
+              key={category.id}
+              category={category}
+              locale={locale}
+              onClick={() => setPanel({ type: 'interruptCategory', category })}
+              rowProps={interruptCategoryReordering ? interruptCategoryReorder.getRowProps(category.id, index) : undefined}
+              dragHandleProps={interruptCategoryReordering ? interruptCategoryReorder.getHandleProps(category.id, index) : undefined}
+              dragging={interruptCategoryReorder.drag?.id === category.id}
+              dropPosition={interruptCategoryReordering ? interruptCategoryReorder.getDropPosition(category.id, index, state.interruptCats.length) : null}
+              reorderMode={interruptCategoryReordering}
+            />
           ))}
-          <AddRowButton label={t(locale, 'settings.addInterruptCategory')} onClick={() => setPanel({ type: 'interruptCategory' })} />
+          {!interruptCategoryReordering && <AddRowButton label={t(locale, 'settings.addInterruptCategory')} onClick={() => setPanel({ type: 'interruptCategory' })} />}
         </div>
 
         <div className="il-section-h"><span>{t(locale, 'settings.frequentInputs')}</span></div>
@@ -228,6 +270,26 @@ export default function SettingsScreen({ state, actions }) {
           onConfirm={() => { actions.resetAll(); setPanel(null); }}
         />
       )}
+    </div>
+  );
+}
+
+function SettingsSectionHeader({ title, count, locale, reorderActive, onToggleReorder }) {
+  return (
+    <div className="il-section-h il-settings-section-h">
+      <span>{title}</span>
+      <span className="il-settings-section-actions">
+        <span className="count">{count}</span>
+        {count > 1 && (
+          <button
+            type="button"
+            className={'il-settings-reorder-toggle' + (reorderActive ? ' active' : '')}
+            onClick={onToggleReorder}
+          >
+            {reorderActive ? t(locale, 'settings.reorderDone') : t(locale, 'settings.reorder')}
+          </button>
+        )}
+      </span>
     </div>
   );
 }

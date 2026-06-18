@@ -25,6 +25,9 @@ import {
   deleteTaskInState,
   deleteTaskTemplateInState,
   moveTaskToIndexInState,
+  moveCategoryToIndexInState,
+  moveChipToIndexInState,
+  moveInterruptCategoryToIndexInState,
   parseBackup,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
@@ -149,9 +152,12 @@ export function createAppActions({
     },
     saveCategory: mutateWith(saveCategoryInState),
     deleteCategory: mutateWith(deleteCategoryInState),
+    moveCategoryToIndex: mutateWith(moveCategoryToIndexInState),
     saveInterruptCategory: mutateWith(saveInterruptCategoryInState),
     deleteInterruptCategory: mutateWith(deleteInterruptCategoryInState),
+    moveInterruptCategoryToIndex: mutateWith(moveInterruptCategoryToIndexInState),
     saveChips: mutateWith(saveChipsInState),
+    moveChipToIndex: mutateWith(moveChipToIndexInState),
     saveTaskTemplate(template) {
       return applyStateResult(saveTaskTemplateInState(getState(), template));
     },

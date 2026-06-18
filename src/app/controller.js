@@ -143,6 +143,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
         filename: datedFilename(`interruptlog-report-${range}`, 'csv'),
         content: () => app.actions.exportReportCsv(range),
         type: 'text/csv;charset=utf-8',
+        downloadOnly: true,
         successKey: 'toasts.csvExported',
       });
     },
@@ -182,9 +183,12 @@ function createPassthroughActions({ app, closeSheet }) {
     deferOverlapRepair: call(app.actions.deferOverlapRepair),
     saveCategory: call(app.actions.saveCategory),
     deleteCategory: call(app.actions.deleteCategory),
+    moveCategoryToIndex: call(app.actions.moveCategoryToIndex),
     saveInterruptCategory: call(app.actions.saveInterruptCategory),
     deleteInterruptCategory: call(app.actions.deleteInterruptCategory),
+    moveInterruptCategoryToIndex: call(app.actions.moveInterruptCategoryToIndex),
     saveChips: call(app.actions.saveChips),
+    moveChipToIndex: call(app.actions.moveChipToIndex),
     saveTaskTemplate: app.actions.saveTaskTemplate,
     deleteTaskTemplate: call(app.actions.deleteTaskTemplate),
     finishOnboarding: app.actions.finishOnboarding,
@@ -206,12 +210,13 @@ function createPassthroughActions({ app, closeSheet }) {
 }
 
 function createTextExporter({ locale, toast }) {
-  return async ({ filename, content, type, successKey }) => {
+  return async ({ filename, content, type, downloadOnly = false, successKey }) => {
     try {
       await shareOrDownloadText(
         filename,
         typeof content === 'function' ? content() : content,
-        type
+        type,
+        { downloadOnly }
       );
       toast(t(locale, successKey));
     } catch {
@@ -232,9 +237,9 @@ export function useViewActions(args) {
   );
 }
 
-async function shareOrDownloadText(filename, content, type) {
+async function shareOrDownloadText(filename, content, type, options = {}) {
   const file = new File([content], filename, { type });
-  if (navigator.canShare?.({ files: [file] })) {
+  if (!options.downloadOnly && navigator.canShare?.({ files: [file] })) {
     await navigator.share({ files: [file], title: filename });
     return;
   }
@@ -245,5 +250,5 @@ async function shareOrDownloadText(filename, content, type) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
 }

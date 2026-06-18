@@ -328,6 +328,7 @@ export function buildHistoryTimelineModel(items, selectedDate, now = Date.now(),
   const laneItems = assignHistoryLanes(items);
   const anchors = buildHistoryAnchors(laneItems, selectedDate, now);
   const axis = solveHistoryAxis(anchors, laneItems, options);
+  const gaps = buildHistoryGaps(laneItems, axis, selectedDate, now, options);
 
   const modeledItems = laneItems
     .map((item) => {
@@ -353,8 +354,56 @@ export function buildHistoryTimelineModel(items, selectedDate, now = Date.now(),
 
   return {
     axis,
+    gaps,
     items: modeledItems,
     nowY: axis.nowTs != null ? getHistoryTimePosition(axis, axis.nowTs) : null,
+  };
+}
+
+function buildHistoryGaps(items, axis, selectedDate, now, options) {
+  const { dayStart, dayEnd } = getHistoryDayBounds(selectedDate);
+  const until = isSameHistoryDay(selectedDate, now) ? Math.min(now, dayEnd) : dayEnd;
+  const minGapMs = options.minGapMs ?? 5 * MINUTE_MS;
+  const minGapHeight = options.minGapHeight ?? 24;
+  if (until <= dayStart) return [];
+
+  const intervals = items
+    .map((item) => ({
+      start: Math.max(dayStart, item.clippedStart),
+      end: Math.min(until, item.clippedEnd),
+    }))
+    .filter((item) => item.end > item.start)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const merged = [];
+  for (const interval of intervals) {
+    const last = merged[merged.length - 1];
+    if (!last || interval.start > last.end) merged.push({ ...interval });
+    else last.end = Math.max(last.end, interval.end);
+  }
+
+  const gaps = [];
+  let cursor = dayStart;
+  for (const interval of merged) {
+    if (interval.start - cursor >= minGapMs) gaps.push(createHistoryGap(cursor, interval.start, axis, minGapHeight));
+    cursor = Math.max(cursor, interval.end);
+  }
+  if (until - cursor >= minGapMs) gaps.push(createHistoryGap(cursor, until, axis, minGapHeight));
+  return gaps;
+}
+
+function createHistoryGap(start, end, axis, minHeight) {
+  const startY = getHistoryTimePosition(axis, start);
+  const endY = getHistoryTimePosition(axis, end);
+  const heightPx = Math.max(endY - startY, minHeight);
+  return {
+    id: `gap-${start}-${end}`,
+    start,
+    end,
+    startY,
+    endY,
+    topPx: startY,
+    heightPx,
   };
 }
 

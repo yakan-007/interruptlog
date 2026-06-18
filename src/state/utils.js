@@ -15,6 +15,10 @@ export function startOfDay(ts) {
 }
 
 export function csvCell(value) {
-  const text = String(value ?? '');
+  const text = protectCsvFormula(String(value ?? ''));
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function protectCsvFormula(text) {
+  return /^[=+\-@]/.test(text.trimStart()) ? `'${text}` : text;
 }

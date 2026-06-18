@@ -214,6 +214,38 @@
   box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 15%, transparent);
 }
 
+.il-history-gap {
+  position: absolute;
+  left: 4px;
+  right: 8px;
+  border: 1px dashed color-mix(in oklch, var(--accent) 34%, var(--hair));
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--accent) 7%, transparent);
+  color: color-mix(in oklch, var(--accent) 68%, var(--ink-3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 1;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.il-history-gap:active {
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+}
+
+.il-history-gap .time {
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .il-history-eventcard {
   position: absolute;
   border: 1px solid var(--hair);
@@ -225,6 +257,7 @@
   text-align: left;
   cursor: pointer;
   overflow: hidden;
+  z-index: 3;
 }
 
 .il-history-eventcard .rail {

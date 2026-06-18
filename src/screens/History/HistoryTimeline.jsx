@@ -1,8 +1,8 @@
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
 import { categoryLabel, interruptCategoryLabel, t, typeLabel, urgencyLabel } from '../../i18n';
 
-export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, locale = 'ja-JP', onEdit }) {
-  const { axis, items, nowY } = timeline;
+export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, locale = 'ja-JP', onEdit, onGapClick }) {
+  const { axis, gaps, items, nowY } = timeline;
   const showNowLine = isSameHistoryDay(selectedDate, now);
 
   return (
@@ -20,6 +20,27 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
               <span />
             </div>
           )}
+
+          {gaps.map((gap) => {
+            const timeLabel = formatHistoryTimeRange({
+              clippedStart: gap.start,
+              clippedEnd: gap.end,
+              clippedDurationMs: gap.end - gap.start,
+            });
+            return (
+              <button
+                key={gap.id}
+                type="button"
+                className="il-history-gap"
+                style={{ top: gap.topPx, height: gap.heightPx }}
+                onClick={() => onGapClick(gap)}
+                aria-label={`${t(locale, 'history.addGap')} ${timeLabel}`}
+              >
+                <span className="time il-mono">{timeLabel}</span>
+                <span>{t(locale, 'history.gapLabel')}</span>
+              </button>
+            );
+          })}
 
           {items.map((event) => {
             const category = findEventCategory(event, state);

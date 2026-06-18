@@ -16,6 +16,23 @@ describe('App smoke flow', () => {
       configurable: true,
       value: vi.fn(),
     });
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:interruptlog-export'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    Object.defineProperty(navigator, 'canShare', {
+      configurable: true,
+      value: vi.fn(() => true),
+    });
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback();
       return 0;
@@ -91,6 +108,18 @@ describe('App smoke flow', () => {
     expect(screen.queryByText('チーム')).toBeNull();
     await user.click(screen.getByRole('button', { name: '日報出力' }));
     expect(window.print).toHaveBeenCalledTimes(1);
+    let downloadedAnchor = null;
+    const appendChild = document.body.appendChild.bind(document.body);
+    vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
+      if (node instanceof HTMLAnchorElement) downloadedAnchor = node;
+      return appendChild(node);
+    });
+    await user.click(screen.getByRole('button', { name: 'CSV保存' }));
+    await waitFor(() => {
+      expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    });
+    expect(navigator.share).not.toHaveBeenCalled();
+    expect(downloadedAnchor?.download).toMatch(/^interruptlog-report-day-\d{4}-\d{2}-\d{2}\.csv$/);
     await user.click(screen.getByRole('button', { name: '週' }));
     expect(screen.queryByRole('button', { name: '日報出力' })).toBeNull();
 
@@ -149,6 +178,28 @@ describe('App smoke flow', () => {
     });
     expect(screen.getByText('あとから記録する作業')).toBeTruthy();
     expect(screen.getByText('あとで見返す個人メモ')).toBeTruthy();
+  });
+
+  it('adds missed time to the selected history day instead of today', async () => {
+    const user = userEvent.setup();
+    const view = await onboardFreshApp(user);
+
+    await user.click(screen.getByRole('button', { name: '履歴' }));
+    await user.click(await screen.findByRole('button', { name: '前日へ' }));
+    await user.click(await screen.findByRole('button', { name: '押し忘れを記録' }));
+
+    await user.type(await screen.findByPlaceholderText('何をしていたか'), '昨日の作業');
+    const timeInputs = view.container.querySelectorAll('.il-hourinput-row input');
+    await replaceInputValue(user, timeInputs[0], '09');
+    await replaceInputValue(user, timeInputs[1], '00');
+    await replaceInputValue(user, timeInputs[2], '09');
+    await replaceInputValue(user, timeInputs[3], '20');
+    await user.click(screen.getByRole('button', { name: '追加' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('過去のイベントを追加')).toBeNull();
+    });
+    expect(screen.getByText('昨日の作業')).toBeTruthy();
   });
 });
 

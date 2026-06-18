@@ -10,6 +10,35 @@
   overflow: hidden;
 }
 
+.il-settings-section-h {
+  align-items: center;
+}
+
+.il-settings-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.il-settings-reorder-toggle {
+  border: 1px solid var(--hair);
+  background: color-mix(in oklch, var(--bg-elevated) 82%, var(--bg-sunken));
+  color: var(--ink-2);
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.il-settings-reorder-toggle.active {
+  background: color-mix(in oklch, var(--accent) 14%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--accent) 35%, var(--hair));
+  color: var(--accent);
+}
+
 .il-setrow {
   display: flex;
   align-items: center;
@@ -23,6 +52,88 @@
 .il-setrow .tg { flex: 1; }
 .il-setrow .t { font-size: 15px; color: var(--ink); }
 .il-setrow .s { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+
+.il-settings-reorderrow {
+  position: relative;
+  padding: 0;
+  gap: 0;
+  transition: margin 140ms ease, background 140ms ease, opacity 140ms ease;
+}
+
+.il-settings-reorderrow + .il-setrow,
+.il-setrow + .il-settings-reorderrow,
+.il-settings-reorderrow + .il-settings-reorderrow {
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-settings-reorderrow.dragging {
+  background: var(--bg-sunken);
+  box-shadow: inset 3px 0 0 var(--accent);
+  opacity: 0.78;
+}
+
+.il-settings-reorderrow.is-reordering.drop-before {
+  margin-top: 12px;
+}
+
+.il-settings-reorderrow.is-reordering.drop-after {
+  margin-bottom: 12px;
+}
+
+.il-settings-reorderrow.drop-before::before,
+.il-settings-reorderrow.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 16%, transparent);
+  z-index: 5;
+}
+
+.il-settings-reorderrow.drop-before::before {
+  top: 0;
+}
+
+.il-settings-reorderrow.drop-after::after {
+  bottom: 0;
+}
+
+.il-setrow-main {
+  min-height: 50px;
+  padding: 12px 16px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.il-settings-reorderrow:not(.is-reordering) .il-setrow-main {
+  padding-left: 16px;
+}
+
+.il-setrow-main-static {
+  color: var(--ink);
+}
+
+.il-reorder-handle {
+  width: 44px;
+  min-height: 50px;
+  border: none;
+  background: transparent;
+  color: var(--ink-4);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.il-reorder-handle:active {
+  cursor: grabbing;
+  color: var(--accent);
+}
 
 .il-settings-note {
   align-items: flex-start;

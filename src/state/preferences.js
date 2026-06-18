@@ -28,6 +28,13 @@ export function deleteCategoryInState(state, categoryId) {
   };
 }
 
+export function moveCategoryToIndexInState(state, categoryId, targetIndex) {
+  return {
+    ...state,
+    categories: moveItemToIndex(state.categories, (category) => category.id === categoryId, targetIndex),
+  };
+}
+
 export function saveInterruptCategoryInState(state, category, now = Date.now()) {
   const normalized = normalizeInterruptCategory({
     id: category.id || newId('int', now),
@@ -56,9 +63,24 @@ export function deleteInterruptCategoryInState(state, categoryId) {
   };
 }
 
+export function moveInterruptCategoryToIndexInState(state, categoryId, targetIndex) {
+  return {
+    ...state,
+    interruptCats: moveItemToIndex(state.interruptCats, (category) => category.id === categoryId, targetIndex),
+  };
+}
+
 export function saveChipsInState(state, kind, chips) {
   const key = kind === 'subject' ? 'subjectChips' : 'whoChips';
   return { ...state, [key]: uniqueTexts(chips) };
+}
+
+export function moveChipToIndexInState(state, kind, chip, targetIndex) {
+  const key = kind === 'subject' ? 'subjectChips' : 'whoChips';
+  return {
+    ...state,
+    [key]: moveItemToIndex(state[key], (item) => item === chip, targetIndex),
+  };
 }
 
 export function setPreferenceInState(state, key, value) {
@@ -69,4 +91,18 @@ export function setPreferenceInState(state, key, value) {
       [key]: value,
     },
   };
+}
+
+function moveItemToIndex(items, match, targetIndex) {
+  const from = items.findIndex(match);
+  if (from < 0 || items.length < 2) return items;
+  const item = items[from];
+  const withoutItem = items.filter((_, index) => index !== from);
+  const safeIndex = Math.max(0, Math.min(withoutItem.length, Number(targetIndex) || 0));
+  const next = [
+    ...withoutItem.slice(0, safeIndex),
+    item,
+    ...withoutItem.slice(safeIndex),
+  ];
+  return next.every((nextItem, index) => nextItem === items[index]) ? items : next;
 }
