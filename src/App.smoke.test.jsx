@@ -12,6 +12,10 @@ describe('App smoke flow', () => {
       configurable: true,
       value: vi.fn(),
     });
+    Object.defineProperty(window, 'print', {
+      configurable: true,
+      value: vi.fn(),
+    });
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback();
       return 0;
@@ -75,8 +79,20 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getByRole('button', { name: 'レポート' }));
     expect(await screen.findByRole('heading', { name: '振り返り' })).toBeTruthy();
-    expect(screen.getByText('集中時間')).toBeTruthy();
+    expect(screen.getAllByText('集中時間').length).toBeGreaterThan(0);
+    expect(screen.getByText('タスクとの関わり')).toBeTruthy();
+    expect(screen.getByText('この日の記録')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '詳細分析を表示' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '日報出力' })).toBeTruthy();
+    expect(screen.getByText('日報')).toBeTruthy();
+    expect(screen.queryByText('時間帯別の割り込み')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'CSV保存' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'CSV エクスポート' })).toBeNull();
     expect(screen.queryByText('チーム')).toBeNull();
+    await user.click(screen.getByRole('button', { name: '日報出力' }));
+    expect(window.print).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: '週' }));
+    expect(screen.queryByRole('button', { name: '日報出力' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '設定' }));
     expect(await screen.findByRole('heading', { name: '設定' })).toBeTruthy();
@@ -113,6 +129,8 @@ describe('App smoke flow', () => {
   it('adds a missed personal event with a memo from history', async () => {
     const user = userEvent.setup();
     const view = await onboardFreshApp(user);
+
+    expect(screen.queryByRole('button', { name: '押し忘れを記録' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '履歴' }));
     await user.click(await screen.findByRole('button', { name: '押し忘れ' }));

@@ -1,10 +1,23 @@
+import { normalizeLocale } from '../i18n';
+
 const DAY_MS = 86400000;
 const HOUR_MS = 3600000;
 const MINUTE_MS = 60000;
 const LONG_EVENT_MS = 4 * HOUR_MS;
 const SECOND_EVENT_MS = 60000;
 
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+const RELATIVE_LABELS = {
+  'ja-JP': {
+    today: '今日',
+    yesterday: '昨日',
+    tomorrow: '明日',
+  },
+  'en-US': {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    tomorrow: 'Tomorrow',
+  },
+};
 
 function pad(n) {
   return String(n).padStart(2, '0');
@@ -31,22 +44,33 @@ export function isSameHistoryDay(a, b) {
   return startOfHistoryDay(a) === startOfHistoryDay(b);
 }
 
-export function formatHistoryDateParts(ts, now = Date.now()) {
+export function formatHistoryDateParts(ts, now = Date.now(), locale = 'ja-JP') {
   const d = new Date(ts);
+  const normalizedLocale = normalizeLocale(locale);
+  const labels = RELATIVE_LABELS[normalizedLocale] ?? RELATIVE_LABELS['ja-JP'];
   const relative = isSameHistoryDay(ts, now)
-    ? '今日'
+    ? labels.today
     : isSameHistoryDay(ts, shiftHistoryDay(now, -1))
-      ? '昨日'
+      ? labels.yesterday
       : isSameHistoryDay(ts, shiftHistoryDay(now, 1))
-        ? '明日'
+        ? labels.tomorrow
         : null;
   return {
     day: String(d.getDate()),
-    month: `${d.getMonth() + 1}月`,
+    month: formatHistoryMonth(d, normalizedLocale),
     year: String(d.getFullYear()),
-    weekday: WEEKDAYS[d.getDay()],
+    weekday: formatHistoryWeekday(d, normalizedLocale),
     relative,
   };
+}
+
+function formatHistoryMonth(date, locale) {
+  if (locale === 'ja-JP') return `${date.getMonth() + 1}月`;
+  return new Intl.DateTimeFormat(locale, { month: 'short' }).format(date);
+}
+
+function formatHistoryWeekday(date, locale) {
+  return new Intl.DateTimeFormat(locale, { weekday: locale === 'ja-JP' ? 'narrow' : 'short' }).format(date);
 }
 
 export function toHistoryDateInputValue(ts) {

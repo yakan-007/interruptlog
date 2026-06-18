@@ -27,6 +27,7 @@ const Icons = {
   back: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3l-5 5 5 5" /></svg>,
   search: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></svg>,
   download: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v9M4.5 7.5L8 11l3.5-3.5M3 13.5h10" /></svg>,
+  print: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 5V2.5h7V5" /><path d="M4.5 11H3a1 1 0 01-1-1V6.5a1.5 1.5 0 011.5-1.5h9A1.5 1.5 0 0114 6.5V10a1 1 0 01-1 1h-1.5" /><path d="M4.5 9.5h7v4h-7z" /><path d="M11.5 7.25h.01" /></svg>,
   alert: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 1.5L15 13H1L8 1.5z" /><path d="M8 6v3.5M8 11.5v.5" /></svg>,
   spark: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5L8 1z" /></svg>,
   circle: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6" /></svg>,

@@ -23,31 +23,11 @@ export function buildViewState(app) {
 function createViewActions({ app, showToast, openSheet, closeSheet }) {
   const locale = app.state.preferences.locale;
   const toast = (message) => showToast(translateMessage(locale, message));
-  const call = (action) => (...args) => action(...args);
-  const callAndClose = (action) => (...args) => {
-    const result = action(...args);
-    closeSheet();
-    return result;
-  };
+  const exportText = createTextExporter({ locale, toast });
   return {
     openSheet,
     closeSheet,
-    startTask(id) {
-      app.actions.startTask(id);
-      return { ok: true, error: null };
-    },
-    stopTask: callAndClose(app.actions.stopTask),
-    completeTask: call(app.actions.completeTask),
-    restoreTask: call(app.actions.restoreTask),
-    restoreTaskAndStart(id) {
-      const result = app.actions.restoreTaskAndStart(id);
-      if (!result.ok && result.error) toast(result.error);
-      return result;
-    },
-    uncompleteTask: app.actions.uncompleteTask,
-    deleteTask: callAndClose(app.actions.deleteTask),
-    reorderTask: call(app.actions.reorderTask),
-    moveTaskToIndex: call(app.actions.moveTaskToIndex),
+    ...createPassthroughActions({ app, closeSheet }),
     saveTask(data) {
       const result = app.actions.saveTask(data);
       if (result.ok) closeSheet();
@@ -66,14 +46,11 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       if (!result.ok && result.error) toast(result.error);
       return result;
     },
-    saveInterrupt: callAndClose(app.actions.saveInterrupt),
-    cancelInterrupt: callAndClose(app.actions.cancelInterrupt),
-    stopInterrupt: callAndClose(app.actions.stopInterrupt),
-    saveBreak: callAndClose(app.actions.saveBreak),
-    setBreakTarget: call(app.actions.setBreakTarget),
-    previewSaveEvent: app.actions.previewSaveEvent,
-    saveEvent: app.actions.saveEvent,
-    deleteEvent: app.actions.deleteEvent,
+    restoreTaskAndStart(id) {
+      const result = app.actions.restoreTaskAndStart(id);
+      if (!result.ok && result.error) toast(result.error);
+      return result;
+    },
     addMissedEvent(event, options) {
       const result = app.actions.addMissedEvent(event, options);
       if (result.ok) {
@@ -84,46 +61,21 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       }
       return result;
     },
-    previewAddMissedEvent: app.actions.previewAddMissedEvent,
-    applyResolution(preview) {
-      return app.actions.applyResolution(preview);
-    },
-    openOverlapRepair() {
-      return app.actions.openOverlapRepair();
-    },
-    deferOverlapRepair: call(app.actions.deferOverlapRepair),
-    saveCategory: call(app.actions.saveCategory),
-    deleteCategory: call(app.actions.deleteCategory),
-    saveInterruptCategory: call(app.actions.saveInterruptCategory),
-    deleteInterruptCategory: call(app.actions.deleteInterruptCategory),
-    saveChips: call(app.actions.saveChips),
-    saveTaskTemplate(template) {
-      return app.actions.saveTaskTemplate(template);
-    },
-    deleteTaskTemplate: call(app.actions.deleteTaskTemplate),
     async exportJson() {
-      try {
-        await shareOrDownloadText(
-          `interruptlog-backup-${new Date().toISOString().slice(0, 10)}.json`,
-          app.actions.exportJson(),
-          'application/json'
-        );
-        toast(t(locale, 'toasts.jsonExported'));
-      } catch {
-        toast(t(locale, 'toasts.exportCanceled'));
-      }
+      await exportText({
+        filename: datedFilename('interruptlog-backup', 'json'),
+        content: () => app.actions.exportJson(),
+        type: 'application/json',
+        successKey: 'toasts.jsonExported',
+      });
     },
     async exportTeamSettings() {
-      try {
-        await shareOrDownloadText(
-          `interruptlog-team-settings-${new Date().toISOString().slice(0, 10)}.json`,
-          app.actions.exportTeamSettings(),
-          'application/json'
-        );
-        toast(t(locale, 'toasts.teamSettingsExported'));
-      } catch {
-        toast(t(locale, 'toasts.exportCanceled'));
-      }
+      await exportText({
+        filename: datedFilename('interruptlog-team-settings', 'json'),
+        content: () => app.actions.exportTeamSettings(),
+        type: 'application/json',
+        successKey: 'toasts.teamSettingsExported',
+      });
     },
     importTeamSettings(payload) {
       const result = app.actions.importTeamSettings(payload);
@@ -133,16 +85,12 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       return result;
     },
     async exportTaskPack() {
-      try {
-        await shareOrDownloadText(
-          `interruptlog-task-pack-${new Date().toISOString().slice(0, 10)}.json`,
-          app.actions.exportTaskPack(),
-          'application/json'
-        );
-        toast(t(locale, 'toasts.taskPackExported'));
-      } catch {
-        toast(t(locale, 'toasts.exportCanceled'));
-      }
+      await exportText({
+        filename: datedFilename('interruptlog-task-pack', 'json'),
+        content: () => app.actions.exportTaskPack(),
+        type: 'application/json',
+        successKey: 'toasts.taskPackExported',
+      });
     },
     importTaskPack(payload) {
       const result = app.actions.importTaskPack(payload);
@@ -164,16 +112,12 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       return result;
     },
     async exportTeamArchive() {
-      try {
-        await shareOrDownloadText(
-          `interruptlog-team-archive-${new Date().toISOString().slice(0, 10)}.json`,
-          app.actions.exportTeamArchive(),
-          'application/json'
-        );
-        toast(t(locale, 'toasts.teamArchiveExported'));
-      } catch {
-        toast(t(locale, 'toasts.exportCanceled'));
-      }
+      await exportText({
+        filename: datedFilename('interruptlog-team-archive', 'json'),
+        content: () => app.actions.exportTeamArchive(),
+        type: 'application/json',
+        successKey: 'toasts.teamArchiveExported',
+      });
     },
     importTeamArchive(payload) {
       const result = app.actions.importTeamArchive(payload);
@@ -195,20 +139,56 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
         toast(t(locale, 'toasts.memberNameRequired'));
         return;
       }
-      try {
-        await shareOrDownloadText(
-          `interruptlog-report-${range}-${new Date().toISOString().slice(0, 10)}.csv`,
-          app.actions.exportReportCsv(range),
-          'text/csv;charset=utf-8'
-        );
-        toast(t(locale, 'toasts.csvExported'));
-      } catch {
-        toast(t(locale, 'toasts.exportCanceled'));
-      }
+      await exportText({
+        filename: datedFilename(`interruptlog-report-${range}`, 'csv'),
+        content: () => app.actions.exportReportCsv(range),
+        type: 'text/csv;charset=utf-8',
+        successKey: 'toasts.csvExported',
+      });
     },
-    resetAll() {
-      app.actions.resetAll();
+  };
+}
+
+function createPassthroughActions({ app, closeSheet }) {
+  const call = (action) => (...args) => action(...args);
+  const callAndClose = (action) => (...args) => {
+    const result = action(...args);
+    closeSheet();
+    return result;
+  };
+  return {
+    startTask(id) {
+      app.actions.startTask(id);
+      return { ok: true, error: null };
     },
+    stopTask: callAndClose(app.actions.stopTask),
+    completeTask: call(app.actions.completeTask),
+    restoreTask: call(app.actions.restoreTask),
+    uncompleteTask: app.actions.uncompleteTask,
+    deleteTask: callAndClose(app.actions.deleteTask),
+    reorderTask: call(app.actions.reorderTask),
+    moveTaskToIndex: call(app.actions.moveTaskToIndex),
+    saveInterrupt: callAndClose(app.actions.saveInterrupt),
+    cancelInterrupt: callAndClose(app.actions.cancelInterrupt),
+    stopInterrupt: callAndClose(app.actions.stopInterrupt),
+    saveBreak: callAndClose(app.actions.saveBreak),
+    setBreakTarget: call(app.actions.setBreakTarget),
+    previewSaveEvent: app.actions.previewSaveEvent,
+    saveEvent: app.actions.saveEvent,
+    deleteEvent: app.actions.deleteEvent,
+    previewAddMissedEvent: app.actions.previewAddMissedEvent,
+    applyResolution: app.actions.applyResolution,
+    openOverlapRepair: app.actions.openOverlapRepair,
+    deferOverlapRepair: call(app.actions.deferOverlapRepair),
+    saveCategory: call(app.actions.saveCategory),
+    deleteCategory: call(app.actions.deleteCategory),
+    saveInterruptCategory: call(app.actions.saveInterruptCategory),
+    deleteInterruptCategory: call(app.actions.deleteInterruptCategory),
+    saveChips: call(app.actions.saveChips),
+    saveTaskTemplate: app.actions.saveTaskTemplate,
+    deleteTaskTemplate: call(app.actions.deleteTaskTemplate),
+    finishOnboarding: app.actions.finishOnboarding,
+    resetAll: app.actions.resetAll,
     setDark: app.actions.setDark,
     setAccent: app.actions.setAccent,
     setMemberName: app.actions.setMemberName,
@@ -223,6 +203,25 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
     updateInterruptionQueueItem: app.actions.updateInterruptionQueueItem,
     deleteInterruptionQueueItem: app.actions.deleteInterruptionQueueItem,
   };
+}
+
+function createTextExporter({ locale, toast }) {
+  return async ({ filename, content, type, successKey }) => {
+    try {
+      await shareOrDownloadText(
+        filename,
+        typeof content === 'function' ? content() : content,
+        type
+      );
+      toast(t(locale, successKey));
+    } catch {
+      toast(t(locale, 'toasts.exportCanceled'));
+    }
+  };
+}
+
+function datedFilename(base, extension) {
+  return `${base}-${new Date().toISOString().slice(0, 10)}.${extension}`;
 }
 
 export function useViewActions(args) {

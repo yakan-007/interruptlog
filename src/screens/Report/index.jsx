@@ -10,8 +10,11 @@ import TeamReport from './TeamReport';
 import {
   BreakdownCard,
   CategoryTimeCard,
+  DailyReportPrintTemplate,
+  DayActivityCard,
   HourlyInterruptsCard,
   SendersCard,
+  TaskEngagementCard,
   TaskStatusCard,
   UrgencyBreakdownCard,
   WeekdayTrendCard,
@@ -21,11 +24,18 @@ import {
 export default function ReportScreen({ state, actions }) {
   const [mode, setMode] = useState('personal');
   const [range, setRange] = useState('day');
+  const [selectedDay, setSelectedDay] = useState(() => startOfDay(Date.now()));
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const teamModeEnabled = FEATURES.teamUi && state.preferences.teamModeEnabled;
   const now = useTicker(1000);
+  const todayStart = startOfDay(now);
+  const selectedDayStart = Math.min(selectedDay, todayStart);
+  const reportNow = range === 'day'
+    ? selectedDayStart === todayStart ? now : endOfDay(selectedDayStart)
+    : now;
   const { bounds, currentStats, previousStats, compareLabel } = useMemo(
-    () => selectReportInputs(state, range, now),
-    [state, range, now]
+    () => selectReportInputs(state, range, reportNow),
+    [state, range, reportNow]
   );
 
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
@@ -52,20 +62,23 @@ export default function ReportScreen({ state, actions }) {
     peakHour,
     quietHour,
     hasInterruptTrend,
+    taskEngagement,
+    dayActivity,
+    dailyReport,
   } = useMemo(
-    () => buildReportMetrics(state, currentStats, bounds, now),
-    [bounds, currentStats, now, state]
+    () => buildReportMetrics(state, currentStats, bounds, reportNow),
+    [bounds, currentStats, reportNow, state]
   );
+  const canGoNextDay = selectedDayStart < todayStart;
+  const setDateFromInput = (value) => {
+    const parsed = parseDateInput(value);
+    if (parsed != null) setSelectedDay(Math.min(parsed, todayStart));
+  };
 
   return (
     <div className="il-screen il-fade">
       <div className="il-topbar">
         <div><div className="sub">{t(state.preferences.locale, 'report.eyebrow')}</div><h1>{t(state.preferences.locale, 'report.title')}</h1></div>
-        <div className="actions">
-          {mode === 'personal' && (
-            <button className="il-iconbtn" aria-label={t(state.preferences.locale, 'report.csvExport')} onClick={() => actions.exportReportCsv(range)}>{Icons.download(18)}</button>
-          )}
-        </div>
       </div>
 
       {teamModeEnabled && (
@@ -86,6 +99,28 @@ export default function ReportScreen({ state, actions }) {
               ))}
             </div>
           </div>
+
+          {range === 'day' && (
+            <div className="il-report-date-nav">
+              <button className="il-iconbtn" aria-label={t(state.preferences.locale, 'report.previousDay')} onClick={() => setSelectedDay(selectedDayStart - DAY_MS)}>{Icons.chevL(17)}</button>
+              <button className="btn secondary sm" onClick={() => setSelectedDay(todayStart)}>{t(state.preferences.locale, 'report.today')}</button>
+              <button className="il-iconbtn" aria-label={t(state.preferences.locale, 'report.nextDay')} onClick={() => setSelectedDay(selectedDayStart + DAY_MS)} disabled={!canGoNextDay}>{Icons.chevR(17)}</button>
+              <label className="il-report-date-input">
+                <span>{Icons.calendar(14)}</span>
+                <input
+                  type="date"
+                  value={toDateInputValue(selectedDayStart)}
+                  max={toDateInputValue(todayStart)}
+                  onChange={(event) => setDateFromInput(event.target.value)}
+                  aria-label={t(state.preferences.locale, 'report.reportDate')}
+                />
+              </label>
+              <button className="btn secondary sm il-report-print-action" onClick={() => window.print()}>
+                {Icons.print(14)}
+                {t(state.preferences.locale, 'report.dailyOutput')}
+              </button>
+            </div>
+          )}
 
           <div className="il-body il-body-report">
             {teamModeEnabled && !state.preferences.memberName && (
@@ -119,46 +154,93 @@ export default function ReportScreen({ state, actions }) {
 
             <BreakdownCard currentStats={currentStats} locale={state.preferences.locale} total={total} />
 
-            <HourlyInterruptsCard
-              hasInterruptTrend={hasInterruptTrend}
-              hourly={hourly}
-              locale={state.preferences.locale}
-              maxHourly={maxHourly}
-              peakHour={peakHour}
-              quietHour={quietHour}
-            />
+            <TaskEngagementCard engagement={taskEngagement} locale={state.preferences.locale} />
 
-            {currentStats.interrupt > 0 && (
-              <UrgencyBreakdownCard
-                locale={state.preferences.locale}
-                maxUrgencyTime={maxUrgencyTime}
-                topUrgency={topUrgency}
-                urgencyStats={urgencyStats}
-              />
+            {range === 'day' && (
+              <DayActivityCard activity={dayActivity} locale={state.preferences.locale} />
             )}
 
-            <WeekdayTrendCard dayStats={dayStats} locale={state.preferences.locale} maxDay={maxDay} />
-            <SendersCard locale={state.preferences.locale} maxSenderTime={maxSenderTime} senders={senders} />
-            <CategoryTimeCard categories={state.categories} categoryList={categoryList} locale={state.preferences.locale} totalCategoryTime={totalCategoryTime} />
-            <TaskStatusCard
-              completedInRange={completedInRange}
-              completedTasks={completedTasks}
-              incompleteTasks={incompleteTasks}
-              locale={state.preferences.locale}
-              taskRate={taskRate}
-              taskReportRows={taskReportRows}
-              uniqueTaskIds={uniqueTaskIds}
-            />
+            <div className="il-report-detail-toggle">
+              <button className="btn secondary fill" onClick={() => setDetailsOpen((current) => !current)} aria-expanded={detailsOpen}>
+                {detailsOpen ? Icons.chevD(14) : Icons.chevR(14)}
+                {detailsOpen ? t(state.preferences.locale, 'report.hideDetailAnalysis') : t(state.preferences.locale, 'report.showDetailAnalysis')}
+              </button>
+            </div>
+
+            {detailsOpen && (
+              <>
+                <HourlyInterruptsCard
+                  hasInterruptTrend={hasInterruptTrend}
+                  hourly={hourly}
+                  locale={state.preferences.locale}
+                  maxHourly={maxHourly}
+                  peakHour={peakHour}
+                  quietHour={quietHour}
+                />
+
+                {currentStats.interrupt > 0 && (
+                  <UrgencyBreakdownCard
+                    locale={state.preferences.locale}
+                    maxUrgencyTime={maxUrgencyTime}
+                    topUrgency={topUrgency}
+                    urgencyStats={urgencyStats}
+                  />
+                )}
+
+                <WeekdayTrendCard dayStats={dayStats} locale={state.preferences.locale} maxDay={maxDay} />
+                <SendersCard locale={state.preferences.locale} maxSenderTime={maxSenderTime} senders={senders} />
+                <CategoryTimeCard categories={state.categories} categoryList={categoryList} locale={state.preferences.locale} totalCategoryTime={totalCategoryTime} />
+                <TaskStatusCard
+                  completedInRange={completedInRange}
+                  completedTasks={completedTasks}
+                  incompleteTasks={incompleteTasks}
+                  locale={state.preferences.locale}
+                  taskRate={taskRate}
+                  taskReportRows={taskReportRows}
+                  uniqueTaskIds={uniqueTaskIds}
+                />
+              </>
+            )}
 
             <div className="il-report-export">
-              <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvExport')}</button>
+              <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
               <div className="il-report-exportcopy">
                 {t(state.preferences.locale, 'report.csvCopy')}
               </div>
             </div>
+
+            {range === 'day' && (
+              <DailyReportPrintTemplate report={dailyReport} locale={state.preferences.locale} />
+            )}
           </div>
         </>
       )}
     </div>
   );
+}
+
+const DAY_MS = 86400000;
+
+function startOfDay(timestamp) {
+  const date = new Date(timestamp);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function endOfDay(timestamp) {
+  return startOfDay(timestamp) + DAY_MS - 1;
+}
+
+function toDateInputValue(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateInput(value) {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day).getTime();
 }

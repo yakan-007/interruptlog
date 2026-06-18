@@ -184,5 +184,10 @@ describe('history helpers', () => {
     expect(formatHistoryDateParts(at(24, 8), now).relative).toBe('今日');
     expect(formatHistoryDateParts(at(23, 8), now).relative).toBe('昨日');
     expect(formatHistoryDateParts(at(25, 8), now).relative).toBe('明日');
+    expect(formatHistoryDateParts(at(24, 8), now, 'en-US')).toMatchObject({
+      month: 'Apr',
+      weekday: 'Fri',
+      relative: 'Today',
+    });
   });
 });

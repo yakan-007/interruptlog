@@ -51,9 +51,6 @@ export default function LogScreen({ state, actions }) {
           <div className="il-empty">
             <div className="t">{t(state.preferences.locale, 'log.emptyTitle')}</div>
             <div className="s">{t(state.preferences.locale, 'log.emptyCopy')}</div>
-            <button className="btn tert il-empty-action" onClick={() => actions.openSheet('addMissed')}>
-              {t(state.preferences.locale, 'log.addMissed')}
-            </button>
           </div>
         ) : (
           <div

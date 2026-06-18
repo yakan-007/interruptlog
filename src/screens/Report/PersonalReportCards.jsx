@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { fmtDurationShort } from '../../lib/formatters';
 import { buildWeeklyReview } from '../../state';
-import { categoryLabel, formatDate, t, tx, urgencyLabel } from '../../i18n';
+import { categoryLabel, formatDate, formatDateTime, t, tx, urgencyLabel } from '../../i18n';
 import TaskStat from './TaskStat';
 
 export function BreakdownCard({ currentStats, locale, total }) {
@@ -154,6 +154,226 @@ export function SendersCard({ senders, maxSenderTime, locale = 'ja-JP' }) {
   );
 }
 
+export function TaskEngagementCard({ engagement, locale = 'ja-JP' }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const selected = selectedId ? engagement.rows.find((row) => row.id === selectedId) ?? null : null;
+  const visibleRows = expanded ? engagement.rows : engagement.rows.slice(0, 5);
+  const hiddenRows = Math.max(0, engagement.rows.length - visibleRows.length);
+  const sessions = selected?.sessions.slice().reverse() ?? [];
+  const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 3);
+  const hiddenSessions = Math.max(0, sessions.length - visibleSessions.length);
+  const maxDaily = Math.max(...(selected?.daily.map((day) => day.durationMs) ?? [1]), 1);
+
+  return (
+    <div className="il-card il-task-engagement-card">
+      <div className="il-card-intro">
+        <h3>{t(locale, 'report.taskEngagement')}</h3>
+        <div className="il-card-copy">{t(locale, 'report.taskEngagementCopy')}</div>
+      </div>
+      {engagement.rows.length === 0 ? (
+        <div className="il-report-taskempty">{t(locale, 'report.noTaskEngagement')}</div>
+      ) : (
+        <>
+          <div className="il-task-engagement-list">
+            {visibleRows.map((row) => (
+              <button
+                key={row.id}
+                className={'il-task-engagement-row' + (selected?.id === row.id ? ' active' : '')}
+                onClick={() => {
+                  setSelectedId((current) => current === row.id ? null : row.id);
+                  setShowAllSessions(false);
+                }}
+              >
+                <span className="swatch" style={{ background: row.categoryColor }} />
+                <span className="main">
+                  <span className="name">{row.name}</span>
+                  <span className="meta">
+                    {fmtDurationShort(row.rangeTime, locale)}
+                    {' · '}
+                    {tx(locale, 'report.sessionsCount', row.sessionCount)}
+                    {' · '}
+                    {tx(locale, 'report.workDaysCount', row.workDayCount)}
+                  </span>
+                </span>
+                <span className="state">{row.isCompleted ? t(locale, 'report.completed') : t(locale, 'report.incomplete')}</span>
+              </button>
+            ))}
+            {engagement.rows.length > 5 && (
+              <button className="il-task-more" onClick={() => setExpanded((current) => !current)}>
+                {expanded ? t(locale, 'report.collapseTasks') : tx(locale, 'report.showAllTasks', hiddenRows)}
+              </button>
+            )}
+          </div>
+
+          {selected && (
+            <div className="il-task-engagement-detail">
+              <div className="il-report-taskstats">
+                <TaskStat label={t(locale, 'report.periodWork')} value={fmtDurationShort(selected.rangeTime, locale)} accent />
+                <TaskStat label={t(locale, 'report.allWork')} value={fmtDurationShort(selected.allTime, locale)} />
+                <TaskStat label={t(locale, 'report.sessions')} value={selected.sessionCount} />
+                <TaskStat label={t(locale, 'report.workDays')} value={selected.workDayCount} />
+              </div>
+              {selected.plannedMs > 0 && (
+                <div className="il-estimate-row">
+                  <span>{t(locale, 'report.estimate')}</span>
+                  <span className="il-mono">{fmtDurationShort(selected.plannedMs, locale)}</span>
+                  <span>{t(locale, 'report.variance')}</span>
+                  <span className="il-mono">{formatSignedDuration(selected.estimateDiffMs, locale)}</span>
+                </div>
+              )}
+              <div className="il-task-days">
+                <div className="il-report-tasklist-title">
+                  <span>{t(locale, 'report.dailyWork')}</span>
+                  <span className="count">{selected.daily.length}</span>
+                </div>
+                {selected.daily.map((day) => (
+                  <div key={day.dayStart} className="il-task-day-row">
+                    <span>{formatDate(day.dayStart, locale)}</span>
+                    <span className="bar"><span style={{ width: `${Math.max(4, day.durationMs / maxDaily * 100)}%` }} /></span>
+                    <span className="il-mono">{fmtDurationShort(day.durationMs, locale)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="il-task-sessions">
+                <div className="il-report-tasklist-title">
+                  <span>{t(locale, 'report.sessionList')}</span>
+                  <span className="count">{sessions.length}</span>
+                </div>
+                {visibleSessions.map((session) => (
+                  <div key={session.id} className="il-session-row">
+                    <span>{formatSession(session, locale)}</span>
+                    <span className="il-mono">{fmtDurationShort(session.durationMs, locale)}</span>
+                  </div>
+                ))}
+                {sessions.length > 3 && (
+                  <button className="il-session-more" onClick={() => setShowAllSessions((current) => !current)}>
+                    {showAllSessions ? t(locale, 'report.collapseSessions') : tx(locale, 'report.showAllSessions', hiddenSessions)}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export function DayActivityCard({ activity, locale = 'ja-JP' }) {
+  return (
+    <div className="il-card il-day-activity-card">
+      <div className="il-card-intro">
+        <h3>{t(locale, 'report.dayActivity')}</h3>
+        <div className="il-card-copy">{t(locale, 'report.dayActivityCopy')}</div>
+      </div>
+      <ActivitySection
+        title={t(locale, 'report.touchedTasks')}
+        empty={t(locale, 'report.noTouchedTasks')}
+        items={activity.touchedTasks}
+        render={(task) => (
+          <div className="il-daily-line">
+            <span className="swatch" style={{ background: task.categoryColor }} />
+            <span>{task.name}</span>
+            <span className="meta">{task.categoryName}</span>
+            <span className="il-mono">{fmtDurationShort(task.time, locale)}</span>
+          </div>
+        )}
+      />
+      <ActivitySection
+        title={t(locale, 'report.interruptions')}
+        empty={t(locale, 'report.noInterruptions')}
+        items={activity.interruptions}
+        render={(event) => (
+          <div className="il-daily-line">
+            <span>{event.label}</span>
+            <span className="meta">{[event.who, event.categoryId].filter(Boolean).join(' · ')}</span>
+            <span className="il-mono">{fmtDurationShort(event.durationMs, locale)}</span>
+          </div>
+        )}
+      />
+      <ActivitySection
+        title={t(locale, 'report.recordedMemos')}
+        empty={t(locale, 'report.noRecordedMemos')}
+        items={activity.memos}
+        render={(memo) => (
+          <div className="il-daily-memo">
+            <div className="label">{memo.label}</div>
+            <div>{memo.memo}</div>
+          </div>
+        )}
+      />
+    </div>
+  );
+}
+
+export function DailyReportPrintTemplate({ report, locale = 'ja-JP' }) {
+  const totals = report.totals;
+  return (
+    <section className="il-daily-print" aria-label={t(locale, 'report.dailyReportPrintTitle')}>
+      <header className="il-daily-print-head">
+        <div>
+          <div className="eyebrow">{t(locale, 'report.dailyReportPrintTitle')}</div>
+          <h1>{formatDate(report.date, locale, { weekday: 'short' })}</h1>
+        </div>
+        <div className="range">{formatTimeRange(report.range, locale)}</div>
+      </header>
+
+      <div className="il-daily-print-stats">
+        <PrintStat label={t(locale, 'report.recordedTime')} value={fmtDurationShort(totals.recorded, locale)} />
+        <PrintStat label={t(locale, 'report.focus')} value={fmtDurationShort(totals.focus, locale)} />
+        <PrintStat label={t(locale, 'report.interrupt')} value={fmtDurationShort(totals.interrupt, locale)} />
+        <PrintStat label={t(locale, 'report.break')} value={fmtDurationShort(totals.break, locale)} />
+      </div>
+
+      <div className="il-daily-print-grid">
+        <PrintTaskSection
+          title={t(locale, 'report.completedTasks')}
+          empty={t(locale, 'report.noCompletedTasks')}
+          tasks={report.completedTasks}
+          locale={locale}
+        />
+        <PrintTaskSection
+          title={t(locale, 'report.incompleteTasks')}
+          empty={t(locale, 'report.noTouchedTasks')}
+          tasks={report.incompleteTasks}
+          locale={locale}
+        />
+      </div>
+
+      <PrintSection title={t(locale, 'report.taskWork')} empty={t(locale, 'report.noTaskEngagement')} items={report.taskRows}>
+        {(task) => (
+          <div className="il-daily-print-row">
+            <span>{task.name}</span>
+            <span>{task.categoryName}</span>
+            <strong>{fmtDurationShort(task.rangeTime, locale)}</strong>
+          </div>
+        )}
+      </PrintSection>
+
+      <PrintSection title={t(locale, 'report.interruptionSummary')} empty={t(locale, 'report.noInterruptions')} items={report.interruptions}>
+        {(event) => (
+          <div className="il-daily-print-row">
+            <span>{event.label}</span>
+            <span>{[event.who, event.categoryId].filter(Boolean).join(' · ')}</span>
+            <strong>{fmtDurationShort(event.durationMs, locale)}</strong>
+          </div>
+        )}
+      </PrintSection>
+
+      <PrintSection title={t(locale, 'report.recordedMemos')} empty={t(locale, 'report.noRecordedMemos')} items={report.memos}>
+        {(memo) => (
+          <div className="il-daily-print-memo">
+            <strong>{memo.label}</strong>
+            <span>{memo.memo}</span>
+          </div>
+        )}
+      </PrintSection>
+    </section>
+  );
+}
+
 export function CategoryTimeCard({ categories, categoryList, totalCategoryTime, locale = 'ja-JP' }) {
   if (categoryList.length === 0) return null;
 
@@ -210,6 +430,62 @@ export function TaskStatusCard({
   );
 }
 
+function ActivitySection({ title, empty, items, render }) {
+  return (
+    <div className="il-daily-section">
+      <div className="il-report-tasklist-title">
+        <span>{title}</span>
+        <span className="count">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <div className="il-report-taskempty">{empty}</div>
+      ) : (
+        <div className="il-daily-list">
+          {items.map((item) => <div key={item.id}>{render(item)}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrintStat({ label, value }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function PrintTaskSection({ title, empty, tasks, locale }) {
+  return (
+    <PrintSection title={title} empty={empty} items={tasks}>
+      {(task) => (
+        <div className="il-daily-print-row">
+          <span>{task.name}</span>
+          <span>{task.categoryName}</span>
+          <strong>{fmtDurationShort(task.time, locale)}</strong>
+        </div>
+      )}
+    </PrintSection>
+  );
+}
+
+function PrintSection({ title, empty, items, children }) {
+  return (
+    <section className="il-daily-print-section">
+      <h2>{title}</h2>
+      {items.length === 0 ? (
+        <p className="empty">{empty}</p>
+      ) : (
+        <div className="items">
+          {items.map((item) => <div key={item.id}>{children(item)}</div>)}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function TaskReportList({ title, empty, tasks, locale = 'ja-JP' }) {
   return (
     <div className="il-report-tasklist">
@@ -240,4 +516,27 @@ function TaskReportList({ title, empty, tasks, locale = 'ja-JP' }) {
 
 function formatReportTaskDate(timestamp, locale) {
   return formatDate(timestamp, locale);
+}
+
+function formatSignedDuration(value, locale) {
+  if (value == null) return '';
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}${fmtDurationShort(Math.abs(value), locale)}`;
+}
+
+function formatSession(session, locale) {
+  const start = formatDateTime(session.clippedStart, locale);
+  const end = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(session.clippedEnd));
+  return `${start} - ${end}`;
+}
+
+function formatTimeRange(range, locale) {
+  const timeFormatter = new Intl.DateTimeFormat(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `${timeFormatter.format(new Date(range.since))} - ${timeFormatter.format(new Date(range.until))}`;
 }

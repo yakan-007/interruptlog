@@ -48,8 +48,8 @@ export default function HistoryScreen({ state, actions }) {
     [dayItems, selectedDate, now]
   );
   const dateParts = useMemo(
-    () => formatHistoryDateParts(selectedDate, now),
-    [selectedDate, now]
+    () => formatHistoryDateParts(selectedDate, now, state.preferences.locale),
+    [selectedDate, now, state.preferences.locale]
   );
   const isTodaySelected = startOfHistoryDay(selectedDate) === startOfHistoryDay(now);
 
