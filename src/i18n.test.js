@@ -38,14 +38,16 @@ describe('i18n', () => {
 
   it('formats dates and due presets by locale without changing values', () => {
     const base = new Date('2026-06-11T10:00:00+09:00');
-    const jaPresets = getDuePresets(base, 'ja-JP');
-    const enPresets = getDuePresets(base, 'en-US');
+    const schedule = { start: '09:00', end: '17:00' };
+    const jaPresets = getDuePresets(base, 'ja-JP', schedule);
+    const enPresets = getDuePresets(base, 'en-US', schedule);
 
     expect(formatDateHeader(base.getTime(), 'ja-JP', base.getTime())).toBe('今日');
     expect(formatDateHeader(base.getTime(), 'en-US', base.getTime())).toBe('Today');
     expect(jaPresets.map((item) => item.value)).toEqual(enPresets.map((item) => item.value));
-    expect(jaPresets.map((item) => item.label)).toEqual(['今日中', '明日', '今週末', 'なし']);
-    expect(enPresets.map((item) => item.label)).toEqual(['Today', 'Tomorrow', 'This Friday', 'None']);
+    expect(jaPresets.map((item) => item.label)).toEqual(['今日の終了まで', '明日の終了まで', '今週末', 'なし']);
+    expect(enPresets.map((item) => item.label)).toEqual(['By end of day', 'Tomorrow EOD', 'This Friday', 'None']);
+    expect(getDuePresets(base, 'ja-JP')).toEqual([{ label: 'なし', value: null }]);
   });
 
   it('resolves string and computed translations', () => {

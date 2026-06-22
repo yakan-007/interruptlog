@@ -363,6 +363,12 @@
   border: 1px solid color-mix(in oklch, var(--task-cat, var(--accent)) 22%, transparent);
 }
 
+.il-taskcard .interrupt-origin {
+  color: color-mix(in oklch, var(--interrupt) 76%, var(--ink) 24%);
+  background: color-mix(in oklch, var(--interrupt) 10%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--interrupt) 28%, var(--hair));
+}
+
 .il-taskcard .task-actions {
   grid-column: 3;
   grid-row: 1;

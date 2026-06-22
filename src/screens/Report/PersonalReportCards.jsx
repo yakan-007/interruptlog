@@ -25,6 +25,38 @@ export function BreakdownCard({ currentStats, locale, total }) {
   );
 }
 
+export function WorkdayCard({ workday, locale = 'ja-JP' }) {
+  if (!workday) return null;
+  return (
+    <div className="il-card il-workday-card">
+      <div className="il-card-intro">
+        <h3>{t(locale, 'report.workday')}</h3>
+        <div className="il-card-copy">{workday.schedule.start} – {workday.schedule.end}</div>
+      </div>
+      <WorkdayLine label={t(locale, 'report.withinWorkday')} task={workday.inside.task} interrupt={workday.inside.interrupt} locale={locale} />
+      {(workday.beforeStart.task > 0 || workday.beforeStart.interrupt > 0) && (
+        <WorkdayLine label={t(locale, 'report.beforeStart')} task={workday.beforeStart.task} interrupt={workday.beforeStart.interrupt} locale={locale} />
+      )}
+      <WorkdayLine label={t(locale, 'report.afterEndWork')} task={workday.afterEnd.task} interrupt={workday.afterEnd.interrupt} locale={locale} emphatic />
+      <div className="il-workday-reactive">
+        <span>{t(locale, 'report.reactiveWork')}</span>
+        <strong className="il-mono">{fmtDurationShort(workday.reactive.total, locale)}</strong>
+        <span className="meta">{t(locale, 'report.directInterrupt')} {fmtDurationShort(workday.reactive.direct, locale)} · {t(locale, 'report.followupWork')} {fmtDurationShort(workday.reactive.followup, locale)}</span>
+      </div>
+    </div>
+  );
+}
+
+function WorkdayLine({ label, task, interrupt, locale, emphatic = false }) {
+  return (
+    <div className={'il-workday-line' + (emphatic ? ' emphatic' : '')}>
+      <span className="label">{label}</span>
+      <span>{t(locale, 'common.task')} <strong className="il-mono">{fmtDurationShort(task, locale)}</strong></span>
+      <span>{t(locale, 'common.interrupt')} <strong className="il-mono">{fmtDurationShort(interrupt, locale)}</strong></span>
+    </div>
+  );
+}
+
 export function HourlyInterruptsCard({
   hasInterruptTrend,
   hourly,
@@ -288,7 +320,7 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
         render={(event) => (
           <div className="il-daily-line">
             <span>{event.label}</span>
-            <span className="meta">{[event.who, event.categoryId].filter(Boolean).join(' · ')}</span>
+            <span className="meta">{[event.who, event.categoryName].filter(Boolean).join(' · ')}</span>
             <span className="il-mono">{fmtDurationShort(event.durationMs, locale)}</span>
           </div>
         )}
@@ -356,7 +388,7 @@ export function DailyReportPrintTemplate({ report, locale = 'ja-JP' }) {
         {(event) => (
           <div className="il-daily-print-row">
             <span>{event.label}</span>
-            <span>{[event.who, event.categoryId].filter(Boolean).join(' · ')}</span>
+            <span>{[event.who, event.categoryName].filter(Boolean).join(' · ')}</span>
             <strong>{fmtDurationShort(event.durationMs, locale)}</strong>
           </div>
         )}

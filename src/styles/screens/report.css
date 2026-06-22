@@ -353,6 +353,48 @@
 
 .il-report-meta .peak { color: var(--interrupt); }
 
+.il-workday-card { display: grid; gap: 10px; }
+
+.il-workday-line {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) auto auto;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.il-workday-line .label { color: var(--ink-2); font-weight: 700; }
+.il-workday-line strong { color: var(--ink-2); font-weight: 700; }
+
+.il-workday-line.emphatic {
+  margin: 0 -4px;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--interrupt) 8%, var(--bg-elevated));
+}
+
+.il-workday-line.emphatic .label,
+.il-workday-line.emphatic strong { color: color-mix(in oklch, var(--interrupt) 70%, var(--ink) 30%); }
+
+.il-workday-reactive {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  border-top: 0.5px solid var(--hair);
+  padding-top: 10px;
+  color: var(--interrupt);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.il-workday-reactive .meta {
+  grid-column: 1 / -1;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .il-report-emptytrend {
   margin-top: 10px;
   padding: 10px 12px;

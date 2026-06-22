@@ -143,6 +143,7 @@ export default function TeamReport({ state, actions }) {
           template={panel.template}
           categories={state.categories}
           locale={state.preferences.locale}
+          workSchedule={state.preferences.workSchedule}
           onClose={() => setPanel(null)}
           onSave={(template) => {
             const result = actions.saveTaskTemplate(template);

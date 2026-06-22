@@ -1,5 +1,6 @@
 import { selectReportInputs } from '../../state';
-import { categoryLabel, normalizeLocale } from '../../i18n';
+import { categoryLabel, interruptCategoryLabel, normalizeLocale } from '../../i18n';
+import { getWorkdayBounds } from '../../state/workday';
 
 const URGENCY_META = {
   low: { color: 'var(--urg-low)' },
@@ -25,6 +26,7 @@ export function buildReportMetrics(state, currentStats, bounds, now) {
   const taskEngagement = buildTaskEngagement(state, currentStats.events, bounds, now);
   const dayActivity = buildDayActivity(state, currentStats.events);
   const dailyReport = buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity);
+  const workday = buildWorkdayReport(state, currentStats.events, bounds, now);
   const peakHour = hourly.indexOf(Math.max(...hourly));
   const quietHour = hourly.indexOf(Math.min(...hourly));
   const hasInterruptTrend = hourly.some((value) => value >= 60000);
@@ -48,8 +50,40 @@ export function buildReportMetrics(state, currentStats, bounds, now) {
     taskEngagement,
     dayActivity,
     dailyReport,
+    workday,
     ...taskReport,
   };
+}
+
+function buildWorkdayReport(state, events, bounds, now) {
+  if (bounds.until - bounds.since > 86400000) return null;
+  const workday = getWorkdayBounds(state, bounds.since);
+  if (!workday) return null;
+
+  const result = {
+    schedule: workday.schedule,
+    inside: { task: 0, interrupt: 0 },
+    beforeStart: { task: 0, interrupt: 0 },
+    afterEnd: { task: 0, interrupt: 0 },
+    reactive: { direct: 0, followup: 0 },
+  };
+  for (const event of events) {
+    if (event.type !== 'task' && event.type !== 'interrupt') continue;
+    const eventStart = event.clippedStart;
+    const eventEnd = event.clippedEnd ?? now;
+    const insideStart = Math.max(eventStart, workday.start);
+    const insideEnd = Math.min(eventEnd, workday.end);
+    const insideMs = Math.max(0, insideEnd - insideStart);
+    const beforeStartMs = Math.max(0, Math.min(eventEnd, workday.start) - eventStart);
+    const afterEndMs = Math.max(0, eventEnd - Math.max(eventStart, workday.end));
+    result.inside[event.type] += insideMs;
+    result.beforeStart[event.type] += beforeStartMs;
+    result.afterEnd[event.type] += afterEndMs;
+    if (event.type === 'interrupt') result.reactive.direct += event.durationMs;
+    if (event.type === 'task' && event.interruptOriginId) result.reactive.followup += event.durationMs;
+  }
+  result.reactive.total = result.reactive.direct + result.reactive.followup;
+  return result;
 }
 
 function buildHourlyInterrupts(events) {
@@ -207,6 +241,10 @@ function buildDayActivity(state, events) {
     .sort((a, b) => b.time - a.time || a.name.localeCompare(b.name, 'ja'));
   const interruptions = events
     .filter((event) => event.type === 'interrupt')
+    .map((event) => ({
+      ...event,
+      categoryName: interruptCategoryLabel(state.preferences.locale, state.interruptCats.find((category) => category.id === event.categoryId)),
+    }))
     .sort((a, b) => b.durationMs - a.durationMs)
     .slice(0, 5);
   const memos = events

@@ -5,9 +5,9 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime
 import { categoryLabel, t, translateMessage } from '../../i18n';
 import SheetShell from './SheetShell';
 
-export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit }) {
+export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit, followup = false, interruptData, onBackToInterrupt }) {
   const locale = state.preferences.locale;
-  const duePresets = getTaskDuePresets(new Date(), locale);
+  const duePresets = getTaskDuePresets(new Date(), locale, state.preferences.workSchedule);
   const [name, setName] = useState(editing?.name ?? draft?.name ?? '');
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? draft?.categoryId ?? state.categories[0]?.id ?? null);
   const [plannedDurationMinutes, setPlannedDurationMinutes] = useState(editing?.planning?.plannedDurationMinutes ?? draft?.plannedDurationMinutes ?? 0);
@@ -19,9 +19,9 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
   const isPaused = state.running?.type === 'interrupt' || state.running?.type === 'break';
 
   useEffect(() => {
-    if (editing || !onDraftChange) return;
+    if (editing || followup || !onDraftChange) return;
     onDraftChange({ name, categoryId, plannedDurationMinutes, dueAt, memo });
-  }, [categoryId, dueAt, editing, memo, name, onDraftChange, plannedDurationMinutes]);
+  }, [categoryId, dueAt, editing, followup, memo, name, onDraftChange, plannedDurationMinutes]);
 
   const update = (setter) => (value) => {
     setError('');
@@ -37,7 +37,9 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
       dueAt,
       memo,
     };
-    const result = editing
+    const result = followup
+      ? actions.createInterruptFollowupTask(interruptData, payload)
+      : editing
       ? actions.saveTask(payload)
       : mode === 'start'
         ? actions.createTaskAndStart(payload)
@@ -47,16 +49,18 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
       return;
     }
     setError('');
-    if (!editing) onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt, memo });
+    if (!editing && !followup) onAfterSubmit?.({ name, categoryId, plannedDurationMinutes, dueAt, memo });
     onClose();
   };
 
   return (
-    <SheetShell title={editing ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.taskDetails')} onClose={onClose} footer={
+    <SheetShell title={followup ? t(locale, 'sheets.followupTaskTitle') : editing ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.taskDetails')} onClose={followup ? onBackToInterrupt : onClose} footer={
       <>
         {editing && <button className="btn danger" onClick={() => actions.deleteTask(editing.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
-        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
-        {editing ? (
+        <button className="btn tert" onClick={followup ? onBackToInterrupt : onClose}>{followup ? t(locale, 'sheets.back') : t(locale, 'sheets.cancel')}</button>
+        {followup ? (
+          <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('create')}>{t(locale, 'sheets.createAndResume')}</button>
+        ) : editing ? (
           <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('save')}>{t(locale, 'sheets.save')}</button>
         ) : (
           <>
@@ -68,8 +72,9 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
     }>
       <div className="il-field">
         <label>{t(locale, 'sheets.taskName')}</label>
-        <input className="il-input" placeholder={t(locale, 'sheets.taskPlaceholder')} value={name} onChange={(event) => update(setName)(event.target.value)} autoFocus />
+        <input className="il-input" placeholder={t(locale, 'sheets.taskPlaceholder')} value={name} onChange={(event) => update(setName)(event.target.value)} aria-label={t(locale, 'sheets.taskName')} autoFocus />
       </div>
+      {followup && <div className="il-sheet-copy il-followup-copy">{t(locale, 'sheets.followupTaskCopy')}</div>}
       <div className="il-field">
         <label>{t(locale, 'sheets.category')}</label>
         <div className="il-chiprow">

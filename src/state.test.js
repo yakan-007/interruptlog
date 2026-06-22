@@ -18,6 +18,7 @@ import {
   buildTeamSettingsExport,
   calcStats,
   compareArchivePeriods,
+  createInterruptFollowupTaskInState,
   createEmptyState,
   createTaskAndStartInState,
   createTaskInState,
@@ -43,9 +44,13 @@ import {
   saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskInState,
+  clearTodayWorkdayEndInState,
   selectCompletedTasks,
   selectHistoryDaySummary,
+  selectWorkdayStatus,
   setBreakTargetInState,
+  setTodayWorkdayEndInState,
+  setWorkScheduleInState,
   startTaskInState,
   stopTaskInState,
   partitionCompletedTasks,
@@ -94,6 +99,58 @@ describe('state model', () => {
     expect(state.teamWorkspace.focusWindow).toEqual({ start: '09:30', end: '11:00' });
     expect(state.teamWorkspace.questionMode).toBe('open');
     expect(state.teamWorkspace.presence.anonymousMemberId).toBeTruthy();
+  });
+
+  it('keeps an optional standard work schedule and daily end override compatible with old state', () => {
+    const legacy = normalizeState(createEmptyState());
+    const configured = setWorkScheduleInState(legacy, { start: '09:00', end: '17:00' });
+    const overridden = setTodayWorkdayEndInState(configured, '18:30', at(11, 10));
+    const reset = clearTodayWorkdayEndInState(overridden, at(11, 10));
+
+    expect(legacy.preferences.workSchedule).toEqual({ start: null, end: null });
+    expect(configured.preferences.workSchedule).toEqual({ start: '09:00', end: '17:00' });
+    expect(overridden.workdaySchedules['2026-05-11']).toEqual({ start: '09:00', end: '18:30' });
+    expect(reset.workdaySchedules['2026-05-11']).toEqual({ start: '09:00', end: '17:00' });
+    expect(normalizeState({ ...legacy, preferences: { workSchedule: { start: '18:00', end: '09:00' } } }).preferences.workSchedule).toEqual({ start: '18:00', end: '09:00' });
+  });
+
+  it('calculates remaining committed estimate and overflow against today’s end time', () => {
+    const state = {
+      ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '12:00' }),
+      tasks: [{
+        id: 'commitment',
+        name: '定時までの作業',
+        isCompleted: false,
+        categoryId: 'cat-dev',
+        planning: { plannedDurationMinutes: 120, dueAt: at(11, 12) },
+      }],
+      events: [{ id: 'done', type: 'task', taskId: 'commitment', start: at(11, 9), end: at(11, 9, 30) }],
+    };
+
+    const atTen = selectWorkdayStatus(state, at(11, 10));
+    const atLate = selectWorkdayStatus(state, at(11, 11, 30));
+
+    expect(atTen).toMatchObject({ commitmentCount: 1, estimateRemainingMs: 90 * 60000, remainingMs: 120 * 60000, overflowMs: 0 });
+    expect(atLate).toMatchObject({ estimateRemainingMs: 90 * 60000, remainingMs: 30 * 60000, overflowMs: 60 * 60000 });
+  });
+
+  it('creates an interrupt-origin follow-up task and resumes the interrupted task', () => {
+    const started = createTaskAndStartInState(createEmptyState(), {
+      name: '元の作業', categoryId: 'cat-dev', plannedDurationMinutes: 30,
+    }, at(11, 9));
+    const paused = beginPauseInState(started.state, 'interrupt', at(11, 9, 10));
+    const created = createInterruptFollowupTaskInState(paused, {
+      label: '確認依頼', who: '田中', urgency: 'med', categoryId: 'int-chat', memo: '調査が必要',
+    }, {
+      name: '確認依頼を調査', categoryId: 'cat-dev', plannedDurationMinutes: 20, dueAt: at(11, 17), memo: '',
+    }, at(11, 9, 20));
+    const followup = created.state.tasks.find((task) => task.id === created.taskId);
+    const interrupt = created.state.events.find((event) => event.type === 'interrupt');
+
+    expect(created.error).toBeNull();
+    expect(followup?.interruptOriginId).toBe(interrupt?.id);
+    expect(interrupt).toMatchObject({ label: '確認依頼', who: '田中', start: at(11, 9, 10), end: at(11, 9, 20) });
+    expect(created.state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: at(11, 9, 20) });
   });
 
   it('treats zero due dates as unset when loading and saving tasks', () => {
@@ -535,15 +592,15 @@ describe('state model', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const [header, row] = csv.split('\n').map((line) => line.split(','));
 
-    expect(header).toEqual(['member', 'reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'taskTemplateId', 'taxonomyVersion', 'who', 'urgency', 'memo', 'durationMinutes']);
+    expect(header).toEqual(['member', 'reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'taskTemplateId', 'taxonomyVersion', 'who', 'urgency', 'memo', 'durationMinutes']);
     expect(row[0]).toBe('佐藤');
     expect(row[1]).toBe('2026-05-11');
     expect(row[2]).toBe('day');
     expect(row[3]).toBeTruthy();
     expect(row[6]).toBe('interrupt');
     expect(row[7]).toBe('仕様確認');
-    expect(row[13]).toBeTruthy();
-    expect(row.slice(14)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+    expect(row[14]).toBeTruthy();
+    expect(row.slice(15)).toEqual(['田中', 'med', '画面の確認', '30.0']);
   });
 
   it('protects CSV cells that could be interpreted as spreadsheet formulas', () => {
@@ -565,8 +622,8 @@ describe('state model', () => {
     const row = csv.split('\n')[1].split(',');
 
     expect(row[7]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
-    expect(row[14]).toBe("'+田中");
-    expect(row[16]).toBe("'@確認");
+    expect(row[15]).toBe("'+田中");
+    expect(row[17]).toBe("'@確認");
   });
 
   it('parses and aggregates multiple team report CSV files', () => {
@@ -757,7 +814,7 @@ describe('state model', () => {
     }, {}, 9000);
 
     expect(result.error).toBe(null);
-    expect(result.preview?.candidate.label).toBe('割り込み');
+    expect(result.preview?.candidate.label).toBe('割り込み作業');
   });
 
   it('keeps task category changes when editing a history event', () => {

@@ -47,7 +47,7 @@ export function buildReportCsv(state, range, now = Date.now()) {
   const categoryName = (id) =>
     state.categories.find((category) => category.id === id)?.name ?? id ?? '';
   const rows = [
-    ['member', 'reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'taskTemplateId', 'taxonomyVersion', 'who', 'urgency', 'memo', 'durationMinutes'],
+    ['member', 'reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'taskTemplateId', 'taxonomyVersion', 'who', 'urgency', 'memo', 'durationMinutes'],
     ...stats.events
       .sort((a, b) => a.clippedStart - b.clippedStart)
       .map((event) => {
@@ -65,6 +65,7 @@ export function buildReportCsv(state, range, now = Date.now()) {
           event.categoryId ?? '',
           event.taskId ?? '',
           event.sourceTaskId ?? task?.sourceTaskId ?? '',
+          event.interruptOriginId ?? task?.interruptOriginId ?? '',
           event.taskTemplateId ?? task?.taskTemplateId ?? '',
           taxonomyVersion,
           event.who ?? '',
@@ -104,6 +105,7 @@ function parseReportCsv(text, source = '') {
       categoryId: cleanText(item.categoryId),
       taskId: cleanText(item.taskId),
       sourceTaskId: cleanText(item.sourceTaskId),
+      interruptOriginId: cleanText(item.interruptOriginId),
       taskTemplateId: cleanText(item.taskTemplateId),
       taxonomyVersion: cleanText(item.taxonomyVersion),
       who: cleanText(item.who),
@@ -213,8 +215,8 @@ export function buildWeeklyReview(state, now = Date.now()) {
   const suggestion = stats.interrupt > 0
     ? topSender
       ? `${topSender.label}からの相談をまとめる時間を作る候補です`
-      : `${peakHour}時台の割り込みをまとめる候補です`
-    : '割り込み記録が増えると、来週の改善候補を出せます';
+      : `${peakHour}時台の割り込み作業をまとめる候補です`
+    : '割り込み作業の記録が増えると、来週の改善候補を出せます';
 
   return {
     since,

@@ -1,5 +1,6 @@
 export { default as AddMissedSheet } from './AddMissedSheet';
 export { default as AddTaskSheet } from './AddTaskSheet';
+export { default as WorkdayEndSheet } from './WorkdayEndSheet';
 export { default as BreakSheet } from './BreakSheet';
 export { default as ConfirmStopSheet } from './ConfirmStopSheet';
 export { default as InterruptSheet } from './InterruptSheet';

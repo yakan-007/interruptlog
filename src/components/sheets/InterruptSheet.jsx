@@ -5,13 +5,13 @@ import { useTicker } from '../../lib/ticker';
 import { interruptCategoryLabel, t, urgencyLabel } from '../../i18n';
 import SheetShell from './SheetShell';
 
-export default function InterruptSheet({ state, actions, onClose }) {
-  const [who, setWho] = useState('');
-  const [saveWhoChip, setSaveWhoChip] = useState(false);
-  const [label, setLabel] = useState('');
-  const [urgency, setUrgency] = useState('med');
-  const [categoryId, setCategoryId] = useState(state.interruptCats[0]?.id ?? '');
-  const [memo, setMemo] = useState('');
+export default function InterruptSheet({ state, actions, onClose, initialDraft }) {
+  const [who, setWho] = useState(initialDraft?.who ?? '');
+  const [saveWhoChip, setSaveWhoChip] = useState(initialDraft?.saveWhoChip ?? false);
+  const [label, setLabel] = useState(initialDraft?.label ?? '');
+  const [urgency, setUrgency] = useState(initialDraft?.urgency ?? 'med');
+  const [categoryId, setCategoryId] = useState(initialDraft?.categoryId ?? state.interruptCats[0]?.id ?? '');
+  const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const now = useTicker(1000);
   const locale = state.preferences.locale;
 
@@ -21,6 +21,10 @@ export default function InterruptSheet({ state, actions, onClose }) {
 
   const save = (resume) => {
     actions.saveInterrupt({ who, saveWhoChip, label: label || (who ? (locale === 'ja-JP' ? `${who}から` : `From ${who}`) : t(locale, 'common.interrupt')), urgency, categoryId, memo, resume });
+  };
+
+  const createFollowup = () => {
+    actions.openSheet('interruptFollowup', { who, saveWhoChip, label, urgency, categoryId, memo });
   };
 
   const scrollChipRow = (event) => {
@@ -92,8 +96,12 @@ export default function InterruptSheet({ state, actions, onClose }) {
         />
       </div>
 
+      <button className="il-followup-action" onClick={createFollowup}>
+        {Icons.plus(14)} {t(locale, 'sheets.followupTask')}
+      </button>
+
       <div className="il-field">
-        <label>{t(locale, 'sheets.category')}</label>
+        <label>{t(locale, 'sheets.interruptCategory')}</label>
         <div className="il-chiprow" onWheel={scrollChipRow}>
           {state.interruptCats.map((category) => (
             <button key={category.id} className={'c' + (categoryId === category.id ? ' sel' : '')} onClick={() => setCategoryId(category.id)}>

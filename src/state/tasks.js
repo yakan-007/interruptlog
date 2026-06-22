@@ -1,5 +1,6 @@
 import { newId } from './ids';
 import { asNumber, asPositiveTimestamp, cleanText } from './utils';
+import { ensureWorkdayScheduleInState } from './workday';
 
 function validateTaskInput(data) {
   if (!cleanText(data.name)) return 'タスク名を入力してください';
@@ -15,6 +16,7 @@ function buildTask(state, data, taskId, now) {
     categoryId: data.categoryId ?? state.categories[0]?.id ?? null,
     memo: cleanText(data.memo),
     sourceTaskId: cleanText(data.sourceTaskId) || null,
+    interruptOriginId: cleanText(data.interruptOriginId) || null,
     taskTemplateId: cleanText(data.taskTemplateId) || null,
     packVersion: cleanText(data.packVersion) || null,
     planning: {
@@ -111,9 +113,10 @@ export function saveTaskInState(state, data, now = Date.now()) {
 }
 
 export function startTaskInState(state, taskId, now = Date.now()) {
-  const task = state.tasks.find((item) => item.id === taskId);
+  const snapshotted = ensureWorkdayScheduleInState(state, now);
+  const task = snapshotted.tasks.find((item) => item.id === taskId);
   if (!task) return state;
-  const pauseClosed = closePauseSessionInState(state, now);
+  const pauseClosed = closePauseSessionInState(snapshotted, now);
   const closed = closeTaskSessionInState(pauseClosed, now);
   const event = {
     id: newId('ev', now),
@@ -123,6 +126,7 @@ export function startTaskInState(state, taskId, now = Date.now()) {
     categoryId: task.categoryId,
     memo: task.memo ?? '',
     sourceTaskId: task.sourceTaskId ?? null,
+    interruptOriginId: task.interruptOriginId ?? null,
     taskTemplateId: task.taskTemplateId ?? null,
     packVersion: task.packVersion ?? null,
     start: now,
@@ -179,6 +183,7 @@ export function closeTaskSessionInState(state, now = Date.now()) {
       categoryId: task?.categoryId ?? null,
       memo: task?.memo ?? '',
       sourceTaskId: task?.sourceTaskId ?? null,
+      interruptOriginId: task?.interruptOriginId ?? null,
       taskTemplateId: task?.taskTemplateId ?? null,
       packVersion: task?.packVersion ?? null,
       start: running.start,

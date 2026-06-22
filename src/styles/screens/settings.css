@@ -185,6 +185,43 @@
   padding: 8px 10px;
 }
 
+.il-settings-workhours {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.il-settings-workhours-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px 12px;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-settings-workhours label {
+  display: grid;
+  gap: 3px;
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.il-settings-workhours input {
+  width: 78px;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--bg-sunken);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 6px;
+}
+
+.il-settings-workhours .sep { color: var(--ink-4); margin-top: 12px; }
+
 .il-setbutton {
   width: 100%;
   border: none;

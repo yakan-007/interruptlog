@@ -16,6 +16,7 @@ export {
 export {
   beginPauseInState,
   cancelPauseInState,
+  createInterruptFollowupTaskInState,
   saveBreakInState,
   saveInterruptInState,
   setBreakTargetInState,
@@ -52,6 +53,12 @@ export {
 } from './schema';
 
 export {
+  clearTodayWorkdayEndInState,
+  setTodayWorkdayEndInState,
+  setWorkScheduleInState,
+} from './workday';
+
+export {
   partitionCompletedTasks,
   selectActiveTasks,
   selectCompletedTasks,
@@ -59,6 +66,7 @@ export {
   selectReportInputs,
   selectRunningTaskMeta,
   selectTaskPriorSpentMs,
+  selectWorkdayStatus,
 } from './selectors';
 
 export {

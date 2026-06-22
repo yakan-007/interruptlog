@@ -49,14 +49,14 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
 
   const save = () => {
     if (!name.trim()) {
-      setError(locale === 'ja-JP' ? 'カテゴリ名を入力してください' : 'Enter a category name');
+      setError(locale === 'ja-JP' ? '種類名を入力してください' : 'Enter a type name');
       return;
     }
     onSave({ id: category?.id, name, icon: null });
   };
 
   return (
-    <SheetShell title={category ? (locale === 'ja-JP' ? '割り込みカテゴリを編集' : 'Edit interruption category') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} footer={
+    <SheetShell title={category ? (locale === 'ja-JP' ? '割り込みの種類を編集' : 'Edit interruption type') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} footer={
       <>
         {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
@@ -64,7 +64,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       </>
     }>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? 'カテゴリ名' : 'Category name'}</label>
+        <label>{locale === 'ja-JP' ? '種類名' : 'Type name'}</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
       </div>
       {error && <div className="il-inline-error">{error}</div>}

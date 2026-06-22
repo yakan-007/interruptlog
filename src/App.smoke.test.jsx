@@ -51,12 +51,12 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getAllByRole('button', { name: '停止' })[0]);
 
-    expect(await screen.findByText('セッションを停止')).toBeTruthy();
+    expect(await screen.findByText('作業を停止')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '停止のみ' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('セッションを停止')).toBeNull();
+      expect(screen.queryByText('作業を停止')).toBeNull();
     });
   });
 
@@ -66,18 +66,103 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getByRole('button', { name: 'interrupt' }));
 
-    expect(await screen.findByText('割り込み記録')).toBeTruthy();
+    expect(await screen.findByText('割り込み作業を記録')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '保存して再開' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('割り込み記録')).toBeNull();
+      expect(screen.queryByText('割り込み作業を記録')).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
     });
   });
 
   it.each([
-    ['interrupt', '割り込み記録'],
+    ['interrupt', '割り込み作業を記録', 'interrupt'],
+    ['break', '休憩記録', 'break'],
+  ])('saves a %s and ends the running timer', async (pauseButton, sheetTitle, eventType) => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await user.click(screen.getByRole('button', { name: pauseButton }));
+    expect(await screen.findByText(sheetTitle)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '保存して終了' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(sheetTitle)).toBeNull();
+      expect(screen.queryAllByRole('button', { name: '停止' }).length).toBe(0);
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.running).toBeNull();
+      expect(saved.events.at(-1)?.type).toBe(eventType);
+      expect(Number.isFinite(saved.events.at(-1)?.end)).toBe(true);
+    });
+  });
+
+  it('stops and completes a task from the confirmation sheet', async () => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await user.click(screen.getAllByRole('button', { name: '停止' })[0]);
+    expect(await screen.findByText('作業を停止')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '停止して完了' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('作業を停止')).toBeNull();
+      expect(screen.getByText('今日完了')).toBeTruthy();
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.running).toBeNull();
+      expect(saved.tasks[0]?.isCompleted).toBe(true);
+    });
+  });
+
+  it('turns an interruption into a follow-up task and returns to the paused task', async () => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await user.click(screen.getByRole('button', { name: 'interrupt' }));
+    await user.type(screen.getByPlaceholderText('または自由記入'), '仕様確認');
+    await user.click(screen.getByRole('button', { name: 'この件をタスクにする' }));
+
+    expect(await screen.findByText('この件をタスクにする')).toBeTruthy();
+    const taskName = screen.getAllByRole('textbox', { name: 'タスク名' }).at(-1);
+    await user.clear(taskName);
+    await user.type(taskName, '仕様を調査する');
+    await user.click(screen.getByRole('button', { name: '作成して戻る' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('この件をタスクにする')).toBeNull();
+      expect(screen.getByText('仕様を調査する')).toBeTruthy();
+      expect(screen.getAllByText('割り込みから発生').length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
+    });
+  });
+
+  it('returns from follow-up task entry without saving the interruption', async () => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await user.click(screen.getByRole('button', { name: 'interrupt' }));
+    await user.type(screen.getByPlaceholderText('または自由記入'), '仕様確認');
+    await user.click(screen.getByRole('button', { name: 'この件をタスクにする' }));
+    expect(await screen.findByText('この件をタスクにする')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '戻る' }));
+    expect(await screen.findByText('割り込み作業を記録')).toBeTruthy();
+    expect(screen.getByDisplayValue('仕様確認')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'キャンセル' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('割り込み作業を記録')).toBeNull();
+      expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.events.some((event) => event.type === 'interrupt')).toBe(false);
+    });
+  });
+
+  it.each([
+    ['interrupt', '割り込み作業を記録'],
     ['break', '休憩記録'],
   ])('closing a %s sheet discards the pause and resumes the task', async (pauseButton, sheetTitle) => {
     const user = userEvent.setup();
@@ -91,6 +176,9 @@ describe('App smoke flow', () => {
     await waitFor(() => {
       expect(screen.queryByText(sheetTitle)).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.running?.type).toBe('task');
+      expect(Number.isFinite(saved.running?.start)).toBe(true);
     });
   });
 
@@ -109,13 +197,13 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await user.click(screen.getByRole('button', { name: '履歴' }));
-    expect(await screen.findByRole('heading', { name: 'イベント履歴' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '記録履歴' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '押し忘れ' })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'レポート' }));
+    await user.click(screen.getByRole('button', { name: '振り返り' }));
     expect(await screen.findByRole('heading', { name: '振り返り' })).toBeTruthy();
-    expect(screen.getAllByText('集中時間').length).toBeGreaterThan(0);
-    expect(screen.getByText('タスクとの関わり')).toBeTruthy();
+    expect(screen.getAllByText('タスク作業時間').length).toBeGreaterThan(0);
+    expect(screen.getByText('タスクごとの作業')).toBeTruthy();
     expect(screen.getByText('この日の記録')).toBeTruthy();
     expect(screen.getByRole('button', { name: '詳細分析を表示' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '日報出力' })).toBeTruthy();
@@ -148,6 +236,55 @@ describe('App smoke flow', () => {
     expect(screen.queryByText('チーム運用を使う')).toBeNull();
   });
 
+  it('shows workday due shortcuts only after a standard work schedule is configured', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      ...createEmptyState(),
+      preferences: {
+        ...createEmptyState().preferences,
+        onboardingDone: true,
+        workSchedule: { start: '00:00', end: '23:59' },
+      },
+    }));
+
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: '詳細を開く' }));
+
+    expect(await screen.findByText('今日の終了まで')).toBeTruthy();
+    expect(screen.getByText('明日の終了まで')).toBeTruthy();
+    expect(screen.getByText('今週末')).toBeTruthy();
+    expect(screen.getByText('見積時間')).toBeTruthy();
+  });
+
+  it('makes no work hours an explicit setting and clears a configured schedule', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      ...createEmptyState(),
+      preferences: {
+        ...createEmptyState().preferences,
+        onboardingDone: true,
+        workSchedule: { start: '09:00', end: '17:00' },
+      },
+    }));
+
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: '設定' }));
+
+    expect(screen.getByRole('button', { name: '基本の作業時間' }).className).toContain('on');
+    expect(screen.getByLabelText('開始時刻')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '基本の作業時間' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '基本の作業時間' }).className).not.toContain('on');
+      expect(screen.queryByLabelText('開始時刻')).toBeNull();
+      expect(JSON.parse(localStorage.getItem(STATE_KEY)).preferences.workSchedule).toEqual({ start: null, end: null });
+    });
+
+    await user.click(screen.getByRole('button', { name: '基本の作業時間' }));
+    expect(await screen.findByLabelText('開始時刻')).toBeTruthy();
+  });
+
   it('keeps release screens personal even when old team preferences exist', async () => {
     const user = userEvent.setup();
     localStorage.setItem(STATE_KEY, JSON.stringify({
@@ -162,7 +299,7 @@ describe('App smoke flow', () => {
 
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'レポート' }));
+    await user.click(await screen.findByRole('button', { name: '振り返り' }));
     expect(await screen.findByRole('heading', { name: '振り返り' })).toBeTruthy();
     expect(screen.queryByText('チーム')).toBeNull();
     expect(screen.queryByText('表示名が未設定です')).toBeNull();

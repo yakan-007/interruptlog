@@ -61,6 +61,7 @@ export default function TaskCard({
           </div>
           <div className="il-meta">
             <span className="il-chip sm subtle">{completedNote || (task.completedAt ? `${t(locale, 'log.completed')} ${fmtRel(task.completedAt, locale, now)}` : t(locale, 'log.completed'))}</span>
+            {task.interruptOriginId && <span className="il-chip sm interrupt-origin">{t(locale, 'log.interruptOrigin')}</span>}
             <span className="meta-stat">
               <span className="muted">{t(locale, 'log.total')}</span>
               <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
@@ -101,6 +102,7 @@ export default function TaskCard({
         </div>
         <div className="il-meta">
           <span className="il-chip task-cat-label" style={{ color: category?.color }}>{categoryLabel(locale, category)}</span>
+          {task.interruptOriginId && <span className="il-chip sm interrupt-origin">{t(locale, 'log.interruptOrigin')}</span>}
           {actualSummary}
           {running && (
             <span className="il-mono subtle">{fmtDuration(now - runningStart, { showSec: true, locale })}</span>

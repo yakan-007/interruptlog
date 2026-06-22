@@ -1,4 +1,5 @@
 import { normalizeLocale } from '../i18n';
+import { isWorkSchedule, normalizeWorkSchedule } from '../lib/workday';
 import { asArray, asNumber, asPositiveTimestamp, cleanText, clone, isObject, uniqueTexts } from './utils';
 
 export const APP_NAME = 'InterruptLog';
@@ -28,13 +29,14 @@ const defaultPreferences = {
   teamLightsEnabled: true,
   topAdd: true,
   sortDue: false,
+  workSchedule: { start: null, end: null },
   historyView: 'timeline',
   onboardingDone: false,
 };
 
 export const TYPE_LABELS = {
   task: 'タスク',
-  interrupt: '割り込み',
+  interrupt: '割り込み作業',
   break: '休憩',
   unknown: '記録',
 };
@@ -67,6 +69,7 @@ export function createEmptyState() {
     teamArchive: {
       entries: [],
     },
+    workdaySchedules: {},
     preferences: { ...defaultPreferences },
     running: null,
   };
@@ -95,6 +98,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
     subjectChips: uniqueTexts(raw.subjectChips),
     teamWorkspace: normalizeTeamWorkspace(raw.teamWorkspace, now),
     teamArchive: normalizeTeamArchive(raw.teamArchive),
+    workdaySchedules: normalizeWorkdaySchedules(raw.workdaySchedules),
     preferences: normalizePreferences(isObject(raw.preferences) ? raw.preferences : {}, options),
     running,
   };
@@ -110,9 +114,19 @@ function normalizePreferences(raw = {}, options = {}) {
     teamLightsEnabled: Boolean(raw.teamLightsEnabled ?? defaultPreferences.teamLightsEnabled),
     topAdd: Boolean(raw.topAdd ?? defaultPreferences.topAdd),
     sortDue: Boolean(raw.sortDue ?? defaultPreferences.sortDue),
+    workSchedule: normalizeWorkSchedule(raw.workSchedule),
     historyView: normalizeHistoryView(raw.historyView),
     onboardingDone: Boolean(raw.onboardingDone ?? options.assumeOnboarded ?? defaultPreferences.onboardingDone),
   };
+}
+
+function normalizeWorkdaySchedules(raw) {
+  if (!isObject(raw)) return {};
+  return Object.fromEntries(
+    Object.entries(raw)
+      .filter(([key, schedule]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && isWorkSchedule(schedule))
+      .map(([key, schedule]) => [key, normalizeWorkSchedule(schedule)])
+  );
 }
 
 function normalizeHistoryView(value) {
@@ -129,6 +143,7 @@ function normalizeTask(task) {
     order: asNumber(task.order, 0),
     categoryId: task.categoryId ? String(task.categoryId) : null,
     sourceTaskId: cleanText(task.sourceTaskId) || null,
+    interruptOriginId: cleanText(task.interruptOriginId) || null,
     taskTemplateId: cleanText(task.taskTemplateId) || null,
     packVersion: cleanText(task.packVersion) || null,
     planning: {
@@ -184,6 +199,7 @@ export function normalizeEvent(event) {
     type: ['task', 'interrupt', 'break', 'unknown'].includes(event.type) ? event.type : 'unknown',
     label: cleanText(event.label) || TYPE_LABELS[event.type] || 'イベント',
     sourceTaskId: cleanText(event.sourceTaskId) || null,
+    interruptOriginId: cleanText(event.interruptOriginId) || null,
     taskTemplateId: cleanText(event.taskTemplateId) || null,
     packVersion: cleanText(event.packVersion) || null,
     start,
@@ -242,6 +258,7 @@ export function normalizeArchiveEntry(entry) {
     categoryId: cleanText(entry.categoryId),
     taskId: cleanText(entry.taskId),
     sourceTaskId: cleanText(entry.sourceTaskId),
+    interruptOriginId: cleanText(entry.interruptOriginId),
     taskTemplateId: cleanText(entry.taskTemplateId),
     taxonomyVersion: cleanText(entry.taxonomyVersion),
     who: cleanText(entry.who),

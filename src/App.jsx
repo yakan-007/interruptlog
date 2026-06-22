@@ -10,6 +10,7 @@ import {
   RepairOverlapsSheet,
   ResolveEventSheet,
   ResumeOrStopSheet,
+  WorkdayEndSheet,
 } from './components/sheets';
 import RunningBar from './components/RunningBar';
 import Icons from './icons';
@@ -152,7 +153,7 @@ export default function App() {
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
-            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={actions.cancelInterrupt} />}
+            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={actions.cancelInterrupt} initialDraft={activeSheetArg} />}
             {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={actions.cancelInterrupt} />}
             {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
@@ -166,7 +167,19 @@ export default function App() {
                 onAfterSubmit={activeSheetArg?.onAfterSubmit}
               />
             )}
+            {activeSheet === 'interruptFollowup' && (
+              <AddTaskSheet
+                state={state}
+                actions={actions}
+                onClose={closeSheet}
+                followup
+                interruptData={activeSheetArg}
+                onBackToInterrupt={() => openSheet('interrupt', activeSheetArg)}
+                draft={{ name: activeSheetArg?.label ?? '' }}
+              />
+            )}
             {activeSheet === 'editTask' && <AddTaskSheet state={state} actions={actions} onClose={closeSheet} editing={activeSheetArg} />}
+            {activeSheet === 'workdayEnd' && <WorkdayEndSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addMissed' && <AddMissedSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
             {activeSheet === 'editEvent' && <EditEventSheet event={activeSheetArg} state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'resolveEvent' && <ResolveEventSheet resolution={activeSheetArg} locale={state.preferences.locale} onBack={handleResolutionBack} onConfirm={handleResolutionConfirm} />}

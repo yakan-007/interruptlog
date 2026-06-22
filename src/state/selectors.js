@@ -1,4 +1,5 @@
 import { calcStats, getRangeBounds } from './reports';
+import { getWorkdayBounds } from './workday';
 
 export function selectActiveTasks(state) {
   return state.tasks
@@ -47,8 +48,8 @@ export function selectRunningTaskMeta(state) {
   if (running.type === 'interrupt') {
     return {
       type: 'interrupt',
-      label: running.label || '割り込み',
-      subLabel: '割り込み中',
+      label: running.label || '割り込み作業',
+      subLabel: '割り込み作業中',
       task: null,
       variant: 'interrupt',
     };
@@ -67,6 +68,34 @@ export function selectTaskPriorSpentMs(state, taskId) {
   return state.events
     .filter((event) => event.type === 'task' && event.taskId === taskId && event.end !== null)
     .reduce((sum, event) => sum + (event.end - event.start), 0);
+}
+
+export function selectWorkdayStatus(state, now = Date.now()) {
+  const bounds = getWorkdayBounds(state, now);
+  if (!bounds) return null;
+
+  const commitments = state.tasks
+    .filter((task) => !task.isCompleted)
+    .filter((task) => (task.planning?.plannedDurationMinutes ?? 0) > 0)
+    .filter((task) => task.planning?.dueAt != null && task.planning.dueAt <= bounds.end)
+    .map((task) => {
+      const spentMs = state.events
+        .filter((event) => event.type === 'task' && event.taskId === task.id)
+        .reduce((sum, event) => sum + Math.max(0, Math.min(event.end ?? now, now) - event.start), 0);
+      const estimatedMs = task.planning.plannedDurationMinutes * 60000;
+      return { taskId: task.id, remainingMs: Math.max(0, estimatedMs - spentMs) };
+    });
+  const estimateRemainingMs = commitments.reduce((sum, item) => sum + item.remainingMs, 0);
+  const remainingMs = Math.max(0, bounds.end - Math.max(now, bounds.start));
+
+  return {
+    ...bounds,
+    commitmentCount: commitments.length,
+    estimateRemainingMs,
+    remainingMs,
+    overflowMs: Math.max(0, estimateRemainingMs - remainingMs),
+    afterEnd: now >= bounds.end,
+  };
 }
 
 export function selectHistoryDaySummary(items) {

@@ -5,6 +5,7 @@ import { SUPPORTED_LOCALES, t, tx } from '../../i18n';
 import { useListReorderDrag } from '../../lib/useListReorderDrag';
 import SettingRow from './SettingRow';
 import { ACCENTS } from './constants';
+import { isWorkSchedule } from '../../lib/workday';
 import {
   CategorySheet,
   ChipsSheet,
@@ -27,8 +28,27 @@ import {
 export default function SettingsScreen({ state, actions }) {
   const [panel, setPanel] = useState(null);
   const [reorderMode, setReorderMode] = useState(null);
+  const [workScheduleEditing, setWorkScheduleEditing] = useState(() => Boolean(
+    state.preferences.workSchedule.start || state.preferences.workSchedule.end
+  ));
   const teamModeEnabled = FEATURES.teamUi && state.preferences.teamModeEnabled;
   const locale = state.preferences.locale;
+  const hasWorkScheduleValues = Boolean(
+    state.preferences.workSchedule.start || state.preferences.workSchedule.end
+  );
+  const workScheduleEnabled = workScheduleEditing || hasWorkScheduleValues;
+  const hasInvalidWorkSchedule = Boolean(
+    workScheduleEnabled
+    && hasWorkScheduleValues
+    && !isWorkSchedule(state.preferences.workSchedule)
+  );
+  const workScheduleNote = !workScheduleEnabled
+    ? t(locale, 'settings.workScheduleOffNote')
+    : !hasWorkScheduleValues
+      ? t(locale, 'settings.workScheduleSetupNote')
+      : hasInvalidWorkSchedule
+        ? t(locale, 'settings.workScheduleInvalid')
+        : t(locale, 'settings.workScheduleNote');
   const categoryReordering = reorderMode === 'categories';
   const interruptCategoryReordering = reorderMode === 'interruptCategories';
   const categoryReorder = useListReorderDrag({
@@ -80,6 +100,49 @@ export default function SettingsScreen({ state, actions }) {
         <div className="il-settings-group">
           <ToggleSetting title={t(locale, 'settings.topAdd')} value={state.preferences.topAdd} onToggle={() => actions.setTopAdd(!state.preferences.topAdd)} ariaLabel={t(locale, 'settings.topAdd')} />
           <ToggleSetting title={t(locale, 'settings.sortDue')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
+        </div>
+
+        <div className="il-section-h"><span>{t(locale, 'settings.workday')}</span></div>
+        <div className="il-settings-group">
+          <ToggleSetting
+            title={t(locale, 'settings.workSchedule')}
+            note={workScheduleNote}
+            value={workScheduleEnabled}
+            onToggle={() => {
+              if (workScheduleEnabled) {
+                actions.setWorkSchedule({ start: null, end: null });
+                setWorkScheduleEditing(false);
+              } else {
+                setWorkScheduleEditing(true);
+              }
+            }}
+            ariaLabel={t(locale, 'settings.workSchedule')}
+          />
+          {workScheduleEnabled && (
+            <div className="il-settings-workhours-row">
+              <div className="il-settings-workhours">
+                <label>
+                  <span>{t(locale, 'settings.workStart')}</span>
+                  <input
+                    type="time"
+                    value={state.preferences.workSchedule.start ?? ''}
+                    onChange={(event) => actions.setWorkSchedule({ ...state.preferences.workSchedule, start: event.target.value || null })}
+                    aria-label={t(locale, 'settings.workStart')}
+                  />
+                </label>
+                <span className="sep">–</span>
+                <label>
+                  <span>{t(locale, 'settings.workEnd')}</span>
+                  <input
+                    type="time"
+                    value={state.preferences.workSchedule.end ?? ''}
+                    onChange={(event) => actions.setWorkSchedule({ ...state.preferences.workSchedule, end: event.target.value || null })}
+                    aria-label={t(locale, 'settings.workEnd')}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         <SettingsSectionHeader

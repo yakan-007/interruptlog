@@ -10,6 +10,16 @@
 
 .il-log-bottomspace { height: 8px; }
 
+.il-workday-overflow {
+  margin: 8px 16px -2px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--urg-high) 9%, var(--bg-elevated));
+  color: var(--urg-high);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .il-archivecopy {
   margin: 2px 16px 8px;
   font-size: 12px;

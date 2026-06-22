@@ -42,8 +42,8 @@ export function PayloadImportSheet({ title, copy, label = 'JSON', locale = 'ja-J
   );
 }
 
-export function TaskTemplateSheet({ template, categories, locale = 'ja-JP', onClose, onSave, onDelete }) {
-  const duePresets = getTaskDuePresets(new Date(), locale);
+export function TaskTemplateSheet({ template, categories, locale = 'ja-JP', workSchedule, onClose, onSave, onDelete }) {
+  const duePresets = getTaskDuePresets(new Date(), locale, workSchedule);
   const [name, setName] = useState(template?.name ?? '');
   const [categoryId, setCategoryId] = useState(template?.categoryId ?? categories[0]?.id ?? null);
   const [plannedDurationMinutes, setPlannedDurationMinutes] = useState(template?.planning?.plannedDurationMinutes ?? 30);

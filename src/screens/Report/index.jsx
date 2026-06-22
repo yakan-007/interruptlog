@@ -19,6 +19,7 @@ import {
   UrgencyBreakdownCard,
   WeekdayTrendCard,
   WeeklyReviewCard,
+  WorkdayCard,
 } from './PersonalReportCards';
 
 export default function ReportScreen({ state, actions }) {
@@ -65,6 +66,7 @@ export default function ReportScreen({ state, actions }) {
     taskEngagement,
     dayActivity,
     dailyReport,
+    workday,
   } = useMemo(
     () => buildReportMetrics(state, currentStats, bounds, reportNow),
     [bounds, currentStats, reportNow, state]
@@ -149,6 +151,8 @@ export default function ReportScreen({ state, actions }) {
               <StatCard label={t(state.preferences.locale, 'report.interrupt')} color="var(--interrupt)" value={currentStats.interrupt} delta={deltaHours(currentStats.interrupt, previousStats.interrupt)} deltaLabel={localizedCompareLabel || compareLabel} deltaInvert />
               <StatCard label={t(state.preferences.locale, 'report.break')} color="var(--break)" value={currentStats.break} delta={deltaHours(currentStats.break, previousStats.break)} deltaLabel={localizedCompareLabel || compareLabel} />
             </div>
+
+            {range === 'day' && <WorkdayCard workday={workday} locale={state.preferences.locale} />}
 
             {range === 'week' && <WeeklyReviewCard state={state} now={now} />}
 

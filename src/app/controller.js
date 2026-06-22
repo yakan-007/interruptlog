@@ -170,7 +170,16 @@ function createPassthroughActions({ app, closeSheet }) {
     reorderTask: call(app.actions.reorderTask),
     moveTaskToIndex: call(app.actions.moveTaskToIndex),
     saveInterrupt: callAndClose(app.actions.saveInterrupt),
-    cancelInterrupt: callAndClose(app.actions.cancelInterrupt),
+    createInterruptFollowupTask(interruptData, taskData) {
+      const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
+      if (result.ok) closeSheet();
+      return result;
+    },
+    cancelInterrupt() {
+      const result = app.actions.cancelInterrupt();
+      closeSheet();
+      return result;
+    },
     stopInterrupt: callAndClose(app.actions.stopInterrupt),
     saveBreak: callAndClose(app.actions.saveBreak),
     setBreakTarget: call(app.actions.setBreakTarget),
@@ -201,6 +210,9 @@ function createPassthroughActions({ app, closeSheet }) {
     setTeamLightsEnabled: app.actions.setTeamLightsEnabled,
     setTopAdd: app.actions.setTopAdd,
     setSortDue: app.actions.setSortDue,
+    setWorkSchedule: app.actions.setWorkSchedule,
+    setTodayWorkdayEnd: app.actions.setTodayWorkdayEnd,
+    clearTodayWorkdayEnd: app.actions.clearTodayWorkdayEnd,
     setHistoryView: app.actions.setHistoryView,
     updateTeamWorkspace: app.actions.updateTeamWorkspace,
     addInterruptionQueueItem: app.actions.addInterruptionQueueItem,

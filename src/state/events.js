@@ -1,6 +1,7 @@
 import { newId } from './ids';
 import { TYPE_LABELS } from './schema';
 import { asNumber, cleanText } from './utils';
+import { ensureWorkdayScheduleInState } from './workday';
 import {
   buildManualResolutionPreview,
   buildOverlapRepairPreview,
@@ -17,7 +18,7 @@ function validateEventWindow({ start, end }) {
 export function saveEventInState(state, updated) {
   const result = previewSaveEventInState(state, updated);
   if (result.error || !result.preview) return { state, error: result.error ?? '入力を確認してください' };
-  return { state: applyResolutionPreviewInState(state, result.preview), error: null };
+  return { state: ensureWorkdayScheduleInState(applyResolutionPreviewInState(state, result.preview), updated.start), error: null };
 }
 
 export function deleteEventInState(state, eventId) {
@@ -33,7 +34,7 @@ export function deleteEventInState(state, eventId) {
 export function addMissedEventInState(state, event, options = {}, now = Date.now()) {
   const result = previewAddMissedEventInState(state, event, options, now);
   if (result.error || !result.preview) return { state, error: result.error ?? '入力を確認してください' };
-  const nextState = applyResolutionPreviewInState(state, result.preview);
+  const nextState = ensureWorkdayScheduleInState(applyResolutionPreviewInState(state, result.preview), event.start);
   const who = cleanText(event.who);
   return {
     state: options.saveWhoChip && who && !nextState.whoChips.includes(who)

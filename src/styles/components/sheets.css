@@ -226,6 +226,23 @@
   margin-bottom: 10px;
 }
 
+.il-followup-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px dashed color-mix(in oklch, var(--interrupt) 42%, var(--hair));
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--interrupt) 7%, var(--bg-elevated));
+  color: color-mix(in oklch, var(--interrupt) 74%, var(--ink) 26%);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  margin: -4px 0 16px;
+}
+
+.il-followup-copy { margin-top: -2px; }
+
 .il-hourinput-row {
   display: flex;
   gap: 4px;

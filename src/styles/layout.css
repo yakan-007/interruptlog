@@ -72,7 +72,7 @@
 .il-topbar.il-topbar-log {
   padding-bottom: 6px;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: space-between;
 }
 
 .il-topbar.il-topbar-log .sub {
@@ -82,6 +82,21 @@
   letter-spacing: 0.03em;
   text-transform: none;
 }
+
+.il-workday-status {
+  border: 1px solid var(--hair);
+  background: var(--bg-elevated);
+  color: var(--ink-3);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.il-workday-status.after { color: var(--urg-high); border-color: color-mix(in oklch, var(--urg-high) 32%, var(--hair)); }
 
 .il-section-h {
   font-size: 11px;

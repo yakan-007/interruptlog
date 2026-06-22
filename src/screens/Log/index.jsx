@@ -1,9 +1,9 @@
 import { Fragment, useMemo, useState } from 'react';
 import Icons from '../../icons';
-import { fmtDateHeader } from '../../lib/formatters';
+import { fmtDateHeader, fmtDurationShort } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
-import { t } from '../../i18n';
-import { partitionCompletedTasks, selectTaskPriorSpentMs } from '../../state';
+import { t, tx } from '../../i18n';
+import { partitionCompletedTasks, selectTaskPriorSpentMs, selectWorkdayStatus } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import TaskCard from './TaskCard';
 import { useTaskDrag } from './useTaskDrag';
@@ -19,6 +19,7 @@ export default function LogScreen({ state, actions }) {
     () => partitionCompletedTasks(state.completedTasks, now),
     [state.completedTasks, now]
   );
+  const workdayStatus = selectWorkdayStatus(state, now);
   const {
     activeIndexById,
     armDrag,
@@ -34,6 +35,13 @@ export default function LogScreen({ state, actions }) {
     <div className="il-screen il-fade">
       <div className="il-topbar il-topbar-log">
         <div className="sub">{state.todayLabel}</div>
+        <button className={'il-workday-status' + (workdayStatus?.afterEnd ? ' after' : '')} onClick={() => actions.openSheet('workdayEnd')}>
+          {workdayStatus
+            ? workdayStatus.afterEnd
+              ? tx(state.preferences.locale, 'log.workdayAfterEnd', workdayStatus.schedule.end)
+              : tx(state.preferences.locale, 'log.workdayUntil', { time: workdayStatus.schedule.end, remaining: fmtDurationShort(workdayStatus.remainingMs, state.preferences.locale) })
+            : t(state.preferences.locale, 'log.workdayUnset')}
+        </button>
       </div>
 
       <div
@@ -42,6 +50,9 @@ export default function LogScreen({ state, actions }) {
           (state.running ? ' has-runbar has-live-dock' : ' has-dock')
         }
       >
+        {workdayStatus?.overflowMs > 0 && (
+          <div className="il-workday-overflow">{tx(state.preferences.locale, 'log.workdayOverflow', fmtDurationShort(workdayStatus.overflowMs, state.preferences.locale))}</div>
+        )}
         <div className="il-section-h">
           <span>{t(state.preferences.locale, 'log.title')}</span>
           <span className="count">{state.activeTasks.length}</span>

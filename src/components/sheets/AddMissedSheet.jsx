@@ -128,7 +128,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           </div>
 
           <div className="il-field">
-            <label>{t(locale, 'sheets.category')}</label>
+            <label>{t(locale, 'sheets.interruptCategory')}</label>
             <div className="il-chiprow">
               {state.interruptCats.map((category) => (
                 <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
