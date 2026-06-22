@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { categoryLabel, interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import { startOfHistoryDay } from '../../lib/history';
 import SheetShell from './SheetShell';
 
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
@@ -13,7 +14,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
   const [initial] = useState(() => new Date(initialDraft?.dayStart ?? Date.now()));
-  const [dayStart] = useState(() => startOfDay(initialDraft?.dayStart ?? Date.now()));
+  const [dayStart] = useState(() => startOfHistoryDay(initialDraft?.dayStart ?? Date.now()));
   const [startH, setStartH] = useState(initialDraft?.startH ?? String(initial.getHours()).padStart(2, '0'));
   const [startM, setStartM] = useState(initialDraft?.startM ?? String(initial.getMinutes()).padStart(2, '0'));
   const [endH, setEndH] = useState(initialDraft?.endH ?? String(initial.getHours()).padStart(2, '0'));
@@ -183,10 +184,4 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );
-}
-
-function startOfDay(timestamp) {
-  const date = new Date(timestamp);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
 }
