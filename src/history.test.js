@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildHistoryTimelineModel,
+  createDefaultMissedDraft,
   formatHistoryDateParts,
   formatHistoryTimeRange,
   fromHistoryDateInputValue,
@@ -16,6 +17,13 @@ const at = (day, hour, minute = 0, second = 0) =>
   new Date(2026, 3, day, hour, minute, second).getTime();
 
 describe('history helpers', () => {
+  it('defaults a missed event on today to the preceding 30 minutes, never future time', () => {
+    const now = at(24, 14, 35, 42);
+    const draft = createDefaultMissedDraft(startOfHistoryDay(now), now);
+
+    expect(draft).toMatchObject({ startH: '14', startM: '05', endH: '14', endM: '35' });
+  });
+
   it('includes a previous-day event in the selected day and clamps it to midnight', () => {
     const selectedDate = at(24, 12);
     const items = getHistoryDayItems([

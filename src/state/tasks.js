@@ -1,5 +1,5 @@
 import { newId } from './ids';
-import { asNumber, cleanText } from './utils';
+import { asNumber, asPositiveTimestamp, cleanText } from './utils';
 
 function validateTaskInput(data) {
   if (!cleanText(data.name)) return 'タスク名を入力してください';
@@ -19,7 +19,7 @@ function buildTask(state, data, taskId, now) {
     packVersion: cleanText(data.packVersion) || null,
     planning: {
       plannedDurationMinutes: Math.max(0, asNumber(data.plannedDurationMinutes, 0) ?? 0),
-      dueAt: asNumber(data.dueAt, null),
+      dueAt: asPositiveTimestamp(data.dueAt, null),
     },
     createdAt: now,
     completedAt: null,
@@ -87,7 +87,7 @@ export function saveTaskInState(state, data, now = Date.now()) {
         planning: {
           ...task.planning,
           plannedDurationMinutes: Math.max(0, asNumber(data.plannedDurationMinutes, 0) ?? 0),
-          dueAt: asNumber(data.dueAt, null),
+          dueAt: asPositiveTimestamp(data.dueAt, null),
         },
       } : task),
       events: state.events.map((event) =>

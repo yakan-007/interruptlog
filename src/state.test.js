@@ -96,6 +96,30 @@ describe('state model', () => {
     expect(state.teamWorkspace.presence.anonymousMemberId).toBeTruthy();
   });
 
+  it('treats zero due dates as unset when loading and saving tasks', () => {
+    const raw = {
+      ...createEmptyState(),
+      tasks: [{
+        id: 't1',
+        name: '期限なしタスク',
+        categoryId: 'cat-dev',
+        planning: { plannedDurationMinutes: 15, dueAt: 0 },
+      }],
+    };
+    const normalized = normalizeState(raw, at(11, 9));
+    const saved = saveTaskInState(normalized, {
+      id: 't1',
+      name: '期限なしタスク',
+      categoryId: 'cat-dev',
+      plannedDurationMinutes: 15,
+      dueAt: 0,
+      memo: '',
+    }, at(11, 10));
+
+    expect(normalized.tasks[0].planning.dueAt).toBeNull();
+    expect(saved.state.tasks[0].planning.dueAt).toBeNull();
+  });
+
   it('marks legacy persisted data as already onboarded when imported or rehydrated', () => {
     const legacyState = {
       version: 2,
@@ -757,12 +781,15 @@ describe('state model', () => {
     expect(result.state.events[0]).toMatchObject({ type: 'task', categoryId: 'cat-doc', memo: '履歴から更新したメモ' });
   });
 
-  it('does not create unknown records when cancelling a pause', () => {
-    const state = beginPauseInState(createEmptyState(), 'interrupt', 1000);
+  it('discards a cancelled pause and resumes the previous task without creating an event', () => {
+    const created = createTaskAndStartInState(createEmptyState(), { name: '再開する作業', categoryId: 'cat-dev' }, 500);
+    const state = beginPauseInState(created.state, 'interrupt', 1000);
     const result = cancelPauseInState(state, 7000);
 
-    expect(result.events).toHaveLength(1);
-    expect(result.events[0]).toMatchObject({ type: 'interrupt', label: 'キャンセルした割り込み', start: 1000, end: 7000 });
+    expect(result.events).toHaveLength(2);
+    expect(result.events[0]).toMatchObject({ type: 'task', start: 500, end: 1000 });
+    expect(result.events[1]).toMatchObject({ type: 'task', start: 7000, end: null });
+    expect(result.running).toMatchObject({ type: 'task', taskId: created.taskId, start: 7000 });
   });
 
   it('round-trips JSON backup payloads in v2 format', () => {

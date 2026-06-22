@@ -23,7 +23,7 @@ export default function TaskCard({
 }) {
   const taskAccent = category?.color ?? 'var(--accent)';
   const plannedMs = (task.planning?.plannedDurationMinutes ?? 0) * 60000;
-  const liveSpent = running && runningStart ? (now - runningStart) : 0;
+  const liveSpent = running && runningStart ? Math.max(0, now - runningStart) : 0;
   const actualMs = priorSpent + liveSpent;
   const dueAt = task.planning?.dueAt;
   const hasDueAt = dueAt != null && dueAt > 0;

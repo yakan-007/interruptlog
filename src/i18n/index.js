@@ -928,13 +928,18 @@ export function urgencyLabel(locale, urgency) {
 }
 
 export function categoryLabel(locale, category) {
-  if (!category) return '';
-  return getLocaleConfig(locale).text.categories?.[category.id] ?? category.name;
+  return editableTaxonomyLabel(locale, category, 'categories');
 }
 
 export function interruptCategoryLabel(locale, category) {
+  return editableTaxonomyLabel(locale, category, 'interruptCategories');
+}
+
+function editableTaxonomyLabel(locale, category, dictionaryKey) {
   if (!category) return '';
-  return getLocaleConfig(locale).text.interruptCategories?.[category.id] ?? category.name;
+  const defaultName = LOCALES['ja-JP'].text[dictionaryKey]?.[category.id];
+  if (category.name && category.name !== defaultName) return category.name;
+  return getLocaleConfig(locale).text[dictionaryKey]?.[category.id] ?? category.name;
 }
 
 export function translateMessage(locale, message) {

@@ -44,6 +44,32 @@ export function isSameHistoryDay(a, b) {
   return startOfHistoryDay(a) === startOfHistoryDay(b);
 }
 
+export function createDefaultMissedDraft(selectedDate, now = Date.now()) {
+  const dayStart = startOfHistoryDay(selectedDate);
+  const dayEnd = dayStart + DAY_MS;
+  const todaySelected = startOfHistoryDay(now) === dayStart;
+  const latestEnd = todaySelected
+    ? Math.max(dayStart, Math.floor(now / MINUTE_MS) * MINUTE_MS)
+    : dayEnd - MINUTE_MS;
+  const end = Math.min(latestEnd, dayEnd - MINUTE_MS);
+  const start = Math.max(dayStart, end - 30 * MINUTE_MS);
+  return createMissedDraftFromRange(start, end);
+}
+
+export function createMissedDraftFromRange(start, end) {
+  const dayStart = startOfHistoryDay(start);
+  const dayEnd = dayStart + DAY_MS;
+  const safeStart = Math.min(Math.max(start, dayStart), dayEnd - 2 * MINUTE_MS);
+  const safeEnd = Math.min(Math.max(end, safeStart + MINUTE_MS), dayEnd - MINUTE_MS);
+  return {
+    dayStart,
+    startH: String(new Date(safeStart).getHours()).padStart(2, '0'),
+    startM: String(new Date(safeStart).getMinutes()).padStart(2, '0'),
+    endH: String(new Date(safeEnd).getHours()).padStart(2, '0'),
+    endM: String(new Date(safeEnd).getMinutes()).padStart(2, '0'),
+  };
+}
+
 export function formatHistoryDateParts(ts, now = Date.now(), locale = 'ja-JP') {
   const d = new Date(ts);
   const normalizedLocale = normalizeLocale(locale);

@@ -5,6 +5,8 @@ import { useTicker } from '../../lib/ticker';
 import { t, tx } from '../../i18n';
 import {
   buildHistoryTimelineModel,
+  createDefaultMissedDraft,
+  createMissedDraftFromRange,
   formatHistoryDateParts,
   fromHistoryDateInputValue,
   getHistoryDayItems,
@@ -158,42 +160,6 @@ export default function HistoryScreen({ state, actions }) {
       </div>
     </div>
   );
-}
-
-const DAY_MS = 86400000;
-const HOUR_MS = 3600000;
-const MINUTE_MS = 60000;
-
-function createDefaultMissedDraft(selectedDate, now) {
-  const dayStart = startOfHistoryDay(selectedDate);
-  const dayEnd = dayStart + DAY_MS;
-  const todaySelected = startOfHistoryDay(now) === dayStart;
-  const latestStart = dayEnd - 2 * MINUTE_MS;
-  const start = Math.min(todaySelected ? now : dayStart + 9 * HOUR_MS, latestStart);
-  const end = Math.min(start + 30 * MINUTE_MS, dayEnd);
-  return createMissedDraftFromRange(start, end);
-}
-
-function createMissedDraftFromRange(start, end) {
-  const dayStart = startOfHistoryDay(start);
-  const dayEnd = dayStart + DAY_MS;
-  const safeStart = Math.min(Math.max(start, dayStart), dayEnd - 2 * MINUTE_MS);
-  const safeEnd = Math.min(Math.max(end, safeStart + MINUTE_MS), dayEnd - MINUTE_MS);
-  return {
-    dayStart,
-    startH: formatHour(safeStart),
-    startM: formatMinute(safeStart),
-    endH: formatHour(safeEnd),
-    endM: formatMinute(safeEnd),
-  };
-}
-
-function formatHour(timestamp) {
-  return String(new Date(timestamp).getHours()).padStart(2, '0');
-}
-
-function formatMinute(timestamp) {
-  return String(new Date(timestamp).getMinutes()).padStart(2, '0');
 }
 
 function toEditableEvent(event, now) {

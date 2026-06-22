@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { toDateTimeLocalValue } from './lib/datetime';
 import { fmtDurationShort } from './lib/formatters';
 
 describe('duration helpers', () => {
@@ -10,5 +11,10 @@ describe('duration helpers', () => {
 
   it('keeps the compact hour and minute format', () => {
     expect(fmtDurationShort(80 * 60_000)).toBe('1h 20m');
+  });
+
+  it('does not turn an unset timestamp into a 1970 date input value', () => {
+    expect(toDateTimeLocalValue(0)).toBe('');
+    expect(toDateTimeLocalValue(null)).toBe('');
   });
 });

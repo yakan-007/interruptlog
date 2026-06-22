@@ -152,8 +152,8 @@ export default function App() {
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
-            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={closeSheet} />}
-            {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={closeSheet} />}
+            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={actions.cancelInterrupt} />}
+            {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={actions.cancelInterrupt} />}
             {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addTask' && (

@@ -1,5 +1,5 @@
 import { normalizeLocale } from '../i18n';
-import { asArray, asNumber, cleanText, clone, isObject, uniqueTexts } from './utils';
+import { asArray, asNumber, asPositiveTimestamp, cleanText, clone, isObject, uniqueTexts } from './utils';
 
 export const APP_NAME = 'InterruptLog';
 export const SCHEMA_VERSION = 2;
@@ -133,7 +133,7 @@ function normalizeTask(task) {
     packVersion: cleanText(task.packVersion) || null,
     planning: {
       plannedDurationMinutes: Math.max(0, asNumber(task.planning?.plannedDurationMinutes, 0) ?? 0),
-      dueAt: asNumber(task.planning?.dueAt, null),
+      dueAt: asPositiveTimestamp(task.planning?.dueAt, null),
     },
     createdAt: asNumber(task.createdAt, Date.now()),
     completedAt: asNumber(task.completedAt, null),
@@ -148,7 +148,7 @@ export function normalizeTaskTemplate(template) {
     categoryId: template.categoryId ? String(template.categoryId) : null,
     planning: {
       plannedDurationMinutes: Math.max(0, asNumber(template.planning?.plannedDurationMinutes, 0) ?? 0),
-      dueAt: asNumber(template.planning?.dueAt, null),
+      dueAt: asPositiveTimestamp(template.planning?.dueAt, null),
     },
     createdAt: asNumber(template.createdAt, Date.now()),
   };

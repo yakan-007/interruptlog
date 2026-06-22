@@ -76,6 +76,24 @@ describe('App smoke flow', () => {
     });
   });
 
+  it.each([
+    ['interrupt', '割り込み記録'],
+    ['break', '休憩記録'],
+  ])('closing a %s sheet discards the pause and resumes the task', async (pauseButton, sheetTitle) => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await user.click(screen.getByRole('button', { name: pauseButton }));
+    expect(await screen.findByText(sheetTitle)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '閉じる' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(sheetTitle)).toBeNull();
+      expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
+    });
+  });
+
   it('opens running task details from the bottom timer', async () => {
     const user = userEvent.setup();
     await startTaskFromFreshApp(user);

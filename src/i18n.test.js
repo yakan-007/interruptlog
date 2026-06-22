@@ -6,6 +6,8 @@ import {
   formatDurationShort,
   formatRelative,
   getDuePresets,
+  categoryLabel,
+  interruptCategoryLabel,
   t,
   tx,
 } from './i18n';
@@ -50,5 +52,12 @@ describe('i18n', () => {
     expect(t('en-US', 'team.focusWindow')).toBe('Focus window');
     expect(tx('ja-JP', 'common.rows', 3)).toBe('3行');
     expect(tx('en-US', 'team.archivePeriodMeta', { people: 2, rows: 10, interrupts: 4 })).toBe('2 people · 10 rows · 4 interruptions');
+  });
+
+  it('uses custom category names instead of overwriting them with default translations', () => {
+    expect(categoryLabel('en-US', { id: 'cat-dev', name: '開発' })).toBe('Development');
+    expect(interruptCategoryLabel('en-US', { id: 'int-call', name: '電話' })).toBe('Phone');
+    expect(categoryLabel('en-US', { id: 'cat-dev', name: '実装' })).toBe('実装');
+    expect(interruptCategoryLabel('en-US', { id: 'int-call', name: '顧客対応' })).toBe('顧客対応');
   });
 });
