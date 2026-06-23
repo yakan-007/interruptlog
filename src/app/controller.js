@@ -96,18 +96,44 @@ function createPassthroughActions({ app, closeSheet }) {
     return result;
   };
   return {
+    ...bindActions(app.actions, call, [
+      'completeTask',
+      'restoreTask',
+      'uncompleteTask',
+      'reorderTask',
+      'moveTaskToIndex',
+      'setBreakTarget',
+      'saveCategory',
+      'deleteCategory',
+      'moveCategoryToIndex',
+      'saveInterruptCategory',
+      'deleteInterruptCategory',
+      'moveInterruptCategoryToIndex',
+      'saveChips',
+      'moveChipToIndex',
+      'setDark',
+      'setAccent',
+      'setLocale',
+      'setTopAdd',
+      'setSortDue',
+      'setWorkSchedule',
+      'setTodayWorkdayEnd',
+      'clearTodayWorkdayEnd',
+      'setHistoryView',
+      'finishOnboarding',
+      'resetAll',
+    ]),
+    ...bindActions(app.actions, callAndClose, [
+      'stopTask',
+      'deleteTask',
+      'saveInterrupt',
+      'stopInterrupt',
+      'saveBreak',
+    ]),
     startTask(id) {
       app.actions.startTask(id);
       return { ok: true, error: null };
     },
-    stopTask: callAndClose(app.actions.stopTask),
-    completeTask: call(app.actions.completeTask),
-    restoreTask: call(app.actions.restoreTask),
-    uncompleteTask: app.actions.uncompleteTask,
-    deleteTask: callAndClose(app.actions.deleteTask),
-    reorderTask: call(app.actions.reorderTask),
-    moveTaskToIndex: call(app.actions.moveTaskToIndex),
-    saveInterrupt: callAndClose(app.actions.saveInterrupt),
     createInterruptFollowupTask(interruptData, taskData) {
       const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
       if (result.ok) closeSheet();
@@ -118,9 +144,6 @@ function createPassthroughActions({ app, closeSheet }) {
       closeSheet();
       return result;
     },
-    stopInterrupt: callAndClose(app.actions.stopInterrupt),
-    saveBreak: callAndClose(app.actions.saveBreak),
-    setBreakTarget: call(app.actions.setBreakTarget),
     previewSaveEvent: app.actions.previewSaveEvent,
     saveEvent: app.actions.saveEvent,
     previewTaskRecord: app.actions.previewTaskRecord,
@@ -130,26 +153,11 @@ function createPassthroughActions({ app, closeSheet }) {
     applyResolution: app.actions.applyResolution,
     openOverlapRepair: app.actions.openOverlapRepair,
     deferOverlapRepair: call(app.actions.deferOverlapRepair),
-    saveCategory: call(app.actions.saveCategory),
-    deleteCategory: call(app.actions.deleteCategory),
-    moveCategoryToIndex: call(app.actions.moveCategoryToIndex),
-    saveInterruptCategory: call(app.actions.saveInterruptCategory),
-    deleteInterruptCategory: call(app.actions.deleteInterruptCategory),
-    moveInterruptCategoryToIndex: call(app.actions.moveInterruptCategoryToIndex),
-    saveChips: call(app.actions.saveChips),
-    moveChipToIndex: call(app.actions.moveChipToIndex),
-    finishOnboarding: app.actions.finishOnboarding,
-    resetAll: app.actions.resetAll,
-    setDark: app.actions.setDark,
-    setAccent: app.actions.setAccent,
-    setLocale: app.actions.setLocale,
-    setTopAdd: app.actions.setTopAdd,
-    setSortDue: app.actions.setSortDue,
-    setWorkSchedule: app.actions.setWorkSchedule,
-    setTodayWorkdayEnd: app.actions.setTodayWorkdayEnd,
-    clearTodayWorkdayEnd: app.actions.clearTodayWorkdayEnd,
-    setHistoryView: app.actions.setHistoryView,
   };
+}
+
+function bindActions(actions, bind, names) {
+  return Object.fromEntries(names.map((name) => [name, bind(actions[name])]));
 }
 
 function createTextExporter({ locale, toast }) {

@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppLifecycle } from './app/lifecycle';
 import { buildViewState, useViewActions } from './app/controller';
+import { useAppLayout } from './app/useAppLayout';
+import { useSheetController } from './app/useSheetController';
+import { useToast } from './app/useToast';
 import {
   AddMissedSheet,
   AddTaskSheet,
@@ -33,73 +36,21 @@ const TABS = [
 export default function App() {
   const app = useAppState();
   const [tab, setTab] = useState('log');
-  const [sheet, setSheet] = useState(null);
-  const [sheetArg, setSheetArg] = useState(null);
-  const [toast, setToast] = useState(null);
-
   const containerRef = useRef(null);
-  const toastTimeoutRef = useRef(null);
-
-  const closeSheet = useCallback(() => {
-    setSheet(null);
-    setSheetArg(null);
-  }, []);
-
-  const openSheet = useCallback((nextSheet, arg) => {
-    if (nextSheet === 'interrupt' && app.state.running?.type !== 'interrupt') app.actions.beginInterrupt();
-    else if (nextSheet === 'break' && app.state.running?.type !== 'break') app.actions.beginBreak();
-    setSheet(nextSheet);
-    setSheetArg(arg);
-  }, [app.actions, app.state.running?.type]);
-
-  const showToast = useCallback((message) => {
-    setToast(message);
-    clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 2200);
-  }, []);
-
-  useEffect(() => () => clearTimeout(toastTimeoutRef.current), []);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.setAttribute('data-theme', app.state.preferences.dark ? 'dark' : 'light');
-    containerRef.current.style.setProperty('--accent', app.state.preferences.accent);
-  }, [app.state.preferences.accent, app.state.preferences.dark]);
-
-  useEffect(() => {
-    const updateKeyboardInset = () => {
-      const viewport = window.visualViewport;
-      const inset = viewport
-        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-        : 0;
-      containerRef.current?.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`);
-    };
-
-    updateKeyboardInset();
-    window.visualViewport?.addEventListener('resize', updateKeyboardInset);
-    window.visualViewport?.addEventListener('scroll', updateKeyboardInset);
-    window.addEventListener('resize', updateKeyboardInset);
-    return () => {
-      window.visualViewport?.removeEventListener('resize', updateKeyboardInset);
-      window.visualViewport?.removeEventListener('scroll', updateKeyboardInset);
-      window.removeEventListener('resize', updateKeyboardInset);
-    };
-  }, []);
-
   const state = useMemo(() => buildViewState(app), [app]);
-  const actions = useViewActions({ app, showToast, openSheet, closeSheet });
   const showOnboarding = app.ready && !state.preferences.onboardingDone;
-  const activeSheet = sheet ?? (!showOnboarding && state.overlapRepair.pending ? 'repairOverlaps' : null);
-  const activeSheetArg = sheet == null ? state.overlapRepair.pending : sheetArg;
+  const { activeSheet, activeSheetArg, closeSheet, openSheet, restoreSheet } = useSheetController(app, showOnboarding);
+  const { showToast, toast } = useToast();
+  useAppLayout(containerRef, app.state.preferences);
+  const actions = useViewActions({ app, showToast, openSheet, closeSheet });
 
   const handleResolutionBack = useCallback(() => {
-    if (!sheetArg?.returnSheet) {
+    if (!activeSheetArg?.returnSheet) {
       closeSheet();
       return;
     }
-    setSheet(sheetArg.returnSheet);
-    setSheetArg(sheetArg.returnArg ?? null);
-  }, [closeSheet, sheetArg]);
+    restoreSheet(activeSheetArg.returnSheet, activeSheetArg.returnArg);
+  }, [activeSheetArg, closeSheet, restoreSheet]);
 
   const handleResolutionConfirm = useCallback((resolution) => {
     if (resolution.mode === 'taskRecord') {

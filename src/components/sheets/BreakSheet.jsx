@@ -1,7 +1,9 @@
 import { fmtDuration } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
+import { elapsedSince } from '../../lib/timer';
 import { t, tx } from '../../i18n';
 import SheetShell from './SheetShell';
+import TimerPanel from './TimerPanel';
 
 export default function BreakSheet({ state, actions, onClose }) {
   const now = useTicker(1000);
@@ -9,7 +11,7 @@ export default function BreakSheet({ state, actions, onClose }) {
   const locale = state.preferences.locale;
 
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
-  const elapsed = Math.max(0, now - (state.running?.start ?? now));
+  const elapsed = elapsedSince(state.running?.start ?? now, now);
   const planned = state.running?.type === 'break' ? Math.max(0, state.running.plannedBreakDurationMinutes ?? 0) : 0;
   const plannedMs = planned * 60000;
   const overMs = plannedMs > 0 ? elapsed - plannedMs : 0;
@@ -38,11 +40,13 @@ export default function BreakSheet({ state, actions, onClose }) {
         </div>
       )}
 
-      <div className={'il-sheet-timer break' + (plannedMs > 0 ? ' has-target' : '') + (tone === 'warn' ? ' warn' : '') + (tone === 'late' ? ' late' : '')}>
-        <div className="eyebrow">{t(locale, 'sheets.breakActive')}</div>
-        <div className="value il-mono">{fmtDuration(elapsed, { showSec: true, locale })}</div>
-        <div className="hint">{timerMeta}</div>
-      </div>
+      <TimerPanel
+        className={'il-sheet-timer break' + (plannedMs > 0 ? ' has-target' : '') + (tone === 'warn' ? ' warn' : '') + (tone === 'late' ? ' late' : '')}
+        elapsed={elapsed}
+        eyebrow={t(locale, 'sheets.breakActive')}
+        hint={timerMeta}
+        locale={locale}
+      />
 
       <div className="il-field">
         <label>{t(locale, 'sheets.breakTarget')}</label>

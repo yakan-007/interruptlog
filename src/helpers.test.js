@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toDateTimeLocalValue } from './lib/datetime';
 import { fmtDurationShort } from './lib/formatters';
+import { elapsedSince, formatElapsedClock } from './lib/timer';
 
 describe('duration helpers', () => {
   it('shows seconds for sub-minute durations', () => {
@@ -16,5 +17,10 @@ describe('duration helpers', () => {
   it('does not turn an unset timestamp into a 1970 date input value', () => {
     expect(toDateTimeLocalValue(0)).toBe('');
     expect(toDateTimeLocalValue(null)).toBe('');
+  });
+
+  it('keeps every timer elapsed value non-negative and consistently formatted', () => {
+    expect(elapsedSince(2_000, 1_000)).toBe(0);
+    expect(formatElapsedClock(elapsedSince(1_000, 3_500))).toBe('00:00:03');
   });
 });

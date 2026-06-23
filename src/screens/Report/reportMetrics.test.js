@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateRangeStats, calcStats, createEmptyState, createReportSnapshot, selectRangeEvents, setWorkScheduleInState } from '../../state';
-import { getRangeBounds } from '../../state/reports';
+import { calculateRangeStats, calcStats, createEmptyState, createReportSnapshot, getRangeBounds, selectRangeEvents, setWorkScheduleInState } from '../../state';
 import { buildReportMetrics } from './reportMetrics';
 
 const at = (hour, minute = 0) => new Date(2026, 4, 11, hour, minute).getTime();

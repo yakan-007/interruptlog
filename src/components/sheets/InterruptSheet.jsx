@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Icons from '../../icons';
-import { fmtDuration } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
+import { elapsedSince } from '../../lib/timer';
 import { interruptCategoryLabel, t, urgencyLabel } from '../../i18n';
 import SheetShell from './SheetShell';
+import TimerPanel from './TimerPanel';
 
 export default function InterruptSheet({ state, actions, onClose, initialDraft }) {
   const [who, setWho] = useState(initialDraft?.who ?? '');
@@ -16,7 +17,7 @@ export default function InterruptSheet({ state, actions, onClose, initialDraft }
   const locale = state.preferences.locale;
 
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
-  const elapsed = Math.max(0, now - (state.running?.start ?? now));
+  const elapsed = elapsedSince(state.running?.start ?? now, now);
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
 
   const save = (resume) => {
@@ -53,10 +54,12 @@ export default function InterruptSheet({ state, actions, onClose, initialDraft }
         </div>
       )}
 
-      <div className="il-sheet-timer interrupt">
-        <div className="eyebrow">{t(locale, 'sheets.interrupting')}</div>
-        <div className="value il-mono">{fmtDuration(elapsed, { showSec: true, locale })}</div>
-      </div>
+      <TimerPanel
+        className="il-sheet-timer interrupt"
+        elapsed={elapsed}
+        eyebrow={t(locale, 'sheets.interrupting')}
+        locale={locale}
+      />
 
       <div className="il-field">
         <label>{t(locale, 'sheets.sender')}</label>

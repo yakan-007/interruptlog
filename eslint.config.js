@@ -57,4 +57,17 @@ export default defineConfig([
       }],
     },
   },
+  {
+    files: ['src/screens/**/*.{js,jsx}', 'src/components/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['../state/*', '../../state/*', '../../../state/*'],
+            message: 'Screens and components must use the public state API or view actions, not state internals.',
+          },
+        ],
+      }],
+    },
+  },
 ])

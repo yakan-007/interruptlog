@@ -1,6 +1,5 @@
 import { categoryLabel, interruptCategoryLabel, normalizeLocale } from '../../i18n';
-import { getWorkdayBounds } from '../../state/workday';
-import { calculateRangeStats, createReportSnapshot, selectRangeEvents } from '../../state/reportFacts';
+import { calculateRangeStats, createReportSnapshot, getWorkdayBounds, selectRangeEvents } from '../../state';
 
 const URGENCY_META = {
   low: { color: 'var(--urg-low)' },

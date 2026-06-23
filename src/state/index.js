@@ -43,6 +43,7 @@ export {
   buildReportCsv,
   buildWeeklyReview,
   calcStats,
+  getRangeBounds,
 } from './reports';
 
 export {
@@ -62,6 +63,8 @@ export {
 
 export {
   clearTodayWorkdayEndInState,
+  getEffectiveWorkdaySchedule,
+  getWorkdayBounds,
   setTodayWorkdayEndInState,
   setWorkScheduleInState,
 } from './workday';

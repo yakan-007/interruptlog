@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isWorkSchedule, workdayKey } from '../../lib/workday';
-import { getEffectiveWorkdaySchedule } from '../../state/workday';
+import { getEffectiveWorkdaySchedule } from '../../state';
 import { t } from '../../i18n';
 import SheetShell from './SheetShell';
 
