@@ -197,8 +197,6 @@ function prepareTaskRecordCandidate(state, record, now, { preview = false } = {}
     taskId: null,
     sourceTaskId: null,
     interruptOriginId: null,
-    taskTemplateId: null,
-    packVersion: null,
     workDetail: null,
   };
   delete base.taskTarget;
@@ -237,8 +235,6 @@ function prepareTaskRecordCandidate(state, record, now, { preview = false } = {}
       categoryId: taskTarget.categoryId ?? state.categories[0]?.id ?? null,
       sourceTaskId: null,
       interruptOriginId: null,
-      taskTemplateId: null,
-      packVersion: null,
     };
     return {
       candidate: taskEventFromTask(base, virtualTask, record.workDetail),
@@ -269,8 +265,6 @@ function taskEventFromTask(base, task, workDetail) {
     categoryId: task.categoryId ?? null,
     sourceTaskId: task.sourceTaskId ?? null,
     interruptOriginId: task.interruptOriginId ?? null,
-    taskTemplateId: task.taskTemplateId ?? null,
-    packVersion: task.packVersion ?? null,
     workDetail: cleanText(workDetail) || null,
   };
 }

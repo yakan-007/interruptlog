@@ -1,18 +1,9 @@
 import {
-  addInterruptionQueueItemInState,
   addMissedEventInState,
-  addReportRowsToArchive,
-  addTeamDemoArchiveInState,
   applyResolutionPreviewInState,
-  applyTaskPackImport,
-  applyTeamArchiveImport,
-  applyTeamSettingsImport,
   beginPauseInState,
   buildBackup,
   buildReportCsv,
-  buildTaskPackExport,
-  buildTeamArchiveExport,
-  buildTeamSettingsExport,
   cancelPauseInState,
   completeTaskInState,
   createInterruptFollowupTaskInState,
@@ -21,10 +12,8 @@ import {
   createTaskInState,
   deleteCategoryInState,
   deleteEventInState,
-  deleteInterruptionQueueItemInState,
   deleteInterruptCategoryInState,
   deleteTaskInState,
-  deleteTaskTemplateInState,
   moveTaskToIndexInState,
   moveCategoryToIndexInState,
   moveChipToIndexInState,
@@ -45,7 +34,6 @@ import {
   saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskInState,
-  saveTaskTemplateInState,
   setBreakTargetInState,
   setTodayWorkdayEndInState,
   setWorkScheduleInState,
@@ -55,16 +43,10 @@ import {
   stopPauseInState,
   stopTaskInState,
   uncompleteTaskInState,
-  updateInterruptionQueueItemInState,
-  updateTeamWorkspaceInState,
 } from '../state';
 
 function toActionResult(result) {
   return { ok: !result?.error, error: result?.error ?? null, taskId: result?.taskId ?? null };
-}
-
-function toStateActionResult(result) {
-  return { ok: !result.error, ...result };
 }
 
 export function createAppActions({
@@ -82,10 +64,6 @@ export function createAppActions({
   const applyResult = (result) => {
     commitResult(result);
     return toActionResult(result);
-  };
-  const applyStateResult = (result) => {
-    commitResult(result);
-    return toStateActionResult(result);
   };
   const mutateWith = (action) => (...args) => {
     mutate((state) => action(state, ...args));
@@ -173,26 +151,15 @@ export function createAppActions({
     moveInterruptCategoryToIndex: mutateWith(moveInterruptCategoryToIndexInState),
     saveChips: mutateWith(saveChipsInState),
     moveChipToIndex: mutateWith(moveChipToIndexInState),
-    saveTaskTemplate(template) {
-      return applyStateResult(saveTaskTemplateInState(getState(), template));
-    },
-    deleteTaskTemplate: mutateWith(deleteTaskTemplateInState),
     setDark: setPreference('dark'),
     setAccent: setPreference('accent'),
-    setMemberName: setPreference('memberName'),
     setLocale: setPreference('locale'),
-    setTeamModeEnabled: setPreference('teamModeEnabled'),
-    setTeamLightsEnabled: setPreference('teamLightsEnabled'),
     setTopAdd: setPreference('topAdd'),
     setSortDue: setPreference('sortDue'),
     setWorkSchedule: mutateWith(setWorkScheduleInState),
     setTodayWorkdayEnd: mutateWith(setTodayWorkdayEndInState),
     clearTodayWorkdayEnd: mutateWith(clearTodayWorkdayEndInState),
     setHistoryView: setPreference('historyView'),
-    updateTeamWorkspace: mutateWith(updateTeamWorkspaceInState),
-    addInterruptionQueueItem: mutateWith(addInterruptionQueueItemInState),
-    updateInterruptionQueueItem: mutateWith(updateInterruptionQueueItemInState),
-    deleteInterruptionQueueItem: mutateWith(deleteInterruptionQueueItemInState),
     finishOnboarding: () => mutate((state) => setPreferenceInState(state, 'onboardingDone', true)),
     exportJson() {
       return JSON.stringify(buildBackup(getState()), null, 2);
@@ -213,30 +180,6 @@ export function createAppActions({
     },
     exportReportCsv(range) {
       return buildReportCsv(getState(), range);
-    },
-    exportTeamSettings() {
-      return JSON.stringify(buildTeamSettingsExport(getState()), null, 2);
-    },
-    importTeamSettings(payload) {
-      return applyStateResult(applyTeamSettingsImport(getState(), payload));
-    },
-    exportTaskPack() {
-      return JSON.stringify(buildTaskPackExport(getState()), null, 2);
-    },
-    importTaskPack(payload) {
-      return applyStateResult(applyTaskPackImport(getState(), payload));
-    },
-    addRowsToTeamArchive(rows) {
-      return applyStateResult(addReportRowsToArchive(getState(), rows));
-    },
-    addTeamDemoArchive() {
-      return applyStateResult(addTeamDemoArchiveInState(getState()));
-    },
-    exportTeamArchive() {
-      return JSON.stringify(buildTeamArchiveExport(getState()), null, 2);
-    },
-    importTeamArchive(payload) {
-      return applyStateResult(applyTeamArchiveImport(getState(), payload));
     },
     resetAll() {
       mutate((state) => ({

@@ -1,23 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   addMissedEventInState,
-  addReportRowsToArchive,
-  aggregateArchiveRows,
-  aggregateTeamReportRows,
-  applyTaskPackImport,
   applyResolutionPreviewInState,
-  applyTeamArchiveImport,
-  applyTeamSettingsImport,
   beginPauseInState,
   buildBackup,
   buildReportCsv,
-  buildAmbientReplay,
-  buildTaskPackExport,
-  buildPublicPresence,
-  buildTeamArchiveExport,
-  buildTeamSettingsExport,
   calcStats,
-  compareArchivePeriods,
   createInterruptFollowupTaskInState,
   createEmptyState,
   createTaskAndStartInState,
@@ -31,7 +19,6 @@ import {
   moveTaskToIndexInState,
   normalizeState,
   parseBackup,
-  parseReportCsvFiles,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
   previewTaskRecordInState,
@@ -59,7 +46,6 @@ import {
   stopTaskInState,
   partitionCompletedTasks,
   selectActiveTasks,
-  updateTeamWorkspaceInState,
 } from './state';
 import { getHistoryDayItems } from './lib/history';
 
@@ -67,42 +53,37 @@ const at = (day, hour, minute = 0, second = 0) =>
   new Date(2026, 4, day, hour, minute, second).getTime();
 
 describe('state model', () => {
-  it('keeps history view preference on valid values, normalizes invalid values, and drops autoStart', () => {
+  it('keeps personal preferences and drops unknown legacy preference keys', () => {
     const normalized = normalizeState({
       ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, historyView: 'list', autoStart: true, teamModeEnabled: true },
+      preferences: { ...createEmptyState().preferences, historyView: 'list', autoStart: true },
     });
     const fallback = parseBackup({
-      schemaVersion: 2,
+      schemaVersion: 1,
       state: {
         ...createEmptyState(),
         preferences: { ...createEmptyState().preferences, historyView: 'weird', autoStart: true },
       },
     });
 
-    expect(normalized.version).toBe(2);
+    expect(normalized.version).toBe(1);
     expect(normalized.preferences.historyView).toBe('list');
     expect(normalized.preferences.onboardingDone).toBe(false);
-    expect(normalized.preferences.teamModeEnabled).toBe(true);
     expect('autoStart' in normalized.preferences).toBe(false);
     expect(normalized.preferences.locale).toBe('ja-JP');
-    expect(normalized.preferences.teamLightsEnabled).toBe(true);
     expect(fallback.preferences.historyView).toBe('timeline');
-    expect(fallback.preferences.teamModeEnabled).toBe(false);
     expect('autoStart' in fallback.preferences).toBe(false);
   });
 
-  it('normalizes locale and team operation defaults', () => {
+  it('normalizes the locale without retaining unknown state fields', () => {
     const state = normalizeState({
       ...createEmptyState(),
       preferences: { locale: 'en-US' },
-      teamWorkspace: { focusWindow: { start: '09:30', end: '11:00' }, questionMode: 'open' },
+      obsoleteWorkspace: { enabled: true },
     });
 
     expect(state.preferences.locale).toBe('en-US');
-    expect(state.teamWorkspace.focusWindow).toEqual({ start: '09:30', end: '11:00' });
-    expect(state.teamWorkspace.questionMode).toBe('open');
-    expect(state.teamWorkspace.presence.anonymousMemberId).toBeTruthy();
+    expect('obsoleteWorkspace' in state).toBe(false);
   });
 
   it('keeps an optional standard work schedule and daily end override compatible with old state', () => {
@@ -181,9 +162,9 @@ describe('state model', () => {
     expect(saved.state.tasks[0].planning.dueAt).toBeNull();
   });
 
-  it('marks legacy persisted data as already onboarded when imported or rehydrated', () => {
-    const legacyState = {
-      version: 2,
+  it('accepts only the personal backup format', () => {
+    const personalState = {
+      version: 1,
       tasks: [],
       events: [],
       categories: createEmptyState().categories,
@@ -194,18 +175,18 @@ describe('state model', () => {
         accent: createEmptyState().preferences.accent,
         topAdd: true,
         sortDue: false,
-        // Legacy key retained in the fixture to prove obsolete preferences are ignored safely.
         showTodayStrip: true,
         historyView: 'timeline',
       },
       running: null,
     };
 
-    const rehydrated = normalizeState(legacyState, 0, { assumeOnboarded: true });
-    const imported = parseBackup({ schemaVersion: 2, state: legacyState }, 0);
+    const rehydrated = normalizeState(personalState, 0, { assumeOnboarded: true });
+    const imported = parseBackup({ schemaVersion: 1, state: personalState }, 0);
 
     expect(rehydrated.preferences.onboardingDone).toBe(true);
     expect(imported.preferences.onboardingDone).toBe(true);
+    expect(() => parseBackup({ schemaVersion: 2, state: personalState }, 0)).toThrow('unsupported schema');
   });
 
   it('normalizes, saves, and deletes editable interrupt categories', () => {
@@ -723,10 +704,9 @@ describe('state model', () => {
     expect(csv.split('\n')).toHaveLength(repaired.events.length + 1);
   });
 
-  it('exports team-ready report CSV columns without dropping existing event fields', () => {
+  it('exports personal report CSV columns without dropping personal event fields', () => {
     const state = {
       ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, memberName: '佐藤' },
       events: [{
         id: 'int-1',
         type: 'interrupt',
@@ -742,15 +722,13 @@ describe('state model', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const [header, row] = csv.split('\n').map((line) => line.split(','));
 
-    expect(header).toEqual(['member', 'reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'taskTemplateId', 'taxonomyVersion', 'who', 'urgency', 'memo', 'durationMinutes']);
-    expect(row[0]).toBe('佐藤');
-    expect(row[1]).toBe('2026-05-11');
-    expect(row[2]).toBe('day');
-    expect(row[3]).toBeTruthy();
-    expect(row[6]).toBe('interrupt');
-    expect(row[7]).toBe('仕様確認');
-    expect(row[14]).toBeTruthy();
-    expect(row.slice(15)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+    expect(header).toEqual(['reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes']);
+    expect(row[0]).toBe('2026-05-11');
+    expect(row[1]).toBe('day');
+    expect(row[2]).toBeTruthy();
+    expect(row[5]).toBe('interrupt');
+    expect(row[6]).toBe('仕様確認');
+    expect(row.slice(12)).toEqual(['田中', 'med', '画面の確認', '30.0']);
   });
 
   it('protects CSV cells that could be interpreted as spreadsheet formulas', () => {
@@ -771,174 +749,9 @@ describe('state model', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const row = csv.split('\n')[1].split(',');
 
-    expect(row[7]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
-    expect(row[15]).toBe("'+田中");
-    expect(row[17]).toBe("'@確認");
-  });
-
-  it('parses and aggregates multiple team report CSV files', () => {
-    const first = [
-      'member,reportDate,range,timezone,start,end,type,label,category,who,urgency,memo,durationMinutes',
-      '佐藤,2026-05-11,day,Asia/Tokyo,2026-05-11T00:00:00.000Z,2026-05-11T01:00:00.000Z,task,開発,,,,,60',
-      '佐藤,2026-05-11,day,Asia/Tokyo,2026-05-11T02:00:00.000Z,2026-05-11T02:15:00.000Z,interrupt,相談,,田中,,memo,15',
-    ].join('\n');
-    const second = [
-      'member,reportDate,range,timezone,start,end,type,label,category,who,urgency,memo,durationMinutes',
-      '鈴木,2026-05-11,day,Asia/Tokyo,2026-05-11T03:00:00.000Z,2026-05-11T03:30:00.000Z,break,休憩,,,,,30',
-      '鈴木,2026-05-11,day,Asia/Tokyo,2026-05-11T04:00:00.000Z,2026-05-11T04:10:00.000Z,unknown,未分類,,,,,10',
-    ].join('\n');
-
-    const parsed = parseReportCsvFiles([
-      { name: 'sato.csv', text: first },
-      { name: 'suzuki.csv', text: second },
-    ]);
-    const summary = aggregateTeamReportRows(parsed.rows);
-
-    expect(parsed.skipped).toBe(0);
-    expect(summary.totals.task).toBe(60 * 60000);
-    expect(summary.totals.interrupt).toBe(15 * 60000);
-    expect(summary.totals.break).toBe(30 * 60000);
-    expect(summary.totals.unknown).toBe(10 * 60000);
-    expect(summary.members.map((member) => member.member).sort()).toEqual(['佐藤', '鈴木']);
-    expect(summary.senders[0]).toMatchObject({ who: '田中', count: 1, time: 15 * 60000 });
-  });
-
-  it('builds anonymous ambient replay and public presence without task details', () => {
-    const parsed = parseReportCsvFiles([{
-      name: 'team.csv',
-      text: [
-        'member,reportDate,range,timezone,start,end,type,label,category,who,urgency,memo,durationMinutes',
-        '佐藤,2026-05-11,day,Asia/Tokyo,2026-05-11T00:00:00.000Z,2026-05-11T01:00:00.000Z,task,秘密の作業,,,,,60',
-        '鈴木,2026-05-11,day,Asia/Tokyo,2026-05-11T00:30:00.000Z,2026-05-11T00:45:00.000Z,interrupt,秘密の相談,,田中,,memo,15',
-      ].join('\n'),
-    }]);
-    const replay = buildAmbientReplay(parsed.rows);
-    const running = updateTeamWorkspaceInState({
-      ...createEmptyState(),
-      running: { type: 'task', taskId: 't1', start: at(11, 9), label: '秘密', preTaskId: null },
-    }, { presence: { teamId: 'team-a' } });
-    const presence = buildPublicPresence(running, at(11, 10));
-
-    expect(replay.members).toHaveLength(2);
-    expect(replay.members[0].label).toBe('Light 1');
-    expect(JSON.stringify(replay)).not.toContain('秘密');
-    expect(presence).toEqual(expect.objectContaining({
-      teamId: 'team-a',
-      status: 'focus',
-    }));
-    expect('label' in presence).toBe(false);
-    expect('taskId' in presence).toBe(false);
-  });
-
-  it('reads legacy report CSV as unset member and skips invalid durations', () => {
-    const legacy = [
-      'start,end,type,label,category,who,urgency,memo,durationMinutes',
-      '2026-05-11T00:00:00.000Z,2026-05-11T00:20:00.000Z,task,作業,,,,,20',
-      '2026-05-11T01:00:00.000Z,2026-05-11T01:10:00.000Z,interrupt,相談,,田中,,memo,nope',
-    ].join('\n');
-
-    const parsed = parseReportCsvFiles([{ name: 'legacy.csv', text: legacy }]);
-    const summary = aggregateTeamReportRows(parsed.rows);
-
-    expect(parsed.rows).toHaveLength(1);
-    expect(parsed.skipped).toBe(1);
-    expect(parsed.rows[0].member).toBe('未設定');
-    expect(summary.members[0]).toMatchObject({ member: '未設定', task: 20 * 60000 });
-  });
-
-  it('exports and imports team settings without replacing personal work', () => {
-    const leader = {
-      ...createEmptyState(),
-      categories: [
-        { id: 'cat-dev', name: '開発改善', color: 'oklch(0.5 0.1 220)' },
-        { id: 'cat-ops', name: '運用', color: 'oklch(0.6 0.1 150)' },
-      ],
-      whoChips: ['田中'],
-      subjectChips: ['週次確認'],
-      teamWorkspace: { ...createEmptyState().teamWorkspace, taxonomyVersion: 'v2026.06' },
-    };
-    const recipient = {
-      ...createEmptyState(),
-      categories: [{ id: 'cat-dev', name: '開発', color: 'old' }],
-      tasks: [{ id: 't1', name: '個人タスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 15, dueAt: null }, createdAt: 1, completedAt: null }],
-      events: [{ id: 'e1', type: 'task', label: '個人タスク', start: 1, end: 2 }],
-      whoChips: ['佐藤'],
-    };
-
-    const payload = buildTeamSettingsExport(leader, at(11, 9));
-    const imported = applyTeamSettingsImport(recipient, JSON.stringify(payload));
-
-    expect(imported.error).toBe(null);
-    expect(imported.state.tasks).toHaveLength(1);
-    expect(imported.state.events).toHaveLength(1);
-    expect(imported.state.categories.find((category) => category.id === 'cat-dev')?.name).toBe('開発改善');
-    expect(imported.state.categories.find((category) => category.id === 'cat-ops')?.name).toBe('運用');
-    expect(imported.state.whoChips).toEqual(['佐藤', '田中']);
-    expect(imported.state.subjectChips).toEqual(['週次確認']);
-    expect(imported.state.teamWorkspace.taxonomyVersion).toBe('v2026.06');
-  });
-
-  it('imports task packs as local tasks and skips the same pack version on repeat import', () => {
-    const leader = {
-      ...createEmptyState(),
-      teamWorkspace: { ...createEmptyState().teamWorkspace, taxonomyVersion: 'v2026.06' },
-      tasks: [
-        { id: 'personal-1', name: '個人タスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 10, dueAt: null }, createdAt: 1, completedAt: null },
-      ],
-      taskTemplates: [
-        { id: 'tpl-leader-1', name: '月次レポート', categoryId: 'cat-dev', planning: { plannedDurationMinutes: 45, dueAt: null }, createdAt: 2 },
-      ],
-    };
-    const pack = buildTaskPackExport(leader, at(11, 9));
-    const first = applyTaskPackImport(createEmptyState(), JSON.stringify(pack), at(11, 10));
-    const second = applyTaskPackImport(first.state, JSON.stringify(pack), at(11, 11));
-
-    expect(first.error).toBe(null);
-    expect(first.addedTasks).toBe(1);
-    expect(pack.tasks).toHaveLength(1);
-    expect(pack.tasks[0].name).toBe('月次レポート');
-    expect(first.state.tasks[0]).toMatchObject({
-      name: '月次レポート',
-      sourceTaskId: 'tpl-leader-1',
-      taskTemplateId: 'tpl-leader-1',
-      packVersion: 'v2026.06',
-    });
-    expect(second.addedTasks).toBe(0);
-    expect(second.skippedTasks).toBe(1);
-    expect(second.state.tasks).toHaveLength(1);
-  });
-
-  it('archives report rows, aggregates by period, compares latest periods, and round-trips archive JSON', () => {
-    const csv = [
-      'member,reportDate,range,timezone,start,end,type,label,category,categoryId,taskId,sourceTaskId,taskTemplateId,taxonomyVersion,who,urgency,memo,durationMinutes',
-      '佐藤,2026-05-11,day,Asia/Tokyo,2026-05-11T00:00:00.000Z,2026-05-11T01:00:00.000Z,task,開発,開発,cat-dev,t1,leader-1,tpl-1,v2026.06,,,,60',
-      '佐藤,2026-06-11,day,Asia/Tokyo,2026-06-11T02:00:00.000Z,2026-06-11T02:20:00.000Z,interrupt,相談,運用,cat-ops,,,,v2026.06,田中,,,20',
-    ].join('\n');
-    const legacy = [
-      'start,end,type,label,category,who,urgency,memo,durationMinutes',
-      '2026-06-11T03:00:00.000Z,2026-06-11T03:30:00.000Z,task,旧CSV作業,開発,,,,30',
-    ].join('\n');
-    const parsed = parseReportCsvFiles([
-      { name: 'new.csv', text: csv },
-      { name: 'legacy.csv', text: legacy },
-    ]);
-    const archived = addReportRowsToArchive(createEmptyState(), parsed.rows, at(11, 12));
-    const duplicate = addReportRowsToArchive(archived.state, parsed.rows, at(11, 13));
-    const months = aggregateArchiveRows(archived.state.teamArchive.entries, 'month');
-    const comparison = compareArchivePeriods(archived.state.teamArchive.entries, 'month');
-    const exported = buildTeamArchiveExport(archived.state, at(11, 14));
-    const imported = applyTeamArchiveImport(createEmptyState(), JSON.stringify(exported), at(11, 15));
-
-    expect(archived.addedEntries).toBe(3);
-    expect(duplicate.addedEntries).toBe(0);
-    expect(months.map((month) => month.period)).toEqual(['2026-06', '2026-05']);
-    expect(months[0].totals.task).toBe(30 * 60000);
-    expect(months[0].totals.interrupt).toBe(20 * 60000);
-    expect(months[0].members.map((member) => member.member).sort()).toEqual(['佐藤', '未設定']);
-    expect(months[0].categories[0].name).toBeTruthy();
-    expect(comparison.current.period).toBe('2026-06');
-    expect(comparison.previous.period).toBe('2026-05');
-    expect(imported.addedEntries).toBe(3);
+    expect(row[6]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
+    expect(row[12]).toBe("'+田中");
+    expect(row[14]).toBe("'@確認");
   });
 
   it('rejects manual add/edit that overlap the current running session', () => {
@@ -999,7 +812,7 @@ describe('state model', () => {
     expect(result.running).toMatchObject({ type: 'task', taskId: created.taskId, start: 7000 });
   });
 
-  it('round-trips JSON backup payloads in v2 format', () => {
+  it('round-trips JSON backup payloads in the personal format', () => {
     const state = {
       ...createEmptyState(),
       events: [{ id: 'manual-note', type: 'task', label: 'バックアップ確認', memo: '復元後も残す', start: 1000, end: 2000 }],
@@ -1007,9 +820,9 @@ describe('state model', () => {
     const backup = buildBackup(state, 1234);
     const imported = parseBackup(JSON.stringify(backup), 5678);
 
-    expect(backup.appName).toBe('InterruptLog');
-    expect(backup.schemaVersion).toBe(2);
-    expect(imported.version).toBe(2);
+    expect(backup.appName).toBe('InterruptLog Personal');
+    expect(backup.schemaVersion).toBe(1);
+    expect(imported.version).toBe(1);
     expect(imported.categories.length).toBeGreaterThan(0);
     expect(imported.events[0]).toMatchObject({ id: 'manual-note', memo: '復元後も残す' });
   });

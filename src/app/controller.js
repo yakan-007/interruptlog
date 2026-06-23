@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { FEATURES } from '../features';
-import { formatDate, t, translateMessage, tx } from '../i18n';
+import { formatDate, t, translateMessage } from '../i18n';
 
 const PAUSED_START_MESSAGE = '先に現在の割り込みや休憩を処理してください';
 
@@ -69,63 +68,6 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
         successKey: 'toasts.jsonExported',
       });
     },
-    async exportTeamSettings() {
-      await exportText({
-        filename: datedFilename('interruptlog-team-settings', 'json'),
-        content: () => app.actions.exportTeamSettings(),
-        type: 'application/json',
-        successKey: 'toasts.teamSettingsExported',
-      });
-    },
-    importTeamSettings(payload) {
-      const result = app.actions.importTeamSettings(payload);
-      toast(result.ok
-        ? `${t(locale, 'settings.importTeamSettings')} (${result.addedCategories})`
-        : result.error);
-      return result;
-    },
-    async exportTaskPack() {
-      await exportText({
-        filename: datedFilename('interruptlog-task-pack', 'json'),
-        content: () => app.actions.exportTaskPack(),
-        type: 'application/json',
-        successKey: 'toasts.taskPackExported',
-      });
-    },
-    importTaskPack(payload) {
-      const result = app.actions.importTaskPack(payload);
-      toast(result.ok
-        ? `${t(locale, 'team.distribution')} (${result.addedTasks})`
-        : result.error);
-      return result;
-    },
-    addRowsToTeamArchive(rows) {
-      const result = app.actions.addRowsToTeamArchive(rows);
-      toast(result.ok
-        ? tx(locale, 'toasts.archiveSaved', result.addedEntries)
-        : result.error);
-      return result;
-    },
-    addTeamDemoArchive() {
-      const result = app.actions.addTeamDemoArchive();
-      toast(result.ok ? t(locale, 'toasts.demoAdded') : result.error);
-      return result;
-    },
-    async exportTeamArchive() {
-      await exportText({
-        filename: datedFilename('interruptlog-team-archive', 'json'),
-        content: () => app.actions.exportTeamArchive(),
-        type: 'application/json',
-        successKey: 'toasts.teamArchiveExported',
-      });
-    },
-    importTeamArchive(payload) {
-      const result = app.actions.importTeamArchive(payload);
-      toast(result.ok
-        ? `${t(locale, 'settings.importTeamArchive')} (${result.addedEntries})`
-        : result.error);
-      return result;
-    },
     importJson(payload) {
       const result = app.actions.importJson(payload);
       toast(result.ok ? t(locale, 'toasts.jsonImported') : result.error);
@@ -135,10 +77,6 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       app.actions.finishOnboarding();
     },
     async exportReportCsv(range) {
-      if (FEATURES.teamUi && app.state.preferences.teamModeEnabled && !app.state.preferences.memberName.trim()) {
-        toast(t(locale, 'toasts.memberNameRequired'));
-        return;
-      }
       await exportText({
         filename: datedFilename(`interruptlog-report-${range}`, 'csv'),
         content: () => app.actions.exportReportCsv(range),
@@ -200,26 +138,17 @@ function createPassthroughActions({ app, closeSheet }) {
     moveInterruptCategoryToIndex: call(app.actions.moveInterruptCategoryToIndex),
     saveChips: call(app.actions.saveChips),
     moveChipToIndex: call(app.actions.moveChipToIndex),
-    saveTaskTemplate: app.actions.saveTaskTemplate,
-    deleteTaskTemplate: call(app.actions.deleteTaskTemplate),
     finishOnboarding: app.actions.finishOnboarding,
     resetAll: app.actions.resetAll,
     setDark: app.actions.setDark,
     setAccent: app.actions.setAccent,
-    setMemberName: app.actions.setMemberName,
     setLocale: app.actions.setLocale,
-    setTeamModeEnabled: app.actions.setTeamModeEnabled,
-    setTeamLightsEnabled: app.actions.setTeamLightsEnabled,
     setTopAdd: app.actions.setTopAdd,
     setSortDue: app.actions.setSortDue,
     setWorkSchedule: app.actions.setWorkSchedule,
     setTodayWorkdayEnd: app.actions.setTodayWorkdayEnd,
     clearTodayWorkdayEnd: app.actions.clearTodayWorkdayEnd,
     setHistoryView: app.actions.setHistoryView,
-    updateTeamWorkspace: app.actions.updateTeamWorkspace,
-    addInterruptionQueueItem: app.actions.addInterruptionQueueItem,
-    updateInterruptionQueueItem: app.actions.updateInterruptionQueueItem,
-    deleteInterruptionQueueItem: app.actions.deleteInterruptionQueueItem,
   };
 }
 

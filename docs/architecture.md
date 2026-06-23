@@ -1,7 +1,7 @@
 # Architecture
 
 作成日: 2026-06-12
-対象: `app/`
+対象: 個人運用 Web v1
 
 ## レイヤ構成
 
@@ -27,10 +27,8 @@
 - 新しい UI 文言は `src/i18n/index.js` にキー追加し、画面では `t()` / `tx()` を使う。
 - locale を受け取れる場所では固定の `'ja-JP'` に寄せず、現在 locale を渡す。
 
-## チーム機能方針
+## 保存形式
 
-- チーム機能は削除しない。
-- ただし、v1 リリースは個人運用アプリとして完成させるため、通常画面には出さない。
-- チーム UI は `VITE_ENABLE_TEAM_UI=true` を明示した開発時だけ表示する。
-- チーム関連の UI は `TeamReport.jsx` / `TeamReportViews.jsx` / `Report/teamViews/` / `Settings/TeamPanels.jsx` に境界を寄せる。
-- 仕様の仮説と未決事項は `docs/team-feature-brief.md` を更新する。
+- 個人版の保存形式は `interruptlog_personal_v1` と JSON backup の `schemaVersion: 1` だけを扱う。
+- 旧形式の localStorage とバックアップは互換対象にしない。個人版の開発はこの形式を唯一の正本とする。
+- 将来のチーム機能は、この保存形式へ仮説のフィールドを追加せず、要件を決めてから別設計として始める。

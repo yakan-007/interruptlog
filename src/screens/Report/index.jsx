@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
-import { FEATURES } from '../../features';
 import Icons from '../../icons';
 import { useTicker } from '../../lib/ticker';
 import { createReportSnapshot, selectReportInputs } from '../../state';
 import { t, tx } from '../../i18n';
 import { buildReportMetrics } from './reportMetrics';
 import StatCard from './StatCard';
-import TeamReport from './TeamReport';
 import {
   BreakdownCard,
   CategoryTimeCard,
@@ -23,11 +21,9 @@ import {
 } from './PersonalReportCards';
 
 export default function ReportScreen({ state, actions }) {
-  const [mode, setMode] = useState('personal');
   const [range, setRange] = useState('day');
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(Date.now()));
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const teamModeEnabled = FEATURES.teamUi && state.preferences.teamModeEnabled;
   const now = useTicker(1000);
   const todayStart = startOfDay(now);
   const selectedDayStart = Math.min(selectedDay, todayStart);
@@ -87,17 +83,7 @@ export default function ReportScreen({ state, actions }) {
         <div><div className="sub">{t(state.preferences.locale, 'report.eyebrow')}</div><h1>{t(state.preferences.locale, 'report.title')}</h1></div>
       </div>
 
-      {teamModeEnabled && (
-        <div className="il-report-mode">
-          <div className="il-seg full">
-            <button className={mode === 'personal' ? 'active' : ''} onClick={() => setMode('personal')}>{t(state.preferences.locale, 'report.personal')}</button>
-            <button className={mode === 'team' ? 'active' : ''} onClick={() => setMode('team')}>{t(state.preferences.locale, 'report.team')}</button>
-          </div>
-        </div>
-      )}
-
-      {teamModeEnabled && mode === 'team' ? <TeamReport state={state} actions={actions} /> : (
-        <>
+      <>
           <div className="il-report-range">
             <div className="il-seg full">
               {['day', 'week', 'month', 'year'].map((key) => (
@@ -129,16 +115,6 @@ export default function ReportScreen({ state, actions }) {
           )}
 
           <div className="il-body il-body-report">
-            {teamModeEnabled && !state.preferences.memberName && (
-              <div className="il-warn">
-                {Icons.alert(14)}
-                <div>
-                  <div className="title">{t(state.preferences.locale, 'report.memberMissingTitle')}</div>
-                  <div className="copy">{t(state.preferences.locale, 'report.memberMissingCopy')}</div>
-                </div>
-              </div>
-            )}
-
             {state.overlapRepair.warning && (
               <div className="il-warn">
                 {Icons.alert(14)}
@@ -221,8 +197,7 @@ export default function ReportScreen({ state, actions }) {
               <DailyReportPrintTemplate report={dailyReport} locale={state.preferences.locale} />
             )}
           </div>
-        </>
-      )}
+      </>
     </div>
   );
 }

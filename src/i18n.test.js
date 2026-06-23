@@ -51,9 +51,8 @@ describe('i18n', () => {
   });
 
   it('resolves string and computed translations', () => {
-    expect(t('en-US', 'team.focusWindow')).toBe('Focus window');
     expect(tx('ja-JP', 'common.rows', 3)).toBe('3行');
-    expect(tx('en-US', 'team.archivePeriodMeta', { people: 2, rows: 10, interrupts: 4 })).toBe('2 people · 10 rows · 4 interruptions');
+    expect(t('en-US', 'report.focus')).toBe('Task time');
   });
 
   it('uses custom category names instead of overwriting them with default translations', () => {

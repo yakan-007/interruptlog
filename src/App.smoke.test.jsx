@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
-import { STATE_KEY } from './constants';
+import { LEGACY_STATE_KEYS, STATE_KEY } from './constants';
 import { createEmptyState } from './state';
 
 describe('App smoke flow', () => {
@@ -58,6 +58,18 @@ describe('App smoke flow', () => {
     await waitFor(() => {
       expect(screen.queryByText('作業を停止')).toBeNull();
     });
+  });
+
+  it('starts fresh and removes the legacy localStorage key', async () => {
+    localStorage.setItem(LEGACY_STATE_KEYS[0], JSON.stringify({
+      ...createEmptyState(),
+      preferences: { ...createEmptyState().preferences, onboardingDone: true },
+    }));
+
+    render(<App />);
+
+    expect(await screen.findByRole('button', { name: 'はじめる' })).toBeTruthy();
+    expect(localStorage.getItem(LEGACY_STATE_KEYS[0])).toBeNull();
   });
 
   it('records an interruption and resumes the running task without render errors', async () => {
@@ -312,31 +324,6 @@ describe('App smoke flow', () => {
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.events).toEqual([expect.objectContaining({ taskId: 'prepared', label: '資料作成' })]);
     });
-  });
-
-  it('keeps release screens personal even when old team preferences exist', async () => {
-    const user = userEvent.setup();
-    localStorage.setItem(STATE_KEY, JSON.stringify({
-      ...createEmptyState(),
-      preferences: {
-        ...createEmptyState().preferences,
-        onboardingDone: true,
-        teamModeEnabled: true,
-        memberName: '',
-      },
-    }));
-
-    render(<App />);
-
-    await user.click(await screen.findByRole('button', { name: '振り返り' }));
-    expect(await screen.findByRole('heading', { name: '振り返り' })).toBeTruthy();
-    expect(screen.queryByText('チーム')).toBeNull();
-    expect(screen.queryByText('表示名が未設定です')).toBeNull();
-
-    await user.click(screen.getByRole('button', { name: '設定' }));
-    expect(await screen.findByRole('heading', { name: '設定' })).toBeTruthy();
-    expect(screen.queryByText('チーム運用')).toBeNull();
-    expect(screen.queryByText('チーム運用を使う')).toBeNull();
   });
 
   it('adds a missed personal event with a memo from history', async () => {

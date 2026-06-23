@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Icons from '../../icons';
-import { FEATURES } from '../../features';
 import { SUPPORTED_LOCALES, t, tx } from '../../i18n';
 import { useListReorderDrag } from '../../lib/useListReorderDrag';
 import SettingRow from './SettingRow';
@@ -13,7 +12,6 @@ import {
   ImportSheet,
   InterruptCategorySheet,
 } from './PersonalPanels';
-import { PayloadImportSheet } from './TeamPanels';
 import {
   AddRowButton,
   CategoryRow,
@@ -31,7 +29,6 @@ export default function SettingsScreen({ state, actions }) {
   const [workScheduleEditing, setWorkScheduleEditing] = useState(() => Boolean(
     state.preferences.workSchedule.start || state.preferences.workSchedule.end
   ));
-  const teamModeEnabled = FEATURES.teamUi && state.preferences.teamModeEnabled;
   const locale = state.preferences.locale;
   const hasWorkScheduleValues = Boolean(
     state.preferences.workSchedule.start || state.preferences.workSchedule.end
@@ -199,47 +196,6 @@ export default function SettingsScreen({ state, actions }) {
           <NavRow title={t(locale, 'settings.subjectChips')} note={tx(locale, 'common.count', state.subjectChips.length)} onClick={() => setPanel({ type: 'chips', kind: 'subject' })} />
         </div>
 
-        {FEATURES.teamUi && (
-          <>
-            <div className="il-section-h"><span>{t(locale, 'settings.teamOps')}</span>{teamModeEnabled && <span className="count">{state.teamArchive.entries.length}</span>}</div>
-            <div className="il-settings-group">
-              <ToggleSetting title={t(locale, 'settings.teamMode')} note={teamModeEnabled ? t(locale, 'settings.teamModeOn') : t(locale, 'settings.teamModeOff')} value={teamModeEnabled} onToggle={() => actions.setTeamModeEnabled(!teamModeEnabled)} ariaLabel={t(locale, 'settings.teamMode')} />
-              {teamModeEnabled && (
-                <>
-                  {FEATURES.teamLights && (
-                    <ToggleSetting
-                      title={t(locale, 'settings.teamLights')}
-                      note={t(locale, 'settings.teamLightsNote')}
-                      value={state.preferences.teamLightsEnabled}
-                      onToggle={() => actions.setTeamLightsEnabled(!state.preferences.teamLightsEnabled)}
-                      ariaLabel={t(locale, 'settings.teamLights')}
-                    />
-                  )}
-                  <div className="il-setrow il-settings-member">
-                    <span className="tg">
-                      <span className="t">{t(locale, 'settings.memberName')}</span>
-                      <span className="s">{t(locale, 'settings.memberNameNote')}</span>
-                    </span>
-                    <input
-                      className="il-settings-memberinput"
-                      value={state.preferences.memberName}
-                      onChange={(event) => actions.setMemberName(event.target.value)}
-                      placeholder={locale === 'ja-JP' ? '例: 佐藤' : 'Example: Alex'}
-                      aria-label={t(locale, 'settings.memberName')}
-                    />
-                  </div>
-                  <SettingsNote icon={Icons.report(14)} title={t(locale, 'settings.teamRulesTitle')} lines={tx(locale, 'settings.teamRulesLines', state.teamWorkspace.taxonomyVersion)} />
-                  <ExportRow title={t(locale, 'settings.exportTeamSettings')} note={t(locale, 'settings.exportTeamSettingsNote')} onClick={() => actions.exportTeamSettings()} />
-                  <NavRow title={t(locale, 'settings.importTeamSettings')} note={t(locale, 'settings.importTeamSettingsNote')} accent onClick={() => setPanel({ type: 'teamSettingsImport' })} />
-                  <SettingsNote icon={Icons.tasks(14)} title={t(locale, 'settings.taskPackPlaceTitle')} lines={tx(locale, 'settings.taskPackPlaceLines')} />
-                  <ExportRow title={t(locale, 'settings.exportTeamArchive')} note={t(locale, 'settings.exportTeamArchiveNote')} onClick={() => actions.exportTeamArchive()} />
-                  <NavRow title={t(locale, 'settings.importTeamArchive')} note={t(locale, 'settings.importTeamArchiveNote')} accent onClick={() => setPanel({ type: 'teamArchiveImport' })} />
-                </>
-              )}
-            </div>
-          </>
-        )}
-
         <div className="il-section-h"><span>{t(locale, 'settings.data')}</span></div>
         {state.overlapRepair.warning && (
           <div className="il-settings-group">
@@ -293,34 +249,6 @@ export default function SettingsScreen({ state, actions }) {
           onClose={() => setPanel(null)}
           onImport={(payload) => {
             const result = actions.importJson(payload);
-            if (result.ok) setPanel(null);
-            return result;
-          }}
-        />
-      )}
-      {FEATURES.teamUi && panel?.type === 'teamSettingsImport' && (
-        <PayloadImportSheet
-          title={t(locale, 'team.teamSettingsImportTitle')}
-          copy={t(locale, 'team.teamSettingsImportCopy')}
-          label={t(locale, 'team.teamSettingsJson')}
-          locale={locale}
-          onClose={() => setPanel(null)}
-          onImport={(payload) => {
-            const result = actions.importTeamSettings(payload);
-            if (result.ok) setPanel(null);
-            return result;
-          }}
-        />
-      )}
-      {FEATURES.teamUi && panel?.type === 'teamArchiveImport' && (
-        <PayloadImportSheet
-          title={t(locale, 'team.teamArchiveImportTitle')}
-          copy={t(locale, 'team.teamArchiveImportCopy')}
-          label={t(locale, 'team.teamArchiveJson')}
-          locale={locale}
-          onClose={() => setPanel(null)}
-          onImport={(payload) => {
-            const result = actions.importTeamArchive(payload);
             if (result.ok) setPanel(null);
             return result;
           }}

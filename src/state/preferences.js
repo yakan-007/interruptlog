@@ -22,7 +22,6 @@ export function deleteCategoryInState(state, categoryId) {
   return {
     ...state,
     categories: state.categories.filter((category) => category.id !== categoryId),
-    taskTemplates: (state.taskTemplates ?? []).map((template) => template.categoryId === categoryId ? { ...template, categoryId: null } : template),
     tasks: state.tasks.map((task) => task.categoryId === categoryId ? { ...task, categoryId: null } : task),
     events: state.events.map((event) => event.categoryId === categoryId ? { ...event, categoryId: null } : event),
   };

@@ -12,10 +12,8 @@ export function buildBackup(state, now = Date.now()) {
 
 export function parseBackup(input, now = Date.now()) {
   const parsed = typeof input === 'string' ? JSON.parse(input) : input;
-  if (!isObject(parsed)) throw new Error('invalid backup');
-  if (Object.prototype.hasOwnProperty.call(parsed, 'state')) {
-    if (parsed.schemaVersion !== SCHEMA_VERSION) throw new Error('unsupported schema');
-    return normalizeState(parsed.state, now, { assumeOnboarded: true });
+  if (!isObject(parsed) || !isObject(parsed.state) || parsed.schemaVersion !== SCHEMA_VERSION) {
+    throw new Error('unsupported schema');
   }
-  return normalizeState(parsed, now, { assumeOnboarded: true });
+  return normalizeState(parsed.state, now, { assumeOnboarded: true });
 }
