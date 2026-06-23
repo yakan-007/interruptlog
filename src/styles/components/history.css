@@ -122,29 +122,6 @@
   transform: scale(0.98);
 }
 
-.il-history-rerecord-action,
-.il-history-edit-tasklink {
-  width: 100%;
-  border: 1px dashed color-mix(in oklch, var(--accent) 35%, var(--hair));
-  border-radius: 10px;
-  background: color-mix(in oklch, var(--accent) 6%, var(--bg-elevated));
-  color: color-mix(in oklch, var(--accent) 74%, var(--ink) 26%);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-
-.il-history-rerecord-action {
-  margin: 2px 0 14px;
-}
-
-.il-history-edit-tasklink {
-  margin: -4px 0 14px;
-  text-align: left;
-}
-
 .il-history-toolbar {
   padding: 8px 16px 10px;
   display: flex;
@@ -164,20 +141,6 @@
 .il-history-warnwrap {
   margin: 2px 16px 10px;
 }
-
-.il-history-undo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  border: 1px solid color-mix(in oklch, var(--accent) 28%, var(--hair));
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--accent) 7%, var(--bg-elevated));
-}
-
-.il-history-undo > div { flex: 1; }
-.il-history-undo .title { font-size: 13px; font-weight: 700; }
-.il-history-undo .copy { margin-top: 2px; font-size: 12px; color: var(--ink-3); }
 
 .il-history-list {
   padding: 0 16px;

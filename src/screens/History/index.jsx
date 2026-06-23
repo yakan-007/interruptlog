@@ -21,7 +21,7 @@ import HistoryTimeline from './HistoryTimeline';
 import HistoryToolbar from './HistoryToolbar';
 import useHistoryAutoScroll from './useHistoryAutoScroll';
 
-export default function HistoryScreen({ state, actions, timelineUndo = false, onUndoRangeRewrite }) {
+export default function HistoryScreen({ state, actions }) {
   const [selectedDate, setSelectedDate] = useState(() => startOfHistoryDay(Date.now()));
   const bodyRef = useRef(null);
   const stickyRef = useRef(null);
@@ -117,18 +117,6 @@ export default function HistoryScreen({ state, actions, timelineUndo = false, on
                 <div className="copy">{t(state.preferences.locale, 'history.overlapCopy')}</div>
               </div>
               <button className="btn secondary sm" onClick={() => actions.openOverlapRepair()}>{t(state.preferences.locale, 'history.repair')}</button>
-            </div>
-          </div>
-        )}
-
-        {timelineUndo && (
-          <div className="il-history-warnwrap">
-            <div className="il-history-undo">
-              <div>
-                <div className="title">{t(state.preferences.locale, 'history.rangeReRecorded')}</div>
-                <div className="copy">{t(state.preferences.locale, 'history.rangeReRecordedCopy')}</div>
-              </div>
-              <button className="btn secondary sm" onClick={onUndoRangeRewrite}>{t(state.preferences.locale, 'history.undo')}</button>
             </div>
           </div>
         )}

@@ -93,8 +93,8 @@ export function HourlyInterruptsCard({
   );
 }
 
-export function WeeklyReviewCard({ state, now }) {
-  const review = useMemo(() => buildWeeklyReview(state, now), [state, now]);
+export function WeeklyReviewCard({ state, now, snapshot }) {
+  const review = useMemo(() => buildWeeklyReview(state, now, snapshot), [state, now, snapshot]);
   return (
     <div className="il-card il-weekly-review">
       <h3>{t(state.preferences.locale, 'report.review')}</h3>

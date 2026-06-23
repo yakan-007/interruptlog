@@ -34,6 +34,7 @@ import {
   parseReportCsvFiles,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
+  previewTaskRecordInState,
   previewReplaceTimeRangeInState,
   previewSaveEventInState,
   reorderTaskInState,
@@ -388,6 +389,39 @@ describe('state model', () => {
     expect(saved.state.events).toEqual([expect.objectContaining({
       id: 'work', taskId: 'task-b', label: '実際にした作業', categoryId: 'cat-doc', interruptOriginId: 'origin-event', workDetail: '構成を検討',
     })]);
+  });
+
+  it('previews before-and-after changes when a corrected record expands across another record', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [
+        { id: 'original', name: '元のタスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+        { id: 'actual', name: '実際のタスク', isCompleted: false, order: 1, categoryId: 'cat-doc', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+      ],
+      events: [
+        { id: 'work', type: 'task', taskId: 'original', label: '元のタスク', categoryId: 'cat-dev', start: at(11, 9), end: at(11, 10) },
+        { id: 'call', type: 'interrupt', label: '電話', categoryId: 'int-call', start: at(11, 10), end: at(11, 10, 20) },
+      ],
+    };
+    const record = {
+      id: 'work',
+      type: 'task',
+      start: at(11, 9),
+      end: at(11, 10, 20),
+      taskTarget: { mode: 'existing', taskId: 'actual' },
+    };
+    const preview = previewTaskRecordInState(state, record);
+
+    expect(preview.error).toBeNull();
+    expect(preview.preview.conflicts).toEqual([expect.objectContaining({ id: 'call' })]);
+    expect(preview.preview.changes).toEqual(expect.arrayContaining([expect.objectContaining({
+      sourceEventId: 'call',
+      before: expect.objectContaining({ label: '電話' }),
+      after: null,
+    })]));
+
+    const saved = saveTaskRecordInState(state, record);
+    expect(saved.state.events).toEqual([expect.objectContaining({ id: 'work', taskId: 'actual', start: at(11, 9), end: at(11, 10, 20) })]);
   });
 
   it('creates a completed task from an unassigned historical work record', () => {

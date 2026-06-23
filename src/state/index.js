@@ -48,6 +48,12 @@ export {
 } from './reports';
 
 export {
+  calculateRangeStats,
+  createReportSnapshot,
+  selectRangeEvents,
+} from './reportFacts';
+
+export {
   findOverlappingEvents,
 } from './resolution';
 

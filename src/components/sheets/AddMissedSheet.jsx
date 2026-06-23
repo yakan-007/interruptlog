@@ -7,10 +7,11 @@ import TaskTargetFields from '../../screens/History/TaskTargetFields';
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
   const [type, setType] = useState(initialDraft?.type ?? 'task');
   const [label, setLabel] = useState(initialDraft?.label ?? '');
-  const [workDetail, setWorkDetail] = useState(initialDraft?.workDetail ?? initialDraft?.label ?? '');
   const [taskTarget, setTaskTarget] = useState(initialDraft?.taskTarget ?? {
-    mode: 'none',
+    mode: 'new',
+    name: initialDraft?.label ?? '',
     categoryId: initialDraft?.taskCategoryId ?? state.categories[0]?.id ?? null,
+    complete: true,
   });
   const [who, setWho] = useState(initialDraft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(Boolean(initialDraft?.saveWhoChip));
@@ -45,7 +46,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       start: start.getTime(),
       end: end.getTime(),
       memo,
-      ...(type === 'task' ? { categoryId: taskTarget.categoryId, workDetail, taskTarget } : {}),
+      ...(type === 'task' ? { categoryId: taskTarget.categoryId, taskTarget } : {}),
       ...(type === 'interrupt' ? { who, urgency, categoryId: interruptCategoryId } : {}),
     };
 
@@ -61,7 +62,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           preview: previewResult.preview,
           record: draft,
           returnSheet: 'addMissed',
-          returnArg: { type, label, workDetail, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+          returnArg: { type, label, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
           confirmLabel: t(locale, 'sheets.add'),
           successMessage: t(locale, 'toasts.eventAdded'),
         });
@@ -84,7 +85,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, workDetail, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+        returnArg: { type, label, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
         confirmLabel: t(locale, 'sheets.add'),
         successMessage: t(locale, 'toasts.eventAdded'),
       });
@@ -116,13 +117,9 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
             state={state}
             value={taskTarget}
             onChange={(next) => { setError(''); setTaskTarget(next); }}
-            suggestedName={workDetail}
+            suggestedName={label}
             locale={locale}
           />
-          <div className="il-field">
-            <label>{t(locale, 'sheets.workDetail')}</label>
-            <input className="il-input" placeholder={t(locale, 'sheets.workDetailPlaceholder')} value={workDetail} onChange={(event) => setWorkDetail(event.target.value)} />
-          </div>
         </>
       )}
 

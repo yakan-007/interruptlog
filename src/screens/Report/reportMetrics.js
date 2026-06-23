@@ -1,6 +1,6 @@
-import { selectReportInputs } from '../../state';
 import { categoryLabel, interruptCategoryLabel, normalizeLocale } from '../../i18n';
 import { getWorkdayBounds } from '../../state/workday';
+import { calculateRangeStats, createReportSnapshot, selectRangeEvents } from '../../state/reportFacts';
 
 const URGENCY_META = {
   low: { color: 'var(--urg-low)' },
@@ -8,12 +8,13 @@ const URGENCY_META = {
   high: { color: 'var(--urg-high)' },
 };
 
-export function buildReportMetrics(state, currentStats, bounds, now) {
+export function buildReportMetrics(state, currentStats, bounds, now, snapshot = null) {
+  const facts = snapshot ?? createReportSnapshot(state, now);
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
   const hourly = buildHourlyInterrupts(currentStats.events);
   const maxHourly = Math.max(...hourly, 1);
   const locale = state.preferences.locale;
-  const dayStats = buildDayStats(state, now, locale);
+  const dayStats = buildDayStats(facts, now, locale);
   const maxDay = Math.max(...dayStats.map((day) => day.focus + day.interrupt), 1);
   const senders = buildSenders(currentStats.events);
   const maxSenderTime = Math.max(...senders.map((sender) => sender.time), 1);
@@ -22,9 +23,11 @@ export function buildReportMetrics(state, currentStats, bounds, now) {
   const topUrgency = urgencyStats.reduce((top, item) => item.time > top.time ? item : top, urgencyStats[0]);
   const categoryList = buildCategoryList(currentStats.events);
   const totalCategoryTime = categoryList.reduce((sum, category) => sum + category.time, 0) || 1;
-  const taskReport = buildTaskReport(state, currentStats.events, bounds);
-  const taskEngagement = buildTaskEngagement(state, currentStats.events, bounds, now);
-  const dayActivity = buildDayActivity(state, currentStats.events);
+  const taskGroups = groupTaskEvents(currentStats.events);
+  const allTaskGroups = groupTaskEvents(selectRangeEvents(facts, Number.NEGATIVE_INFINITY, now));
+  const taskReport = buildTaskReport(state, taskGroups, bounds);
+  const taskEngagement = buildTaskEngagement(state, taskGroups, allTaskGroups, bounds);
+  const dayActivity = buildDayActivity(state, currentStats.events, taskGroups);
   const dailyReport = buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity);
   const workday = buildWorkdayReport(state, currentStats.events, bounds, now);
   const peakHour = hourly.indexOf(Math.max(...hourly));
@@ -95,17 +98,21 @@ function buildHourlyInterrupts(events) {
   return hourly;
 }
 
-function buildDayStats(state, now, locale) {
+function buildDayStats(snapshot, now, locale) {
   const weekdayFormatter = new Intl.DateTimeFormat(normalizeLocale(locale), { weekday: 'narrow' });
   return Array(7).fill(null).map((_, index) => {
-    const dayStart = now - (6 - index) * 86400000;
-    const base = new Date(dayStart);
+    const base = new Date(now);
+    base.setDate(base.getDate() - (6 - index));
     base.setHours(0, 0, 0, 0);
-    const dayInput = selectReportInputs(state, 'day', base.getTime() + 86399999);
+    const dayStart = base.getTime();
+    const nextDay = new Date(dayStart);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const until = Math.min(nextDay.getTime(), now);
+    const dayInput = calculateRangeStats(snapshot, dayStart, until);
     return {
-      day: weekdayFormatter.format(new Date(dayStart)),
-      focus: dayInput.currentStats.focus,
-      interrupt: dayInput.currentStats.interrupt,
+      day: weekdayFormatter.format(base),
+      focus: dayInput.focus,
+      interrupt: dayInput.interrupt,
     };
   });
 }
@@ -141,25 +148,22 @@ function buildCategoryList(events) {
   return Object.values(categoryMap).sort((a, b) => b.time - a.time);
 }
 
-function buildTaskReport(state, events, bounds) {
-  const taskEvents = events.filter((event) => event.type === 'task' && event.taskId);
-  const uniqueTaskIds = [...new Set(taskEvents.map((event) => event.taskId))];
-  const taskTimeById = taskEvents.reduce((map, event) => {
-    map.set(event.taskId, (map.get(event.taskId) ?? 0) + event.durationMs);
-    return map;
-  }, new Map());
-  const taskReportRows = uniqueTaskIds
-    .map((id) => {
-      const task = state.tasks.find((item) => item.id === id);
-      const firstEvent = taskEvents.find((event) => event.taskId === id);
-      const category = state.categories.find((item) => item.id === (task?.categoryId ?? firstEvent?.categoryId));
+function buildTaskReport(state, groups, bounds) {
+  const uniqueTaskIds = [...groups.keys()];
+  const taskById = new Map(state.tasks.map((task) => [task.id, task]));
+  const categoryById = new Map(state.categories.map((category) => [category.id, category]));
+  const taskReportRows = [...groups.values()]
+    .map((group) => {
+      const task = taskById.get(group.id);
+      const firstEvent = group.events[0];
+      const category = categoryById.get(firstEvent?.categoryId ?? task?.categoryId);
       const completedInRange = Boolean(task?.isCompleted && task.completedAt >= bounds.since && task.completedAt < bounds.until);
       return {
-        id,
+        id: group.id,
         name: task?.name ?? firstEvent?.label ?? 'Task',
         categoryName: categoryLabel(state.preferences.locale, category),
         categoryColor: category?.color ?? 'var(--task)',
-        time: taskTimeById.get(id) ?? 0,
+        time: group.time,
         completedAt: task?.completedAt ?? null,
         completedInRange,
       };
@@ -183,36 +187,30 @@ function buildTaskReport(state, events, bounds) {
   };
 }
 
-function buildTaskEngagement(state, events, bounds, now) {
-  const taskEvents = events.filter((event) => event.type === 'task' && event.taskId);
-  const allTaskEvents = state.events
-    .filter((event) => event.type === 'task' && event.taskId)
-    .map((event) => clipEvent(event, 0, now, now))
-    .filter(Boolean);
-  const allTimeById = sumEventsByTask(allTaskEvents);
-  const rangeTimeById = sumEventsByTask(taskEvents);
-  const rows = [...rangeTimeById.entries()]
-    .map(([id, rangeTime]) => {
-      const task = state.tasks.find((item) => item.id === id);
-      const sessions = taskEvents
-        .filter((event) => event.taskId === id)
-        .sort((a, b) => a.clippedStart - b.clippedStart);
+function buildTaskEngagement(state, rangeGroups, allGroups, bounds) {
+  const taskById = new Map(state.tasks.map((task) => [task.id, task]));
+  const categoryById = new Map(state.categories.map((category) => [category.id, category]));
+  const rows = [...rangeGroups.values()]
+    .map((group) => {
+      const task = taskById.get(group.id);
+      const sessions = group.events;
       const firstEvent = sessions[0];
-      const category = state.categories.find((item) => item.id === (task?.categoryId ?? firstEvent?.categoryId));
+      const category = categoryById.get(firstEvent?.categoryId ?? task?.categoryId);
       const daily = buildTaskDailyWork(sessions, bounds);
       const plannedMs = (task?.planning?.plannedDurationMinutes ?? 0) * 60000;
+      const allTime = allGroups.get(group.id)?.time ?? group.time;
       return {
-        id,
+        id: group.id,
         name: task?.name ?? firstEvent?.label ?? 'Task',
         categoryName: categoryLabel(state.preferences.locale, category),
         categoryColor: category?.color ?? 'var(--task)',
-        rangeTime,
-        allTime: allTimeById.get(id) ?? rangeTime,
+        rangeTime: group.time,
+        allTime,
         sessionCount: sessions.length,
         workDayCount: daily.length,
         isCompleted: Boolean(task?.isCompleted),
         plannedMs,
-        estimateDiffMs: plannedMs > 0 ? (allTimeById.get(id) ?? rangeTime) - plannedMs : null,
+        estimateDiffMs: plannedMs > 0 ? allTime - plannedMs : null,
         daily,
         sessions,
       };
@@ -221,20 +219,20 @@ function buildTaskEngagement(state, events, bounds, now) {
   return { rows };
 }
 
-function buildDayActivity(state, events) {
-  const taskIds = new Set(events.filter((event) => event.type === 'task' && event.taskId).map((event) => event.taskId));
-  const touchedTasks = [...taskIds]
-    .map((id) => {
-      const task = state.tasks.find((item) => item.id === id);
-      const taskEvents = events.filter((event) => event.taskId === id);
-      const firstEvent = taskEvents[0];
-      const category = state.categories.find((item) => item.id === (task?.categoryId ?? firstEvent?.categoryId));
+function buildDayActivity(state, events, taskGroups) {
+  const taskById = new Map(state.tasks.map((task) => [task.id, task]));
+  const categoryById = new Map(state.categories.map((category) => [category.id, category]));
+  const touchedTasks = [...taskGroups.values()]
+    .map((group) => {
+      const task = taskById.get(group.id);
+      const firstEvent = group.events[0];
+      const category = categoryById.get(firstEvent?.categoryId ?? task?.categoryId);
       return {
-        id,
+        id: group.id,
         name: task?.name ?? firstEvent?.label ?? 'Task',
         categoryName: categoryLabel(state.preferences.locale, category),
         categoryColor: category?.color ?? 'var(--task)',
-        time: taskEvents.reduce((sum, event) => sum + event.durationMs, 0),
+        time: group.time,
         isCompleted: Boolean(task?.isCompleted),
       };
     })
@@ -293,11 +291,16 @@ function buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity)
   };
 }
 
-function sumEventsByTask(events) {
-  return events.reduce((map, event) => {
-    map.set(event.taskId, (map.get(event.taskId) ?? 0) + event.durationMs);
-    return map;
-  }, new Map());
+function groupTaskEvents(events) {
+  const groups = new Map();
+  for (const event of events) {
+    if (event.type !== 'task' || !event.taskId) continue;
+    if (!groups.has(event.taskId)) groups.set(event.taskId, { id: event.taskId, events: [], time: 0 });
+    const group = groups.get(event.taskId);
+    group.events.push(event);
+    group.time += event.durationMs;
+  }
+  return groups;
 }
 
 function buildTaskDailyWork(events, bounds) {
@@ -314,14 +317,6 @@ function buildTaskDailyWork(events, bounds) {
     }
   }
   return [...daily.entries()].map(([dayStart, durationMs]) => ({ dayStart, durationMs }));
-}
-
-function clipEvent(event, since, until, now) {
-  const end = event.end ?? now;
-  const clippedStart = Math.max(event.start, since);
-  const clippedEnd = Math.min(end, until);
-  const durationMs = Math.max(0, clippedEnd - clippedStart);
-  return durationMs > 0 ? { ...event, clippedStart, clippedEnd, durationMs } : null;
 }
 
 function startOfDay(timestamp) {

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { FEATURES } from '../../features';
 import Icons from '../../icons';
 import { useTicker } from '../../lib/ticker';
-import { selectReportInputs } from '../../state';
+import { createReportSnapshot, selectReportInputs } from '../../state';
 import { t, tx } from '../../i18n';
 import { buildReportMetrics } from './reportMetrics';
 import StatCard from './StatCard';
@@ -34,9 +34,13 @@ export default function ReportScreen({ state, actions }) {
   const reportNow = range === 'day'
     ? selectedDayStart === todayStart ? now : endOfDay(selectedDayStart)
     : now;
+  const reportSnapshot = useMemo(
+    () => createReportSnapshot(state.events, reportNow),
+    [state.events, reportNow]
+  );
   const { bounds, currentStats, previousStats, compareLabel } = useMemo(
-    () => selectReportInputs(state, range, reportNow),
-    [state, range, reportNow]
+    () => selectReportInputs(state, range, reportNow, reportSnapshot),
+    [state, range, reportNow, reportSnapshot]
   );
 
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
@@ -68,8 +72,8 @@ export default function ReportScreen({ state, actions }) {
     dailyReport,
     workday,
   } = useMemo(
-    () => buildReportMetrics(state, currentStats, bounds, reportNow),
-    [bounds, currentStats, reportNow, state]
+    () => buildReportMetrics(state, currentStats, bounds, reportNow, reportSnapshot),
+    [bounds, currentStats, reportNow, reportSnapshot, state]
   );
   const canGoNextDay = selectedDayStart < todayStart;
   const setDateFromInput = (value) => {
@@ -154,7 +158,7 @@ export default function ReportScreen({ state, actions }) {
 
             {range === 'day' && <WorkdayCard workday={workday} locale={state.preferences.locale} />}
 
-            {range === 'week' && <WeeklyReviewCard state={state} now={now} />}
+            {range === 'week' && <WeeklyReviewCard state={state} now={now} snapshot={reportSnapshot} />}
 
             <BreakdownCard currentStats={currentStats} locale={state.preferences.locale} total={total} />
 

@@ -1,4 +1,5 @@
-import { calcStats, getRangeBounds } from './reports';
+import { getRangeBounds } from './reports';
+import { calculateRangeStats, createReportSnapshot, selectRangeEvents } from './reportFacts';
 import { getWorkdayBounds } from './workday';
 
 export function selectActiveTasks(state) {
@@ -74,14 +75,18 @@ export function selectWorkdayStatus(state, now = Date.now()) {
   const bounds = getWorkdayBounds(state, now);
   if (!bounds) return null;
 
+  const spentByTask = new Map();
+  for (const event of selectRangeEvents(createReportSnapshot(state, now), Number.NEGATIVE_INFINITY, now)) {
+    if (event.type !== 'task' || !event.taskId) continue;
+    spentByTask.set(event.taskId, (spentByTask.get(event.taskId) ?? 0) + event.durationMs);
+  }
+
   const commitments = state.tasks
     .filter((task) => !task.isCompleted)
     .filter((task) => (task.planning?.plannedDurationMinutes ?? 0) > 0)
     .filter((task) => task.planning?.dueAt != null && task.planning.dueAt <= bounds.end)
     .map((task) => {
-      const spentMs = state.events
-        .filter((event) => event.type === 'task' && event.taskId === task.id)
-        .reduce((sum, event) => sum + Math.max(0, Math.min(event.end ?? now, now) - event.start), 0);
+      const spentMs = spentByTask.get(task.id) ?? 0;
       const estimatedMs = task.planning.plannedDurationMinutes * 60000;
       return { taskId: task.id, remainingMs: Math.max(0, estimatedMs - spentMs) };
     });
@@ -105,12 +110,14 @@ export function selectHistoryDaySummary(items) {
   };
 }
 
-export function selectReportInputs(state, range, now = Date.now()) {
+export function selectReportInputs(state, range, now = Date.now(), snapshot = null) {
   const bounds = getRangeBounds(range, now);
+  const facts = snapshot ?? createReportSnapshot(state, now);
   return {
     bounds,
-    currentStats: calcStats(state.events, bounds.since, bounds.until, now),
-    previousStats: calcStats(state.events, bounds.prevSince, bounds.prevUntil, now),
+    snapshot: facts,
+    currentStats: calculateRangeStats(facts, bounds.since, bounds.until),
+    previousStats: calculateRangeStats(facts, bounds.prevSince, bounds.prevUntil),
     compareLabel: { day: '昨日比', week: '先週比', month: '先月比', year: '前年比' }[range],
   };
 }

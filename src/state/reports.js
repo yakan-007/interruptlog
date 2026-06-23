@@ -1,44 +1,24 @@
 import { cleanText, csvCell } from './utils';
+import { calculateRangeStats, createReportSnapshot } from './reportFacts';
 
-const DAY_MS = 86400000;
 const TEAM_MEMBER_FALLBACK = '未設定';
 const REPORT_TYPES = ['task', 'interrupt', 'break', 'unknown'];
 
 export function getRangeBounds(range, now = Date.now()) {
   const today = startOfDay(now);
-  if (range === 'day') return { since: today, until: now, prevSince: today - DAY_MS, prevUntil: today };
-  if (range === 'week') return { since: now - (7 * DAY_MS), until: now, prevSince: now - (14 * DAY_MS), prevUntil: now - (7 * DAY_MS) };
-  if (range === 'month') return { since: now - (30 * DAY_MS), until: now, prevSince: now - (60 * DAY_MS), prevUntil: now - (30 * DAY_MS) };
-  return { since: now - (365 * DAY_MS), until: now, prevSince: now - (730 * DAY_MS), prevUntil: now - (365 * DAY_MS) };
-}
-
-function getEventOverlap(event, since, until, now = Date.now()) {
-  const end = event.end ?? now;
-  const start = Math.max(event.start, since);
-  const clippedEnd = Math.min(end, until);
-  const durationMs = Math.max(0, clippedEnd - start);
-  if (durationMs <= 0) return null;
-  return { ...event, clippedStart: start, clippedEnd, durationMs };
+  if (range === 'day') return { since: today, until: now, prevSince: shiftCalendarDays(today, -1), prevUntil: today };
+  if (range === 'week') return calendarRange(now, 7);
+  if (range === 'month') return calendarRange(now, 30);
+  return calendarRange(now, 365);
 }
 
 export function calcStats(events, since, until, now = Date.now()) {
-  const overlaps = events.map((event) => getEventOverlap(event, since, until, now)).filter(Boolean);
-  const sumMs = (type) => overlaps
-    .filter((item) => item.type === type)
-    .reduce((sum, item) => sum + Math.min(item.durationMs, 12 * 3600000), 0);
-
-  return {
-    focus: sumMs('task'),
-    interrupt: sumMs('interrupt'),
-    break: sumMs('break'),
-    unknown: sumMs('unknown'),
-    events: overlaps,
-  };
+  return calculateRangeStats(createReportSnapshot(events, now), since, until);
 }
 
-export function buildReportCsv(state, range, now = Date.now()) {
+export function buildReportCsv(state, range, now = Date.now(), snapshot = null) {
   const bounds = getRangeBounds(range, now);
-  const stats = calcStats(state.events, bounds.since, bounds.until, now);
+  const stats = calculateRangeStats(snapshot ?? createReportSnapshot(state, now), bounds.since, bounds.until);
   const member = cleanText(state.preferences?.memberName);
   const reportDate = formatDateKey(bounds.since);
   const timezone = getTimezoneName();
@@ -180,10 +160,9 @@ export function aggregateTeamReportRows(rows) {
   };
 }
 
-export function buildWeeklyReview(state, now = Date.now()) {
-  const until = now;
-  const since = now - (7 * DAY_MS);
-  const stats = calcStats(state.events, since, until, now);
+export function buildWeeklyReview(state, now = Date.now(), snapshot = null) {
+  const { since, until } = getRangeBounds('week', now);
+  const stats = calculateRangeStats(snapshot ?? createReportSnapshot(state, now), since, until);
   const hourly = Array(24).fill(0);
   const senders = new Map();
   const categories = new Map();
@@ -236,6 +215,18 @@ export function buildWeeklyReview(state, now = Date.now()) {
 function startOfDay(ts) {
   const date = new Date(ts);
   date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function calendarRange(now, days) {
+  const since = shiftCalendarDays(now, -days);
+  const prevSince = shiftCalendarDays(now, -(days * 2));
+  return { since, until: now, prevSince, prevUntil: since };
+}
+
+function shiftCalendarDays(timestamp, amount) {
+  const date = new Date(timestamp);
+  date.setDate(date.getDate() + amount);
   return date.getTime();
 }
 

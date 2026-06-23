@@ -4,11 +4,10 @@ import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
 import { interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
 import TaskTargetFields from './TaskTargetFields';
-import { taskTargetForEvent, taskWorkDetailForEvent } from './taskRecordHelpers';
+import { taskTargetForEvent } from './taskRecordHelpers';
 
 export default function EditEventSheet({ event, state, actions, onClose }) {
   const [label, setLabel] = useState(event.label ?? '');
-  const [workDetail, setWorkDetail] = useState(() => taskWorkDetailForEvent(event, state));
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
@@ -19,7 +18,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end));
   const locale = state.preferences.locale;
-  const currentTask = state.tasks.find((task) => task.id === taskTarget.taskId);
 
   const handleTypeChange = (nextType) => {
     setError('');
@@ -30,7 +28,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     id: event.id,
     type,
     label,
-    workDetail,
     memo,
     who,
     urgency,
@@ -70,17 +67,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     else setError(translateMessage(locale, result.error ?? t(locale, 'errors.invalidWindow')));
   };
 
-  const openRangeRewrite = () => {
-    const draft = buildDraft();
-    actions.openSheet('reRecordRange', {
-      start: draft.start ?? event.start,
-      end: draft.end ?? event.end,
-      taskTarget,
-      workDetail,
-      memo,
-    });
-  };
-
   return (
     <SheetShell title={t(locale, 'sheets.editWorkRecord')} onClose={onClose} footer={
       <>
@@ -106,18 +92,9 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
             state={state}
             value={taskTarget}
             onChange={(next) => { setError(''); setTaskTarget(next); }}
-            suggestedName={workDetail || label}
+            suggestedName={label}
             locale={locale}
           />
-          <div className="il-field">
-            <label>{t(locale, 'sheets.workDetail')}</label>
-            <input className="il-input" placeholder={t(locale, 'sheets.workDetailPlaceholder')} value={workDetail} onChange={(current) => setWorkDetail(current.target.value)} />
-          </div>
-          {currentTask && (
-            <button className="il-history-edit-tasklink" type="button" onClick={() => actions.openSheet('editTask', currentTask)}>
-              {t(locale, 'sheets.editTaskLink')}
-            </button>
-          )}
         </>
       ) : (
         <div className="il-field">
@@ -175,10 +152,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           <input className="il-input il-mono" type="datetime-local" value={endAt} onChange={(current) => setEndAt(current.target.value)} />
         </div>
       </div>
-
-      <button className="il-history-rerecord-action" type="button" onClick={openRangeRewrite}>
-        {t(locale, 'sheets.reRecordRange')}
-      </button>
 
       <div className="il-field">
         <label>{t(locale, 'sheets.memo')}</label>

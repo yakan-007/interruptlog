@@ -32,10 +32,8 @@ import {
   parseBackup,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
-  previewReplaceTimeRangeInState,
   previewSaveEventInState,
   previewTaskRecordInState,
-  replaceTimeRangeInState,
   reorderTaskInState,
   restoreTaskAndStartInState,
   restoreTaskInState,
@@ -139,21 +137,6 @@ export function createAppActions({
     },
     saveTaskRecord(record) {
       return applyResult(saveTaskRecordInState(getState(), record));
-    },
-    previewReplaceTimeRange(record) {
-      return previewReplaceTimeRangeInState(getState(), record);
-    },
-    replaceTimeRange(record) {
-      const previousState = getState();
-      const result = replaceTimeRangeInState(previousState, record);
-      commitResult(result);
-      return { ...toActionResult(result), previousState, state: result.state };
-    },
-    restoreTimelineSnapshot(snapshot) {
-      if (!snapshot) return { ok: false, error: '元に戻す内容がありません' };
-      setTrackedAppState(snapshot);
-      setLastError(null);
-      return { ok: true, error: null };
     },
     deleteEvent: mutateWith(deleteEventInState),
     addMissedEvent(event, options) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { calcStats, createEmptyState, setWorkScheduleInState } from '../../state';
+import { calculateRangeStats, calcStats, createEmptyState, createReportSnapshot, selectRangeEvents, setWorkScheduleInState } from '../../state';
+import { getRangeBounds } from '../../state/reports';
 import { buildReportMetrics } from './reportMetrics';
 
 const at = (hour, minute = 0) => new Date(2026, 4, 11, hour, minute).getTime();
@@ -47,5 +48,43 @@ describe('workday report metrics', () => {
     expect(metrics.taskEngagement.rows[0].sessions[0].workDetail).toBe('構成を検討');
     expect(metrics.dayActivity.recordOnlyWork).toEqual([expect.objectContaining({ name: 'メール返信', time: 20 * 60000 })]);
     expect(metrics.dailyReport.recordOnlyWork).toHaveLength(1);
+  });
+
+  it('keeps task aggregation linear over a large event history', () => {
+    const start = at(1, 0);
+    const count = 16_000;
+    const duration = 5 * 60000;
+    const tasks = Array.from({ length: 200 }, (_, index) => ({
+      id: `task-${index}`,
+      name: `Task ${index}`,
+      categoryId: 'cat-dev',
+      isCompleted: false,
+      order: index,
+      planning: { plannedDurationMinutes: 0, dueAt: null },
+      createdAt: start,
+      completedAt: null,
+    }));
+    const events = Array.from({ length: count }, (_, index) => ({
+      id: `event-${index}`,
+      type: 'task',
+      taskId: `task-${index % tasks.length}`,
+      label: `Task ${index % tasks.length}`,
+      categoryId: 'cat-dev',
+      start: start + index * duration,
+      end: start + (index + 1) * duration,
+    }));
+    const now = start + count * duration;
+    const state = { ...createEmptyState(), tasks, events };
+    const snapshot = createReportSnapshot(state, now);
+    const middle = 8_000;
+    const narrow = selectRangeEvents(snapshot, start + middle * duration, start + (middle + 1) * duration);
+    const bounds = getRangeBounds('year', now);
+    const stats = calculateRangeStats(snapshot, bounds.since, bounds.until);
+    const metrics = buildReportMetrics(state, stats, bounds, now, snapshot);
+
+    expect(narrow).toEqual([expect.objectContaining({ id: `event-${middle}`, durationMs: duration })]);
+    expect(stats.focus).toBe(count * duration);
+    expect(metrics.taskEngagement.rows).toHaveLength(tasks.length);
+    expect(metrics.taskEngagement.rows.reduce((sum, row) => sum + row.rangeTime, 0)).toBe(count * duration);
   });
 });

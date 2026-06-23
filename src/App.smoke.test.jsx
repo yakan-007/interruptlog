@@ -284,7 +284,7 @@ describe('App smoke flow', () => {
     expect(await screen.findByLabelText('開始時刻')).toBeTruthy();
   });
 
-  it('re-records a timeline range onto a prepared task after reviewing affected records', async () => {
+  it('reassigns a history record to a prepared task from the task-name picker', async () => {
     const user = userEvent.setup();
     const start = new Date();
     start.setHours(9, 0, 0, 0);
@@ -306,22 +306,11 @@ describe('App smoke flow', () => {
     await user.click(await screen.findByRole('button', { name: /別タスク/ }));
     expect(await screen.findByText('作業記録を修正')).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'この時間帯を記録し直す' }));
-    expect(await screen.findByText('この時間帯を記録し直す')).toBeTruthy();
-    await user.selectOptions(screen.getByRole('combobox', { name: '既存のタスク' }), 'prepared');
-    await user.click(screen.getByRole('button', { name: '内容を確認' }));
-    expect(await screen.findByText('置き換わる記録')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: '記録し直す' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'タスク名' }), 'prepared');
+    await user.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => {
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.events).toEqual([expect.objectContaining({ taskId: 'prepared', label: '資料作成' })]);
-    });
-
-    await user.click(await screen.findByRole('button', { name: '元に戻す' }));
-    await waitFor(() => {
-      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
-      expect(saved.events).toEqual([expect.objectContaining({ taskId: 'wrong', label: '別タスク' })]);
     });
   });
 
@@ -359,7 +348,7 @@ describe('App smoke flow', () => {
     await user.click(screen.getByRole('button', { name: '履歴' }));
     await user.click(await screen.findByRole('button', { name: '押し忘れ' }));
 
-    await user.type(await screen.findByPlaceholderText('何をしていたか'), 'あとから記録する作業');
+    await user.type(await screen.findByRole('textbox', { name: 'タスク名' }), 'あとから記録する作業');
     const timeInputs = view.container.querySelectorAll('.il-hourinput-row input');
     await replaceInputValue(user, timeInputs[0], '09');
     await replaceInputValue(user, timeInputs[1], '00');
@@ -373,6 +362,9 @@ describe('App smoke flow', () => {
     });
     expect(screen.getByText('あとから記録する作業')).toBeTruthy();
     expect(screen.getByText('あとで見返す個人メモ')).toBeTruthy();
+    const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+    expect(saved.tasks).toEqual([expect.objectContaining({ name: 'あとから記録する作業', isCompleted: true })]);
+    expect(saved.events).toEqual([expect.objectContaining({ taskId: saved.tasks[0].id })]);
   });
 
   it('adds missed time to the selected history day instead of today', async () => {
@@ -383,7 +375,7 @@ describe('App smoke flow', () => {
     await user.click(await screen.findByRole('button', { name: '前日へ' }));
     await user.click(await screen.findByRole('button', { name: '押し忘れを記録' }));
 
-    await user.type(await screen.findByPlaceholderText('何をしていたか'), '昨日の作業');
+    await user.type(await screen.findByRole('textbox', { name: 'タスク名' }), '昨日の作業');
     const timeInputs = view.container.querySelectorAll('.il-hourinput-row input');
     await replaceInputValue(user, timeInputs[0], '09');
     await replaceInputValue(user, timeInputs[1], '00');

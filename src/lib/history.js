@@ -1,6 +1,5 @@
 import { normalizeLocale } from '../i18n';
 
-const DAY_MS = 86400000;
 const HOUR_MS = 3600000;
 const MINUTE_MS = 60000;
 const LONG_EVENT_MS = 4 * HOUR_MS;
@@ -31,7 +30,7 @@ export function startOfHistoryDay(ts = Date.now()) {
 
 function getHistoryDayBounds(ts = Date.now()) {
   const dayStart = startOfHistoryDay(ts);
-  return { dayStart, dayEnd: dayStart + DAY_MS };
+  return { dayStart, dayEnd: nextHistoryDayStart(dayStart) };
 }
 
 export function shiftHistoryDay(ts, delta) {
@@ -46,7 +45,7 @@ export function isSameHistoryDay(a, b) {
 
 export function createDefaultMissedDraft(selectedDate, now = Date.now()) {
   const dayStart = startOfHistoryDay(selectedDate);
-  const dayEnd = dayStart + DAY_MS;
+  const dayEnd = nextHistoryDayStart(dayStart);
   const todaySelected = startOfHistoryDay(now) === dayStart;
   const latestEnd = todaySelected
     ? Math.max(dayStart, Math.floor(now / MINUTE_MS) * MINUTE_MS)
@@ -58,7 +57,7 @@ export function createDefaultMissedDraft(selectedDate, now = Date.now()) {
 
 export function createMissedDraftFromRange(start, end) {
   const dayStart = startOfHistoryDay(start);
-  const dayEnd = dayStart + DAY_MS;
+  const dayEnd = nextHistoryDayStart(dayStart);
   const safeStart = Math.min(Math.max(start, dayStart), dayEnd - 2 * MINUTE_MS);
   const safeEnd = Math.min(Math.max(end, safeStart + MINUTE_MS), dayEnd - MINUTE_MS);
   return {
@@ -162,6 +161,12 @@ function projectEventIntoHistoryDay(event, selectedDate, now = Date.now()) {
     invalid: false,
     longEvent: (actualEnd - event.start) >= LONG_EVENT_MS,
   };
+}
+
+function nextHistoryDayStart(dayStart) {
+  const next = new Date(dayStart);
+  next.setDate(next.getDate() + 1);
+  return next.getTime();
 }
 
 export function getHistoryDayItems(events, selectedDate, now = Date.now()) {

@@ -296,6 +296,18 @@ function materializeTaskTargetInState(state, record, now) {
     return { state, record: { ...record, taskTarget: target }, taskId: target.mode === 'existing' ? target.taskId : null, error: null };
   }
 
+  const normalizedName = cleanText(target.name).toLocaleLowerCase();
+  const existing = state.tasks.find((task) => !task.isCompleted
+    && cleanText(task.name).toLocaleLowerCase() === normalizedName);
+  if (existing) {
+    return {
+      state,
+      record: { ...record, taskTarget: { mode: 'existing', taskId: existing.id } },
+      taskId: existing.id,
+      error: null,
+    };
+  }
+
   const created = createTaskInState(state, {
     name: target.name,
     categoryId: target.categoryId ?? state.categories[0]?.id ?? null,
