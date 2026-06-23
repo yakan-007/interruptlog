@@ -1,0 +1,33 @@
+const messages = {
+history: {
+        eyebrow: 'HISTORY',
+        title: 'Event history',
+        emptyTitle: 'No history for this day',
+        emptyCopy: 'Start tracking on the Tasks screen, or add missed time later.',
+        addMissed: 'Add missed time',
+        previousDay: 'From previous day',
+        nextDay: 'Continues tomorrow',
+        longEvent: 'Long event',
+        list: 'List',
+        timeline: 'Timeline',
+        today: 'Today',
+        previous: 'Previous day',
+        next: 'Next day',
+        pickDate: 'Pick date',
+        missedShort: 'Missed',
+        gapLabel: 'Open time',
+        addGap: 'Record this open time',
+        viewMode: 'History view mode',
+        summary: ({ count, total }) => `${count} items / ${total} total`,
+        anomaliesTitle: (count) => `${count} events need review`,
+        anomaliesCopy: 'Some events are still open or have inconsistent times.',
+        overlapTitle: (count) => `${count} overlapping events need review`,
+        overlapCopy: 'Reports and views may include overlapping time.',
+        repair: 'Repair overlaps',
+        rangeReRecorded: 'Time range was re-recorded',
+        rangeReRecordedCopy: 'You can undo this once now.',
+        undo: 'Undo',
+      },
+};
+
+export default messages.history;

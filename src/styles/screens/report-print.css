@@ -1,0 +1,194 @@
+.il-daily-print {
+  display: none;
+}
+
+.il-daily-print-head,
+.il-daily-print-stats,
+.il-daily-print-grid,
+.il-daily-print-row,
+.il-daily-print-memo {
+  break-inside: avoid;
+}
+
+.il-daily-print-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  border-bottom: 2px solid #111;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.il-daily-print-head .eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.il-daily-print-head h1 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.il-daily-print-head .range {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  white-space: nowrap;
+}
+
+.il-daily-print-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #111;
+  margin-bottom: 14px;
+}
+
+.il-daily-print-stats > div {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 1px solid #111;
+}
+
+.il-daily-print-stats > div:first-child {
+  border-left: none;
+}
+
+.il-daily-print-stats span,
+.il-daily-print-section h2 {
+  color: #555;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.il-daily-print-stats strong {
+  color: #111;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.il-daily-print-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.il-daily-print-section {
+  margin-top: 12px;
+}
+
+.il-daily-print-section h2 {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.il-daily-print-section .empty {
+  margin: 0;
+  color: #777;
+  font-size: 11px;
+}
+
+.il-daily-print-section .items {
+  border-top: 1px solid #d7d2cb;
+}
+
+.il-daily-print-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(70px, auto) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid #d7d2cb;
+  font-size: 11px;
+}
+
+.il-daily-print-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.il-daily-print-row span:nth-child(2) {
+  color: #666;
+}
+
+.il-daily-print-row strong {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.il-daily-print-memo {
+  display: grid;
+  gap: 3px;
+  padding: 7px 0;
+  border-bottom: 1px solid #d7d2cb;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.il-daily-print-memo strong {
+  font-size: 11px;
+}
+
+.il-daily-print-memo span {
+  color: #333;
+}
+
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    width: auto;
+    height: auto;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .il-appshell,
+  .il-appcontent,
+  .il-screen,
+  .il-body-report {
+    display: block;
+    width: auto;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: none;
+    box-shadow: none;
+    background: #fff;
+  }
+
+  .il-topbar,
+  .il-report-mode,
+  .il-report-range,
+  .il-report-date-nav,
+  .il-tabbar,
+  .il-runbar,
+  .il-quickdock,
+  .il-toast,
+  .il-body-report > :not(.il-daily-print) {
+    display: none !important;
+  }
+
+  .il-daily-print {
+    display: block !important;
+    color: #111;
+    background: #fff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+}

@@ -1,0 +1,33 @@
+const messages = {
+history: {
+        eyebrow: 'HISTORY',
+        title: '記録履歴',
+        emptyTitle: 'この日の履歴はありません',
+        emptyCopy: 'タスク画面で記録を始めるか、押し忘れた時間をあとから補えます。',
+        addMissed: '押し忘れを記録',
+        previousDay: '前日から',
+        nextDay: '翌日に続く',
+        longEvent: '長時間',
+        list: 'リスト',
+        timeline: 'タイムライン',
+        today: '今日',
+        previous: '前日へ',
+        next: '翌日へ',
+        pickDate: '日付を選ぶ',
+        missedShort: '押し忘れ',
+        gapLabel: '空き時間',
+        addGap: 'この空き時間を記録',
+        viewMode: '履歴表示モード',
+        summary: ({ count, total }) => `${count}件 / 合計 ${total}`,
+        anomaliesTitle: (count) => `${count}件の要確認記録`,
+        anomaliesCopy: '未終了または時刻が不整合なイベントがあります',
+        overlapTitle: (count) => `${count}件の重複イベントが未整理です`,
+        overlapCopy: '集計や表示に重複が含まれる可能性があります',
+        repair: '重複を整理',
+        rangeReRecorded: '時間帯の記録を変更しました',
+        rangeReRecordedCopy: '今なら一度だけ元に戻せます。',
+        undo: '元に戻す',
+      },
+};
+
+export default messages.history;

@@ -53,6 +53,13 @@ describe('i18n', () => {
   it('resolves string and computed translations', () => {
     expect(tx('ja-JP', 'common.rows', 3)).toBe('3行');
     expect(t('en-US', 'report.focus')).toBe('Task time');
+    expect(tx('en-US', 'log.workdayUntil', { time: '5:00 PM', remaining: '2h 0m' })).toContain('5:00 PM');
+    expect(tx('en-US', 'history.summary', { count: 2, total: '1h 0m' })).toBe('2 items / 1h 0m total');
+    expect(tx('en-US', 'report.sessionsCount', 3)).toContain('3');
+    expect(tx('en-US', 'report.workDaysCount', 2)).toContain('2');
+    expect(tx('en-US', 'report.showAllTasks', 4)).toContain('4');
+    expect(tx('en-US', 'report.showAllSessions', 5)).toContain('5');
+    expect(tx('en-US', 'report.focusAndInterrupt', { focus: '2h', interrupt: '30m' })).toContain('2h');
   });
 
   it('uses custom category names instead of overwriting them with default translations', () => {

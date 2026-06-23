@@ -1,0 +1,30 @@
+const messages = {
+log: {
+        title: 'Tasks',
+        emptyTitle: 'No tasks for today yet',
+        emptyCopy: 'Add a task from the input below.',
+        completedToday: 'Completed today',
+        completedArchive: 'Completed archive',
+        archiveCopy: 'Older completed tasks are hidden from the main list. Restarting one keeps tracking on the same task.',
+        addPlaceholder: 'Add a task...',
+        taskName: 'Task name',
+        openDetails: 'Open details',
+        addTask: 'Add task',
+        addAndStart: 'Add and start',
+        actual: 'Actual',
+        planned: 'Estimate',
+        total: 'Total',
+        completed: 'Done',
+        restart: 'Restart',
+        start: 'Start',
+        stop: 'Stop',
+        todayTime: "Today's time",
+        workdayUnset: 'Set work hours',
+        workdayUntil: ({ time, remaining }) => `Ends ${time} · ${remaining} left`,
+        workdayAfterEnd: (time) => `Ended at ${time}`,
+        workdayOverflow: (duration) => `${duration} over estimate`,
+        interruptOrigin: 'From an interruption',
+      },
+};
+
+export default messages.log;

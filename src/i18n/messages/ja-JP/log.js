@@ -1,0 +1,30 @@
+const messages = {
+log: {
+        title: 'タスク',
+        emptyTitle: '今日のタスクはまだありません',
+        emptyCopy: '下の入力欄からタスクを追加できます。',
+        completedToday: '今日完了',
+        completedArchive: '完了アーカイブ',
+        archiveCopy: '過去に完了したタスクです。メイン一覧からは外れますが、再開すると同じタスクとして時間を続けて記録できます。',
+        addPlaceholder: 'タスクを追加...',
+        taskName: 'タスク名',
+        openDetails: '詳細を開く',
+        addTask: 'タスクを追加',
+        addAndStart: '追加して開始',
+        actual: '実績',
+        planned: '見積',
+        total: '累計',
+        completed: '完了',
+        restart: '再開',
+        start: '開始',
+        stop: '停止',
+        todayTime: '今日の時間',
+        workdayUnset: '作業時間を設定',
+        workdayUntil: ({ time, remaining }) => `終了 ${time} · 残り ${remaining}`,
+        workdayAfterEnd: (time) => `終了 ${time} を過ぎました`,
+        workdayOverflow: (duration) => `見積が ${duration} 超過`,
+        interruptOrigin: '割り込みから発生',
+      },
+};
+
+export default messages.log;

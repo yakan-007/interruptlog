@@ -13,6 +13,7 @@
 - `src/useAppState.js`: React state、永続化、派生 selector、action 生成の接続点。
 - `src/app/controller.js`: シート閉鎖、通知、ダウンロードなど画面固有の副作用を合成する層。
 - `src/screens/` / `src/components/`: 表示と入力。ドメイン更新は action 経由で行う。
+- `src/i18n/messages/<locale>/`: 画面機能ごとの辞書。公開 API は `src/i18n/index.js` に集約する。
 
 ## アクション追加手順
 
@@ -25,7 +26,7 @@
 
 - `ja-JP` と `en-US` はキー構造を揃える。
 - en-US は削除しない。正式な英語対応に向けた準備状態として保持する。
-- 新しい UI 文言は `src/i18n/index.js` にキー追加し、画面では `t()` / `tx()` を使う。
+- 新しい UI 文言は対応する `src/i18n/messages/<locale>/` に追加し、画面では `t()` / `tx()` を使う。
 - locale を受け取れる場所では固定の `'ja-JP'` に寄せず、現在 locale を渡す。
 
 ## 保存形式
@@ -33,3 +34,10 @@
 - 個人版の保存形式は `interruptlog_personal_v1` と JSON backup の `schemaVersion: 1` だけを扱う。
 - 旧形式の localStorage とバックアップは互換対象にしない。個人版の開発はこの形式を唯一の正本とする。
 - 将来のチーム機能は、この保存形式へ仮説のフィールドを追加せず、要件を決めてから別設計として始める。
+
+## リリース品質
+
+- `src/` が唯一の実装正本。`dist/` は `npm run build` が作る成果物で、手編集しない。
+- `npm run check` は lint、coverage 付きテスト、build、knip を順に実行する。
+- coverage は Statements 80%、Branches 65%、Functions 70%、Lines 80% を下回ると失敗する。
+- GitHub Actions の `Check` workflow でも同じ `npm run check` を実行する。
