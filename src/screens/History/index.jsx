@@ -21,7 +21,7 @@ import HistoryTimeline from './HistoryTimeline';
 import HistoryToolbar from './HistoryToolbar';
 import useHistoryAutoScroll from './useHistoryAutoScroll';
 
-export default function HistoryScreen({ state, actions }) {
+export default function HistoryScreen({ state, actions, timelineUndo = false, onUndoRangeRewrite }) {
   const [selectedDate, setSelectedDate] = useState(() => startOfHistoryDay(Date.now()));
   const bodyRef = useRef(null);
   const stickyRef = useRef(null);
@@ -121,6 +121,18 @@ export default function HistoryScreen({ state, actions }) {
           </div>
         )}
 
+        {timelineUndo && (
+          <div className="il-history-warnwrap">
+            <div className="il-history-undo">
+              <div>
+                <div className="title">{t(state.preferences.locale, 'history.rangeReRecorded')}</div>
+                <div className="copy">{t(state.preferences.locale, 'history.rangeReRecordedCopy')}</div>
+              </div>
+              <button className="btn secondary sm" onClick={onUndoRangeRewrite}>{t(state.preferences.locale, 'history.undo')}</button>
+            </div>
+          </div>
+        )}
+
         {dayItems.length === 0 && (
           <div className="il-empty">
             <div className="t">{t(state.preferences.locale, 'history.emptyTitle')}</div>
@@ -168,6 +180,7 @@ function toEditableEvent(event, now) {
     type: event.type,
     taskId: event.taskId ?? null,
     label: event.label ?? '',
+    workDetail: event.workDetail ?? null,
     memo: event.memo ?? '',
     who: event.who ?? '',
     urgency: event.urgency ?? 'med',

@@ -275,7 +275,10 @@ export function TaskEngagementCard({ engagement, locale = 'ja-JP' }) {
                 </div>
                 {visibleSessions.map((session) => (
                   <div key={session.id} className="il-session-row">
-                    <span>{formatSession(session, locale)}</span>
+                    <span className="il-session-main">
+                      <span>{formatSession(session, locale)}</span>
+                      {session.workDetail && <small>{session.workDetail}</small>}
+                    </span>
                     <span className="il-mono">{fmtDurationShort(session.durationMs, locale)}</span>
                   </div>
                 ))}
@@ -322,6 +325,19 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
             <span>{event.label}</span>
             <span className="meta">{[event.who, event.categoryName].filter(Boolean).join(' · ')}</span>
             <span className="il-mono">{fmtDurationShort(event.durationMs, locale)}</span>
+          </div>
+        )}
+      />
+      <ActivitySection
+        title={t(locale, 'report.recordOnlyWork')}
+        empty={t(locale, 'report.noRecordOnlyWork')}
+        items={activity.recordOnlyWork}
+        render={(work) => (
+          <div className="il-daily-line">
+            <span className="swatch" style={{ background: work.categoryColor }} />
+            <span>{work.name}</span>
+            <span className="meta">{work.categoryName}</span>
+            <span className="il-mono">{fmtDurationShort(work.time, locale)}</span>
           </div>
         )}
       />
@@ -380,6 +396,16 @@ export function DailyReportPrintTemplate({ report, locale = 'ja-JP' }) {
             <span>{task.name}</span>
             <span>{task.categoryName}</span>
             <strong>{fmtDurationShort(task.rangeTime, locale)}</strong>
+          </div>
+        )}
+      </PrintSection>
+
+      <PrintSection title={t(locale, 'report.recordOnlyWork')} empty={t(locale, 'report.noRecordOnlyWork')} items={report.recordOnlyWork}>
+        {(work) => (
+          <div className="il-daily-print-row">
+            <span>{work.name}</span>
+            <span>{work.categoryName}</span>
+            <strong>{fmtDurationShort(work.time, locale)}</strong>
           </div>
         )}
       </PrintSection>

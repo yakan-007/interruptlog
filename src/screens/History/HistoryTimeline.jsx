@@ -61,7 +61,7 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                 <div className="rail" />
                 <div className="headline">
                   <div className="time il-mono">{formatHistoryTimeRange(event)}</div>
-                  <div className="title">{event.label}</div>
+                  <div className="title">{event.workDetail || event.label}</div>
                 </div>
                 <div className="meta">
                   <span>{typeLabel(locale, event.type)}</span>

@@ -2,45 +2,51 @@ import { useState } from 'react';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
-import { categoryLabel, interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import TaskTargetFields from './TaskTargetFields';
+import { taskTargetForEvent, taskWorkDetailForEvent } from './taskRecordHelpers';
 
 export default function EditEventSheet({ event, state, actions, onClose }) {
   const [label, setLabel] = useState(event.label ?? '');
+  const [workDetail, setWorkDetail] = useState(() => taskWorkDetailForEvent(event, state));
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
   const [urgency, setUrgency] = useState(event.urgency ?? 'med');
-  const [taskCategoryId, setTaskCategoryId] = useState(event.type === 'task' ? event.categoryId ?? state.categories[0]?.id ?? '' : state.categories[0]?.id ?? '');
+  const [taskTarget, setTaskTarget] = useState(() => event.taskTarget ?? taskTargetForEvent(event, state));
   const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? state.interruptCats[0]?.id ?? '' : state.interruptCats[0]?.id ?? '');
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end));
   const locale = state.preferences.locale;
+  const currentTask = state.tasks.find((task) => task.id === taskTarget.taskId);
 
   const handleTypeChange = (nextType) => {
     setError('');
     setType(nextType);
   };
 
+  const buildDraft = () => ({
+    id: event.id,
+    type,
+    label,
+    workDetail,
+    memo,
+    who,
+    urgency,
+    categoryId: type === 'interrupt' ? interruptCategoryId : taskTarget.categoryId ?? event.categoryId ?? null,
+    taskTarget,
+    start: fromDateTimeLocalValue(startAt),
+    end: fromDateTimeLocalValue(endAt),
+  });
+
   const handleSave = () => {
-    const start = fromDateTimeLocalValue(startAt);
-    const end = fromDateTimeLocalValue(endAt);
-    if (start == null || end == null) {
+    const draft = buildDraft();
+    if (draft.start == null || draft.end == null) {
       setError(t(locale, 'sheets.dateCheck'));
       return;
     }
-    const extra = {
-      taskId: type === 'task' ? event.taskId ?? null : null,
-      who: type === 'interrupt' ? who : '',
-      urgency: type === 'interrupt' ? urgency : 'med',
-      categoryId: type === 'task'
-        ? taskCategoryId
-        : type === 'interrupt'
-          ? interruptCategoryId
-          : null,
-    };
-    const draft = { ...event, type, label, memo, start, end, ...extra };
-    const previewResult = actions.previewSaveEvent(draft);
+    const previewResult = actions.previewTaskRecord(draft);
     if (previewResult.error) {
       setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.invalidWindow')));
       return;
@@ -48,8 +54,9 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
 
     if (previewResult.preview?.conflicts?.length) {
       actions.openSheet('resolveEvent', {
-        mode: 'edit',
+        mode: 'taskRecord',
         preview: previewResult.preview,
+        record: draft,
         returnSheet: 'editEvent',
         returnArg: draft,
         confirmLabel: t(locale, 'sheets.save'),
@@ -58,13 +65,24 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       return;
     }
 
-    const result = actions.saveEvent(draft);
+    const result = actions.saveTaskRecord(draft);
     if (result.ok) onClose();
     else setError(translateMessage(locale, result.error ?? t(locale, 'errors.invalidWindow')));
   };
 
+  const openRangeRewrite = () => {
+    const draft = buildDraft();
+    actions.openSheet('reRecordRange', {
+      start: draft.start ?? event.start,
+      end: draft.end ?? event.end,
+      taskTarget,
+      workDetail,
+      memo,
+    });
+  };
+
   return (
-    <SheetShell title={t(locale, 'sheets.editEvent')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.editWorkRecord')} onClose={onClose} footer={
       <>
         <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); }}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
@@ -75,33 +93,36 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         <label>{t(locale, 'sheets.type')}</label>
         <div className="il-seg full">
           {['task', 'interrupt', 'break'].map((value) => (
-            <button key={value} className={type === value ? 'active' : ''} onClick={() => handleTypeChange(value)}>
+            <button key={value} type="button" className={type === value ? 'active' : ''} onClick={() => handleTypeChange(value)}>
               {typeLabel(locale, value)}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="il-field">
-        <label>{t(locale, 'sheets.label')}</label>
-        <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
-      </div>
-
-      {type === 'task' && (
-        <div className="il-field">
-          <label>{t(locale, 'sheets.category')}</label>
-          <div className="il-chiprow">
-            {state.categories.map((category) => (
-              <button
-                key={category.id}
-                className={'c task-cat' + (taskCategoryId === category.id ? ' sel' : '')}
-                onClick={() => setTaskCategoryId(category.id)}
-                style={{ '--chip-cat': category.color, borderLeft: `3px solid ${category.color}` }}
-              >
-                {categoryLabel(locale, category)}
-              </button>
-            ))}
+      {type === 'task' ? (
+        <>
+          <TaskTargetFields
+            state={state}
+            value={taskTarget}
+            onChange={(next) => { setError(''); setTaskTarget(next); }}
+            suggestedName={workDetail || label}
+            locale={locale}
+          />
+          <div className="il-field">
+            <label>{t(locale, 'sheets.workDetail')}</label>
+            <input className="il-input" placeholder={t(locale, 'sheets.workDetailPlaceholder')} value={workDetail} onChange={(current) => setWorkDetail(current.target.value)} />
           </div>
+          {currentTask && (
+            <button className="il-history-edit-tasklink" type="button" onClick={() => actions.openSheet('editTask', currentTask)}>
+              {t(locale, 'sheets.editTaskLink')}
+            </button>
+          )}
+        </>
+      ) : (
+        <div className="il-field">
+          <label>{type === 'interrupt' ? t(locale, 'sheets.subject') : t(locale, 'sheets.label')}</label>
+          <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
         </div>
       )}
 
@@ -117,7 +138,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
                 onChange={(current) => setWho(current.target.value)}
               />
               {state.whoChips.map((item) => (
-                <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
+                <button key={item} type="button" className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
               ))}
             </div>
           </div>
@@ -126,7 +147,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
             <label>{t(locale, 'sheets.interruptCategory')}</label>
             <div className="il-chiprow">
               {state.interruptCats.map((category) => (
-                <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
+                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
                   {interruptCategoryLabel(locale, category)}
                 </button>
               ))}
@@ -137,7 +158,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
             <label>{t(locale, 'sheets.urgency')}</label>
             <div className="il-urg">
               {['low', 'med', 'high'].map((value) => (
-                <button key={value} className={urgency === value ? `sel ${value}` : ''} onClick={() => setUrgency(value)}>{urgencyLabel(locale, value)}</button>
+                <button key={value} type="button" className={urgency === value ? `sel ${value}` : ''} onClick={() => setUrgency(value)}>{urgencyLabel(locale, value)}</button>
               ))}
             </div>
           </div>
@@ -154,6 +175,10 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           <input className="il-input il-mono" type="datetime-local" value={endAt} onChange={(current) => setEndAt(current.target.value)} />
         </div>
       </div>
+
+      <button className="il-history-rerecord-action" type="button" onClick={openRangeRewrite}>
+        {t(locale, 'sheets.reRecordRange')}
+      </button>
 
       <div className="il-field">
         <label>{t(locale, 'sheets.memo')}</label>

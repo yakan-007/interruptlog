@@ -236,6 +236,20 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.il-session-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.il-session-main small {
+  color: var(--ink-3);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .il-session-row span:first-child {
   min-width: 0;
   overflow: hidden;

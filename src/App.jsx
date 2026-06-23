@@ -5,9 +5,11 @@ import {
   AddMissedSheet,
   AddTaskSheet,
   BreakSheet,
+  ConfirmReRecordSheet,
   ConfirmStopSheet,
   InterruptSheet,
   RepairOverlapsSheet,
+  ReRecordRangeSheet,
   ResolveEventSheet,
   ResumeOrStopSheet,
   WorkdayEndSheet,
@@ -36,6 +38,7 @@ export default function App() {
   const [sheet, setSheet] = useState(null);
   const [sheetArg, setSheetArg] = useState(null);
   const [toast, setToast] = useState(null);
+  const [timelineUndo, setTimelineUndo] = useState(null);
 
   const containerRef = useRef(null);
   const toastTimeoutRef = useRef(null);
@@ -102,10 +105,45 @@ export default function App() {
   }, [closeSheet, sheetArg]);
 
   const handleResolutionConfirm = useCallback((resolution) => {
+    if (resolution.mode === 'taskRecord') {
+      const result = actions.saveTaskRecord(resolution.record);
+      if (!result.ok) return;
+      closeSheet();
+      showToast(translateMessage(state.preferences.locale, resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved')));
+      return;
+    }
     actions.applyResolution(resolution.preview);
     closeSheet();
     showToast(translateMessage(state.preferences.locale, resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved')));
   }, [actions, closeSheet, showToast, state.preferences.locale]);
+
+  const handleReRecordBack = useCallback(() => {
+    setSheet('reRecordRange');
+    setSheetArg(activeSheetArg?.record ?? null);
+  }, [activeSheetArg]);
+
+  const handleReRecordConfirm = useCallback((undo) => {
+    if (undo?.previousState && undo?.state) {
+      setTimelineUndo({
+        previousState: undo.previousState,
+        afterSignature: timelineStateSignature(undo.state),
+      });
+    }
+    closeSheet();
+    showToast(t(state.preferences.locale, 'toasts.rangeReRecorded'));
+  }, [closeSheet, showToast, state.preferences.locale]);
+
+  const canUndoRangeRewrite = Boolean(
+    timelineUndo && timelineUndo.afterSignature === timelineStateSignature(state)
+  );
+
+  const undoRangeRewrite = useCallback(() => {
+    if (!canUndoRangeRewrite || !timelineUndo) return;
+    const result = actions.restoreTimelineSnapshot(timelineUndo.previousState);
+    if (!result.ok) return;
+    setTimelineUndo(null);
+    showToast(t(state.preferences.locale, 'toasts.rangeRestored'));
+  }, [actions, canUndoRangeRewrite, showToast, state.preferences.locale, timelineUndo]);
 
   const handleRepairApply = useCallback(() => {
     if (!activeSheetArg?.nextEvents && !state.overlapRepair.pending) return;
@@ -138,7 +176,7 @@ export default function App() {
         <>
           <div className="il-appcontent">
             {tab === 'log' && <LogScreen state={state} actions={actions} />}
-            {tab === 'history' && <HistoryScreen state={state} actions={actions} />}
+            {tab === 'history' && <HistoryScreen state={state} actions={actions} timelineUndo={canUndoRangeRewrite} onUndoRangeRewrite={undoRangeRewrite} />}
             {tab === 'report' && <ReportScreen state={state} actions={actions} />}
             {tab === 'settings' && <SettingsScreen state={state} actions={actions} />}
 
@@ -182,6 +220,8 @@ export default function App() {
             {activeSheet === 'workdayEnd' && <WorkdayEndSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addMissed' && <AddMissedSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
             {activeSheet === 'editEvent' && <EditEventSheet event={activeSheetArg} state={state} actions={actions} onClose={closeSheet} />}
+            {activeSheet === 'reRecordRange' && <ReRecordRangeSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}
+            {activeSheet === 'confirmReRecord' && <ConfirmReRecordSheet state={state} actions={actions} data={activeSheetArg} onBack={handleReRecordBack} onConfirm={handleReRecordConfirm} />}
             {activeSheet === 'resolveEvent' && <ResolveEventSheet resolution={activeSheetArg} locale={state.preferences.locale} onBack={handleResolutionBack} onConfirm={handleResolutionConfirm} />}
             {activeSheet === 'repairOverlaps' && <RepairOverlapsSheet preview={activeSheetArg ?? state.overlapRepair.pending} locale={state.preferences.locale} onDefer={handleRepairDefer} onApply={handleRepairApply} />}
           </div>
@@ -204,4 +244,13 @@ function TabButton({ icon, label, active, onClick }) {
       <span>{label}</span>
     </button>
   );
+}
+
+function timelineStateSignature(state) {
+  return JSON.stringify({
+    events: state.events,
+    tasks: state.tasks,
+    running: state.running,
+    workdaySchedules: state.workdaySchedules,
+  });
 }

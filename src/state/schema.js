@@ -198,6 +198,7 @@ export function normalizeEvent(event) {
     id: String(event.id),
     type: ['task', 'interrupt', 'break', 'unknown'].includes(event.type) ? event.type : 'unknown',
     label: cleanText(event.label) || TYPE_LABELS[event.type] || 'イベント',
+    workDetail: cleanText(event.workDetail) || null,
     sourceTaskId: cleanText(event.sourceTaskId) || null,
     interruptOriginId: cleanText(event.interruptOriginId) || null,
     taskTemplateId: cleanText(event.taskTemplateId) || null,

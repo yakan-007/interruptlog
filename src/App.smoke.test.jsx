@@ -250,8 +250,7 @@ describe('App smoke flow', () => {
     render(<App />);
     await user.click(await screen.findByRole('button', { name: '詳細を開く' }));
 
-    expect(await screen.findByText('今日の終了まで')).toBeTruthy();
-    expect(screen.getByText('明日の終了まで')).toBeTruthy();
+    expect(await screen.findByText('明日の終了まで')).toBeTruthy();
     expect(screen.getByText('今週末')).toBeTruthy();
     expect(screen.getByText('見積時間')).toBeTruthy();
   });
@@ -283,6 +282,47 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getByRole('button', { name: '基本の作業時間' }));
     expect(await screen.findByLabelText('開始時刻')).toBeTruthy();
+  });
+
+  it('re-records a timeline range onto a prepared task after reviewing affected records', async () => {
+    const user = userEvent.setup();
+    const start = new Date();
+    start.setHours(9, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(10, 0, 0, 0);
+    const state = createEmptyState();
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      ...state,
+      preferences: { ...state.preferences, onboardingDone: true, historyView: 'list' },
+      tasks: [
+        { id: 'wrong', name: '別タスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: start.getTime(), completedAt: null },
+        { id: 'prepared', name: '資料作成', isCompleted: false, order: 1, categoryId: 'cat-doc', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: start.getTime(), completedAt: null },
+      ],
+      events: [{ id: 'wrong-record', type: 'task', taskId: 'wrong', label: '別タスク', categoryId: 'cat-dev', start: start.getTime(), end: end.getTime() }],
+    }));
+
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: '履歴' }));
+    await user.click(await screen.findByRole('button', { name: /別タスク/ }));
+    expect(await screen.findByText('作業記録を修正')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'この時間帯を記録し直す' }));
+    expect(await screen.findByText('この時間帯を記録し直す')).toBeTruthy();
+    await user.selectOptions(screen.getByRole('combobox', { name: '既存のタスク' }), 'prepared');
+    await user.click(screen.getByRole('button', { name: '内容を確認' }));
+    expect(await screen.findByText('置き換わる記録')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '記録し直す' }));
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.events).toEqual([expect.objectContaining({ taskId: 'prepared', label: '資料作成' })]);
+    });
+
+    await user.click(await screen.findByRole('button', { name: '元に戻す' }));
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.events).toEqual([expect.objectContaining({ taskId: 'wrong', label: '別タスク' })]);
+    });
   });
 
   it('keeps release screens personal even when old team preferences exist', async () => {

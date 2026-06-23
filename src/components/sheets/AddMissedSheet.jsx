@@ -1,12 +1,17 @@
 import { useState } from 'react';
-import { categoryLabel, interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
 import { startOfHistoryDay } from '../../lib/history';
 import SheetShell from './SheetShell';
+import TaskTargetFields from '../../screens/History/TaskTargetFields';
 
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
   const [type, setType] = useState(initialDraft?.type ?? 'task');
   const [label, setLabel] = useState(initialDraft?.label ?? '');
-  const [taskCategoryId, setTaskCategoryId] = useState(initialDraft?.taskCategoryId ?? state.categories[0]?.id ?? null);
+  const [workDetail, setWorkDetail] = useState(initialDraft?.workDetail ?? initialDraft?.label ?? '');
+  const [taskTarget, setTaskTarget] = useState(initialDraft?.taskTarget ?? {
+    mode: 'none',
+    categoryId: initialDraft?.taskCategoryId ?? state.categories[0]?.id ?? null,
+  });
   const [who, setWho] = useState(initialDraft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(Boolean(initialDraft?.saveWhoChip));
   const [urgency, setUrgency] = useState(initialDraft?.urgency ?? 'med');
@@ -40,9 +45,34 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       start: start.getTime(),
       end: end.getTime(),
       memo,
-      ...(type === 'task' ? { categoryId: taskCategoryId } : {}),
+      ...(type === 'task' ? { categoryId: taskTarget.categoryId, workDetail, taskTarget } : {}),
       ...(type === 'interrupt' ? { who, urgency, categoryId: interruptCategoryId } : {}),
     };
+
+    if (type === 'task') {
+      const previewResult = actions.previewTaskRecord(draft);
+      if (previewResult.error) {
+        setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.checkInput')));
+        return;
+      }
+      if (previewResult.preview?.conflicts?.length) {
+        actions.openSheet('resolveEvent', {
+          mode: 'taskRecord',
+          preview: previewResult.preview,
+          record: draft,
+          returnSheet: 'addMissed',
+          returnArg: { type, label, workDetail, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+          confirmLabel: t(locale, 'sheets.add'),
+          successMessage: t(locale, 'toasts.eventAdded'),
+        });
+        return;
+      }
+      const result = actions.saveTaskRecord(draft);
+      if (result.ok) onClose();
+      else setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
+      return;
+    }
+
     const previewResult = actions.previewAddMissedEvent(draft, { createGap: false });
     if (previewResult.error) {
       setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.checkInput')));
@@ -54,7 +84,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskCategoryId, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+        returnArg: { type, label, workDetail, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
         confirmLabel: t(locale, 'sheets.add'),
         successMessage: t(locale, 'toasts.eventAdded'),
       });
@@ -80,27 +110,26 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           <button className={type === 'break' ? 'active' : ''} onClick={() => setType('break')}>{typeLabel(locale, 'break')}</button>
         </div>
       </div>
-      <div className="il-field">
-        <label>{t(locale, 'sheets.label')}</label>
-        <input className="il-input" placeholder={t(locale, 'sheets.labelPlaceholder')} value={label} onChange={(event) => setLabel(event.target.value)} />
-      </div>
-
       {type === 'task' && (
-        <div className="il-field">
-          <label>{t(locale, 'sheets.category')}</label>
-          <div className="il-chiprow">
-            {state.categories.map((category) => (
-              <button
-                key={category.id}
-                className={'c task-cat' + (taskCategoryId === category.id ? ' sel' : '')}
-                onClick={() => setTaskCategoryId(category.id)}
-                style={{ '--chip-cat': category.color }}
-              >
-                <span className="dot" style={{ background: category.color }} />
-                {categoryLabel(locale, category)}
-              </button>
-            ))}
+        <>
+          <TaskTargetFields
+            state={state}
+            value={taskTarget}
+            onChange={(next) => { setError(''); setTaskTarget(next); }}
+            suggestedName={workDetail}
+            locale={locale}
+          />
+          <div className="il-field">
+            <label>{t(locale, 'sheets.workDetail')}</label>
+            <input className="il-input" placeholder={t(locale, 'sheets.workDetailPlaceholder')} value={workDetail} onChange={(event) => setWorkDetail(event.target.value)} />
           </div>
+        </>
+      )}
+
+      {type !== 'task' && (
+        <div className="il-field">
+          <label>{type === 'interrupt' ? t(locale, 'sheets.subject') : t(locale, 'sheets.label')}</label>
+          <input className="il-input" placeholder={t(locale, 'sheets.labelPlaceholder')} value={label} onChange={(event) => setLabel(event.target.value)} />
         </div>
       )}
 

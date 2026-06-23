@@ -31,7 +31,7 @@ function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
     <button type="button" className={'il-ev t-' + event.type} style={{ borderBottom: last ? 'none' : '0.5px solid var(--hair)' }} onClick={onEdit}>
       <div className="dot" />
       <div className="ev-main">
-        <div className="ev-title">{event.label}</div>
+        <div className="ev-title">{event.workDetail || event.label}</div>
         <div className="ev-meta wrap">
           <span className="il-mono">{formatHistoryTimeRange(event)}</span>
           <span>•</span>

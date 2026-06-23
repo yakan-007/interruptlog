@@ -247,16 +247,29 @@ function buildDayActivity(state, events) {
     }))
     .sort((a, b) => b.durationMs - a.durationMs)
     .slice(0, 5);
+  const recordOnlyWork = events
+    .filter((event) => event.type === 'task' && !event.taskId)
+    .map((event) => {
+      const category = state.categories.find((item) => item.id === event.categoryId);
+      return {
+        id: event.id,
+        name: event.workDetail || event.label,
+        categoryName: categoryLabel(state.preferences.locale, category),
+        categoryColor: category?.color ?? 'var(--task)',
+        time: event.durationMs,
+      };
+    })
+    .sort((a, b) => b.time - a.time);
   const memos = events
     .filter((event) => event.memo)
     .map((event) => ({
       id: event.id,
-      label: event.label || event.type,
+      label: event.workDetail || event.label || event.type,
       memo: event.memo,
       time: event.clippedStart,
     }))
     .slice(0, 6);
-  return { touchedTasks, interruptions, memos };
+  return { touchedTasks, interruptions, recordOnlyWork, memos };
 }
 
 function buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity) {
@@ -273,6 +286,7 @@ function buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity)
     },
     completedTasks,
     incompleteTasks,
+    recordOnlyWork: dayActivity.recordOnlyWork,
     taskRows: taskEngagement.rows.slice(0, 8),
     interruptions: dayActivity.interruptions,
     memos: dayActivity.memos,

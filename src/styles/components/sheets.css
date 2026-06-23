@@ -226,6 +226,96 @@
   margin-bottom: 10px;
 }
 
+.il-task-target-field {
+  display: grid;
+  gap: 10px;
+}
+
+.il-task-target-field > label {
+  margin-bottom: -2px;
+}
+
+.il-task-target-select {
+  width: 100%;
+}
+
+.il-task-target-category {
+  display: grid;
+  gap: 8px;
+}
+
+.il-task-target-category > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.il-task-target-complete {
+  margin-top: -2px;
+}
+
+.il-rerecord-impact {
+  display: grid;
+  gap: 2px;
+  margin-top: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.il-rerecord-impact-title {
+  padding: 9px 11px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--bg-sunken);
+}
+
+.il-rerecord-impact-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 7px 11px;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-rerecord-impact-row .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-4);
+  flex: 0 0 auto;
+}
+
+.il-rerecord-impact-row .dot.t-task { background: var(--task); }
+.il-rerecord-impact-row .dot.t-interrupt { background: var(--interrupt); }
+.il-rerecord-impact-row .dot.t-break { background: var(--break); }
+
+.il-rerecord-impact-row .main {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 1px;
+}
+
+.il-rerecord-impact-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.il-rerecord-impact-row small {
+  color: var(--ink-4);
+  font-size: 11px;
+}
+
+.il-rerecord-impact-row.gap {
+  color: var(--ink-3);
+  background: color-mix(in oklch, var(--accent) 4%, transparent);
+}
+
 .il-followup-action {
   display: inline-flex;
   align-items: center;

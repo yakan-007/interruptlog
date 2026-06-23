@@ -26,4 +26,26 @@ describe('workday report metrics', () => {
     });
     expect(metrics.dayActivity.interruptions[0].categoryName).toBe('電話');
   });
+
+  it('keeps session details under their task and exposes work recorded without a task separately', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [{
+        id: 'task-1', name: '資料作成', isCompleted: false, order: 0, categoryId: 'cat-doc',
+        planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: at(9), completedAt: null,
+      }],
+      events: [
+        { id: 'session', type: 'task', taskId: 'task-1', label: '資料作成', workDetail: '構成を検討', categoryId: 'cat-doc', start: at(9), end: at(10) },
+        { id: 'record-only', type: 'task', label: 'メール返信', workDetail: 'メール返信', categoryId: 'cat-adm', start: at(10), end: at(10, 20) },
+      ],
+    };
+    const bounds = { since: at(0), until: at(23, 59) };
+    const currentStats = calcStats(state.events, bounds.since, bounds.until, bounds.until);
+    const metrics = buildReportMetrics(state, currentStats, bounds, bounds.until);
+
+    expect(metrics.taskEngagement.rows[0].name).toBe('資料作成');
+    expect(metrics.taskEngagement.rows[0].sessions[0].workDetail).toBe('構成を検討');
+    expect(metrics.dayActivity.recordOnlyWork).toEqual([expect.objectContaining({ name: 'メール返信', time: 20 * 60000 })]);
+    expect(metrics.dailyReport.recordOnlyWork).toHaveLength(1);
+  });
 });

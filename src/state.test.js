@@ -34,6 +34,7 @@ import {
   parseReportCsvFiles,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
+  previewReplaceTimeRangeInState,
   previewSaveEventInState,
   reorderTaskInState,
   restoreTaskAndStartInState,
@@ -41,6 +42,8 @@ import {
   cancelPauseInState,
   saveBreakInState,
   saveEventInState,
+  saveTaskRecordInState,
+  replaceTimeRangeInState,
   saveInterruptCategoryInState,
   saveInterruptInState,
   saveTaskInState,
@@ -359,6 +362,119 @@ describe('state model', () => {
       end: 2600,
     }, {}, 9000);
     expect(separated.state.events).toHaveLength(2);
+  });
+
+  it('moves a work record to an existing task without changing the task name', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [
+        { id: 'task-a', name: '元のタスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+        { id: 'task-b', name: '実際にした作業', isCompleted: false, order: 1, categoryId: 'cat-doc', interruptOriginId: 'origin-event', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+      ],
+      events: [{ id: 'work', type: 'task', taskId: 'task-a', label: '元のタスク', categoryId: 'cat-dev', start: at(11, 9), end: at(11, 10) }],
+    };
+
+    const saved = saveTaskRecordInState(state, {
+      id: 'work',
+      type: 'task',
+      start: at(11, 9),
+      end: at(11, 10),
+      workDetail: '構成を検討',
+      taskTarget: { mode: 'existing', taskId: 'task-b' },
+    });
+
+    expect(saved.error).toBeNull();
+    expect(saved.state.tasks.map((task) => task.name)).toEqual(['元のタスク', '実際にした作業']);
+    expect(saved.state.events).toEqual([expect.objectContaining({
+      id: 'work', taskId: 'task-b', label: '実際にした作業', categoryId: 'cat-doc', interruptOriginId: 'origin-event', workDetail: '構成を検討',
+    })]);
+  });
+
+  it('creates a completed task from an unassigned historical work record', () => {
+    const saved = saveTaskRecordInState(createEmptyState(), {
+      type: 'task',
+      start: at(11, 13),
+      end: at(11, 14),
+      workDetail: '請求書を確認',
+      taskTarget: { mode: 'new', name: '請求書の確認', categoryId: 'cat-adm', complete: true },
+    });
+
+    expect(saved.error).toBeNull();
+    expect(saved.taskId).toBeTruthy();
+    expect(saved.state.tasks).toEqual([expect.objectContaining({
+      id: saved.taskId, name: '請求書の確認', categoryId: 'cat-adm', isCompleted: true, completedAt: at(11, 14),
+    })]);
+    expect(saved.state.events).toEqual([expect.objectContaining({
+      type: 'task', taskId: saved.taskId, label: '請求書の確認', interruptOriginId: null, workDetail: '請求書を確認',
+    })]);
+  });
+
+  it('re-records one same-day range over tasks, an interruption, and a break', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [
+        { id: 'old', name: '別タスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+        { id: 'actual', name: '資料作成', isCompleted: false, order: 1, categoryId: 'cat-doc', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+      ],
+      events: [
+        { id: 'a', type: 'task', taskId: 'old', label: '別タスク', categoryId: 'cat-dev', start: at(11, 9), end: at(11, 9, 20) },
+        { id: 'b', type: 'interrupt', label: '電話', categoryId: 'int-call', start: at(11, 9, 20), end: at(11, 9, 40) },
+        { id: 'c', type: 'break', label: '休憩', start: at(11, 9, 40), end: at(11, 9, 50) },
+        { id: 'd', type: 'task', taskId: 'old', label: '別タスク', categoryId: 'cat-dev', start: at(11, 9, 50), end: at(11, 10) },
+      ],
+    };
+    const record = {
+      type: 'task',
+      start: at(11, 9),
+      end: at(11, 10),
+      workDetail: '構成をまとめる',
+      taskTarget: { mode: 'existing', taskId: 'actual' },
+    };
+    const preview = previewReplaceTimeRangeInState(state, record);
+    const replaced = replaceTimeRangeInState(state, record);
+
+    expect(preview.error).toBeNull();
+    expect(preview.impact).toMatchObject({ unrecordedMs: 0 });
+    expect(preview.impact.items.map((item) => item.type)).toEqual(['task', 'interrupt', 'break', 'task']);
+    expect(replaced.error).toBeNull();
+    expect(replaced.state.events).toEqual([expect.objectContaining({
+      type: 'task', taskId: 'actual', label: '資料作成', workDetail: '構成をまとめる', start: at(11, 9), end: at(11, 10),
+    })]);
+    expect(findOverlappingEvents(replaced.state.events)).toHaveLength(0);
+  });
+
+  it('splits the edge records when re-recording only the middle of a time range', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [
+        { id: 'a', name: 'A', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+        { id: 'b', name: 'B', isCompleted: false, order: 1, categoryId: 'cat-doc', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+      ],
+      events: [{ id: 'a-work', type: 'task', taskId: 'a', label: 'A', categoryId: 'cat-dev', start: at(11, 9), end: at(11, 10) }],
+    };
+
+    const replaced = replaceTimeRangeInState(state, {
+      type: 'task', start: at(11, 9, 20), end: at(11, 9, 40), taskTarget: { mode: 'existing', taskId: 'b' },
+    });
+
+    expect(replaced.error).toBeNull();
+    expect(replaced.state.events.map((event) => `${event.taskId}:${event.start}-${event.end}`)).toEqual([
+      `a:${at(11, 9)}-${at(11, 9, 20)}`,
+      `b:${at(11, 9, 20)}-${at(11, 9, 40)}`,
+      `a:${at(11, 9, 40)}-${at(11, 10)}`,
+    ]);
+  });
+
+  it('does not allow a range replacement across calendar days', () => {
+    const result = previewReplaceTimeRangeInState(createEmptyState(), {
+      type: 'task',
+      start: at(11, 23, 30),
+      end: at(12, 0, 30),
+      taskTarget: { mode: 'none', categoryId: 'cat-dev' },
+    });
+
+    expect(result.preview).toBeNull();
+    expect(result.error).toContain('同じ日');
   });
 
   it('restores a completed task and can immediately resume tracking on the same task id', () => {
