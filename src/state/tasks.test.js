@@ -131,17 +131,22 @@ describe('personal tasks', () => {
 
     expect(state.tasks[0].memo).toBe('最初のメモ');
     expect(state.events[0]).toMatchObject({ type: 'task', taskId: state.tasks[0].id, memo: '最初のメモ' });
+    state.events.unshift({
+      id: 'previous-session', type: 'task', taskId: state.tasks[0].id, label: '以前のタスク名',
+      categoryId: 'cat-dev', memo: '以前のメモ', start: 500, end: 900,
+    });
 
     state = saveTaskInState(state, {
       id: state.tasks[0].id,
-      name: 'メモ付きタスク',
+      name: '更新後のタスク名',
       categoryId: 'cat-doc',
       plannedDurationMinutes: 45,
       memo: '更新したメモ',
     }, 2000).state;
 
     expect(state.tasks[0]).toMatchObject({ memo: '更新したメモ', categoryId: 'cat-doc' });
-    expect(state.events[0]).toMatchObject({ memo: '更新したメモ', categoryId: 'cat-doc' });
+    expect(state.events[0]).toMatchObject({ label: '更新後のタスク名', categoryId: 'cat-doc', memo: '更新したメモ' });
+    expect(state.events[1]).toMatchObject({ label: '更新後のタスク名', memo: '更新したメモ', categoryId: 'cat-doc' });
   });
 
   it('reorders active tasks and switches back to manual ordering', () => {

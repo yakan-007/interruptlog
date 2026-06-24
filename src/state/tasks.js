@@ -75,13 +75,14 @@ export function saveTaskInState(state, data, now = Date.now()) {
   if (error) return { state, taskId: data.id ?? null, error };
   if (!data.id) return createTaskInState(state, data, now);
 
+  const name = cleanText(data.name);
   const memo = cleanText(data.memo);
   return {
     state: {
       ...state,
       tasks: state.tasks.map((task) => task.id === data.id ? {
         ...task,
-        name: cleanText(data.name) || task.name,
+        name: name || task.name,
         categoryId: data.categoryId ?? null,
         memo,
         planning: {
@@ -90,20 +91,18 @@ export function saveTaskInState(state, data, now = Date.now()) {
           dueAt: asPositiveTimestamp(data.dueAt, null),
         },
       } : task),
-      events: state.events.map((event) =>
-        event.type === 'task' &&
-        event.taskId === data.id &&
-        event.end === null &&
-        state.running?.type === 'task' &&
-        state.running.taskId === data.id
-          ? {
-              ...event,
-              label: cleanText(data.name) || event.label,
-              categoryId: data.categoryId ?? null,
-              memo,
-            }
-          : event
-      ),
+      // Task sessions inherit their shared identity from the task. A task edit
+      // must therefore update every linked session so history, reports, and
+      // exports cannot disagree about its name, category, or memo.
+      events: state.events.map((event) => {
+        if (event.type !== 'task' || event.taskId !== data.id) return event;
+        return {
+          ...event,
+          categoryId: data.categoryId ?? null,
+          label: name || event.label,
+          memo,
+        };
+      }),
     },
     taskId: data.id,
     error: null,

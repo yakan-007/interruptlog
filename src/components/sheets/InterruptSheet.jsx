@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Icons from '../../icons';
 import { useTicker } from '../../lib/ticker';
 import { elapsedSince } from '../../lib/timer';
@@ -6,7 +6,7 @@ import { interruptCategoryLabel, t, urgencyLabel } from '../../i18n';
 import SheetShell from './SheetShell';
 import TimerPanel from './TimerPanel';
 
-export default function InterruptSheet({ state, actions, onClose, initialDraft }) {
+export default function InterruptSheet({ state, actions, onClose, onDraftChange, initialDraft }) {
   const [who, setWho] = useState(initialDraft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(initialDraft?.saveWhoChip ?? false);
   const [label, setLabel] = useState(initialDraft?.label ?? '');
@@ -19,6 +19,10 @@ export default function InterruptSheet({ state, actions, onClose, initialDraft }
   const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
   const elapsed = elapsedSince(state.running?.start ?? now, now);
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
+
+  useEffect(() => {
+    onDraftChange?.({ who, saveWhoChip, label, urgency, categoryId, memo });
+  }, [categoryId, label, memo, onDraftChange, saveWhoChip, urgency, who]);
 
   const save = (resume) => {
     actions.saveInterrupt({ who, saveWhoChip, label: label || (who ? (locale === 'ja-JP' ? `${who}から` : `From ${who}`) : t(locale, 'common.interrupt')), urgency, categoryId, memo, resume });

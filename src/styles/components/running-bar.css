@@ -240,6 +240,11 @@
   padding: 8px 10px 8px 12px;
   border-radius: 16px;
   gap: 8px;
+  min-width: 0;
+}
+
+.il-runbar.compact:not(.task) .label {
+  min-width: 0;
 }
 
 .il-runbar.compact:not(.task) .label .top {
@@ -253,6 +258,7 @@
 .il-runbar.compact:not(.task) .time {
   font-size: 15px;
   padding-right: 0;
+  flex-shrink: 0;
 }
 
 .il-runbar.compact:not(.task) .rb-btn {

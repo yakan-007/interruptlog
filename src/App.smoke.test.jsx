@@ -176,7 +176,7 @@ describe('App smoke flow', () => {
   it.each([
     ['interrupt', '割り込み作業を記録'],
     ['break', '休憩記録'],
-  ])('closing a %s sheet discards the pause and resumes the task', async (pauseButton, sheetTitle) => {
+  ])('minimizes a %s sheet and only discards the pause after an explicit cancel', async (pauseButton, sheetTitle) => {
     const user = userEvent.setup();
     await startTaskFromFreshApp(user);
 
@@ -186,11 +186,20 @@ describe('App smoke flow', () => {
     await user.click(screen.getByRole('button', { name: '閉じる' }));
 
     await waitFor(() => {
-      expect(screen.queryByText(sheetTitle)).toBeNull();
+      expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
-      expect(saved.running?.type).toBe('task');
+      expect(saved.running?.type).toBe(pauseButton);
       expect(Number.isFinite(saved.running?.start)).toBe(true);
+    });
+
+    await user.click(screen.getByRole('button', { name: sheetTitle }));
+    await user.click(screen.getByRole('button', { name: 'キャンセル' }));
+
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.running?.type).toBe('task');
+      expect(saved.events.some((event) => event.type === pauseButton)).toBe(false);
     });
   });
 

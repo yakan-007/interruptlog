@@ -39,10 +39,10 @@ export default function App() {
   const containerRef = useRef(null);
   const state = useMemo(() => buildViewState(app), [app]);
   const showOnboarding = app.ready && !state.preferences.onboardingDone;
-  const { activeSheet, activeSheetArg, closeSheet, openSheet, restoreSheet } = useSheetController(app, showOnboarding);
+  const { activeSheet, activeSheetArg, closeSheet, openSheet, restoreSheet, updateInterruptDraft, clearInterruptDraft } = useSheetController(app, showOnboarding);
   const { showToast, toast } = useToast();
   useAppLayout(containerRef, app.state.preferences);
-  const actions = useViewActions({ app, showToast, openSheet, closeSheet });
+  const actions = useViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft });
 
   const handleResolutionBack = useCallback(() => {
     if (!activeSheetArg?.returnSheet) {
@@ -111,8 +111,8 @@ export default function App() {
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
-            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={actions.cancelInterrupt} initialDraft={activeSheetArg} />}
-            {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={actions.cancelInterrupt} />}
+            {activeSheet === 'interrupt' && <InterruptSheet state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg} />}
+            {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addTask' && (

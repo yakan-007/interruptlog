@@ -19,14 +19,14 @@ export function buildViewState(app) {
   };
 }
 
-function createViewActions({ app, showToast, openSheet, closeSheet }) {
+function createViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft }) {
   const locale = app.state.preferences.locale;
   const toast = (message) => showToast(translateMessage(locale, message));
   const exportText = createTextExporter({ locale, toast });
   return {
     openSheet,
     closeSheet,
-    ...createPassthroughActions({ app, closeSheet }),
+    ...createPassthroughActions({ app, closeSheet, clearInterruptDraft }),
     saveTask(data) {
       const result = app.actions.saveTask(data);
       if (result.ok) closeSheet();
@@ -88,7 +88,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
   };
 }
 
-function createPassthroughActions({ app, closeSheet }) {
+function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
   const call = (action) => (...args) => action(...args);
   const callAndClose = (action) => (...args) => {
     const result = action(...args);
@@ -126,9 +126,6 @@ function createPassthroughActions({ app, closeSheet }) {
     ...bindActions(app.actions, callAndClose, [
       'stopTask',
       'deleteTask',
-      'saveInterrupt',
-      'stopInterrupt',
-      'saveBreak',
     ]),
     startTask(id) {
       app.actions.startTask(id);
@@ -136,11 +133,33 @@ function createPassthroughActions({ app, closeSheet }) {
     },
     createInterruptFollowupTask(interruptData, taskData) {
       const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
-      if (result.ok) closeSheet();
+      if (result.ok) {
+        clearInterruptDraft();
+        closeSheet();
+      }
+      return result;
+    },
+    saveInterrupt(data) {
+      const result = app.actions.saveInterrupt(data);
+      clearInterruptDraft();
+      closeSheet();
+      return result;
+    },
+    saveBreak(data) {
+      const result = app.actions.saveBreak(data);
+      clearInterruptDraft();
+      closeSheet();
       return result;
     },
     cancelInterrupt() {
       const result = app.actions.cancelInterrupt();
+      clearInterruptDraft();
+      closeSheet();
+      return result;
+    },
+    stopInterrupt(resume) {
+      const result = app.actions.stopInterrupt(resume);
+      clearInterruptDraft();
       closeSheet();
       return result;
     },
@@ -181,10 +200,10 @@ function datedFilename(base, extension) {
 }
 
 export function useViewActions(args) {
-  const { app, showToast, openSheet, closeSheet } = args;
+  const { app, showToast, openSheet, closeSheet, clearInterruptDraft } = args;
   return useMemo(
-    () => createViewActions({ app, showToast, openSheet, closeSheet }),
-    [app, showToast, openSheet, closeSheet]
+    () => createViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft }),
+    [app, showToast, openSheet, closeSheet, clearInterruptDraft]
   );
 }
 
