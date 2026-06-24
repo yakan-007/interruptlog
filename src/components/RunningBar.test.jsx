@@ -28,8 +28,8 @@ describe('shared running timer bar', () => {
     await user.click(screen.getByRole('button', { name: '停止' }));
 
     expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'editTask', expect.objectContaining({ id: 'task-1' }));
-    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'interrupt');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'break');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'newInterrupt');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'newBreak');
     expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'confirmStop');
   });
 

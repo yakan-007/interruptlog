@@ -25,6 +25,7 @@ export {
   saveInterruptInState,
   setBreakTargetInState,
   stopPauseInState,
+  updateInterruptDraftInState,
 } from './interruptsBreaks';
 
 export {
@@ -37,6 +38,7 @@ export {
   saveChipsInState,
   saveInterruptCategoryInState,
   setPreferenceInState,
+  setReportProfileInState,
 } from './preferences';
 
 export {

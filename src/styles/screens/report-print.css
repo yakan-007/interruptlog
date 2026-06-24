@@ -33,6 +33,13 @@
   line-height: 1.15;
 }
 
+.il-daily-print-head .identity {
+  margin-top: 5px;
+  color: #555;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .il-daily-print-head .range {
   font-size: 11px;
   font-weight: 700;

@@ -11,10 +11,23 @@ export function useSheetController(app, showOnboarding) {
   }, []);
 
   const openSheet = useCallback((nextSheet, arg) => {
+    if (nextSheet === 'newInterrupt') {
+      app.actions.beginInterrupt();
+      setInterruptDraft(null);
+      setSheet('interrupt');
+      setSheetArg(null);
+      return;
+    }
+    if (nextSheet === 'newBreak') {
+      app.actions.beginBreak();
+      setSheet('break');
+      setSheetArg(null);
+      return;
+    }
     if (nextSheet === 'interrupt') {
       const isNewInterrupt = app.state.running?.type !== 'interrupt';
       if (isNewInterrupt) app.actions.beginInterrupt();
-      const draft = arg ?? (isNewInterrupt ? null : interruptDraft);
+      const draft = arg ?? (isNewInterrupt ? null : interruptDraft ?? app.state.running?.draft ?? null);
       if (isNewInterrupt) setInterruptDraft(draft);
       setSheet(nextSheet);
       setSheetArg(draft);
@@ -23,12 +36,13 @@ export function useSheetController(app, showOnboarding) {
     else if (nextSheet === 'break' && app.state.running?.type !== 'break') app.actions.beginBreak();
     setSheet(nextSheet);
     setSheetArg(arg);
-  }, [app.actions, app.state.running?.type, interruptDraft]);
+  }, [app.actions, app.state.running?.draft, app.state.running?.type, interruptDraft]);
 
   const updateInterruptDraft = useCallback((draft) => {
     setInterruptDraft(draft);
+    app.actions.updateInterruptDraft(draft);
     if (sheet === 'interrupt') setSheetArg(draft);
-  }, [sheet]);
+  }, [app.actions, sheet]);
 
   const clearInterruptDraft = useCallback(() => {
     setInterruptDraft(null);

@@ -6,6 +6,7 @@ import {
   moveInterruptCategoryToIndexInState,
   normalizeState,
   parseBackup,
+  setReportProfileInState,
 } from './index';
 
 describe('personal preferences', () => {
@@ -66,4 +67,18 @@ describe('personal preferences', () => {
     expect(subjectMoved.tasks[0].categoryId).toBe('cat-dev');
     expect(subjectMoved.events[0].categoryId).toBe('int-chat');
   });
+});
+
+it('stores a compact report profile and normalizes imported profile values', () => {
+  const saved = setReportProfileInState(createEmptyState(), {
+    affiliation: '  開発部 プラットフォームチーム  ',
+    name: '  山田 太郎  ',
+  });
+  const restored = normalizeState({
+    ...createEmptyState(),
+    preferences: { reportProfile: { affiliation: 42, name: null } },
+  });
+
+  expect(saved.preferences.reportProfile).toEqual({ affiliation: '開発部 プラットフォームチーム', name: '山田 太郎' });
+  expect(restored.preferences.reportProfile).toEqual({ affiliation: '42', name: '' });
 });

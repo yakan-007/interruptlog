@@ -269,7 +269,7 @@
   background: var(--ink-5);
 }
 
-.il-history-eventcard.t-task .rail { background: var(--task); }
+.il-history-eventcard.t-task .rail { background: var(--history-category-color, var(--task)); }
 .il-history-eventcard.t-interrupt .rail { background: var(--interrupt); }
 .il-history-eventcard.t-break .rail { background: var(--break); }
 .il-history-eventcard.t-unknown .rail { background: var(--unknown); }
@@ -403,7 +403,7 @@
   box-shadow: 0 0 0 2px var(--bg);
 }
 
-.il-ev.t-task .dot { background: var(--task); }
+.il-ev.t-task .dot { background: var(--history-category-color, var(--task)); }
 .il-ev.t-interrupt .dot { background: var(--interrupt); }
 .il-ev.t-break .dot { background: var(--break); }
 .il-ev.t-unknown .dot { background: var(--unknown); }

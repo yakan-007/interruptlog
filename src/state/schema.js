@@ -24,6 +24,7 @@ const defaultPreferences = {
   dark: false,
   accent: 'oklch(0.35 0.03 250)',
   locale: 'ja-JP',
+  reportProfile: { affiliation: '', name: '' },
   topAdd: true,
   sortDue: false,
   workSchedule: { start: null, end: null },
@@ -83,11 +84,19 @@ function normalizePreferences(raw = {}, options = {}) {
     dark: Boolean(raw.dark ?? defaultPreferences.dark),
     accent: cleanText(raw.accent) || defaultPreferences.accent,
     locale: normalizeLocale(raw.locale ?? defaultPreferences.locale),
+    reportProfile: normalizeReportProfile(raw.reportProfile),
     topAdd: Boolean(raw.topAdd ?? defaultPreferences.topAdd),
     sortDue: Boolean(raw.sortDue ?? defaultPreferences.sortDue),
     workSchedule: normalizeWorkSchedule(raw.workSchedule),
     historyView: raw.historyView === 'list' ? 'list' : 'timeline',
     onboardingDone: Boolean(raw.onboardingDone ?? options.assumeOnboarded ?? defaultPreferences.onboardingDone),
+  };
+}
+
+function normalizeReportProfile(raw) {
+  return {
+    affiliation: cleanText(raw?.affiliation),
+    name: cleanText(raw?.name),
   };
 }
 
@@ -167,15 +176,46 @@ function normalizeRunning(running, taskIds) {
   if (!isObject(running) || !running.type || running.start == null) return null;
   if (running.type === 'task' && (!running.taskId || !taskIds.has(running.taskId))) return null;
   if (!['task', 'interrupt', 'break'].includes(running.type)) return null;
+  const resumeStack = normalizeResumeStack(running.resumeStack, taskIds, running.preTaskId);
   return {
     type: running.type,
     taskId: running.taskId ?? null,
     start: asNumber(running.start, null),
     label: running.label ?? null,
-    preTaskId: running.preTaskId ?? null,
+    preTaskId: resumeStack.slice().reverse().find((context) => context.type === 'task')?.taskId ?? null,
+    resumeStack,
+    draft: running.type === 'interrupt' ? normalizeInterruptDraft(running.draft) : null,
     plannedBreakDurationMinutes: running.type === 'break'
       ? Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0)
       : null,
+  };
+}
+
+function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {
+  const source = Array.isArray(raw)
+    ? raw
+    : legacyPreTaskId ? [{ type: 'task', taskId: legacyPreTaskId }] : [];
+  return source.flatMap((context) => {
+    if (!isObject(context)) return [];
+    if (context.type === 'task' && context.taskId && taskIds.has(context.taskId)) {
+      return [{ type: 'task', taskId: String(context.taskId) }];
+    }
+    if (context.type === 'interrupt') return [{ type: 'interrupt', draft: normalizeInterruptDraft(context.draft) }];
+    if (context.type === 'break') {
+      return [{ type: 'break', plannedBreakDurationMinutes: Math.max(0, asNumber(context.plannedBreakDurationMinutes, 0) ?? 0) }];
+    }
+    return [];
+  });
+}
+
+function normalizeInterruptDraft(raw) {
+  return {
+    who: cleanText(raw?.who),
+    saveWhoChip: Boolean(raw?.saveWhoChip),
+    label: cleanText(raw?.label),
+    urgency: ['low', 'med', 'high'].includes(raw?.urgency) ? raw.urgency : 'med',
+    categoryId: cleanText(raw?.categoryId) || null,
+    memo: cleanText(raw?.memo),
   };
 }
 

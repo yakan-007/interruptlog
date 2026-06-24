@@ -26,9 +26,10 @@ export default function HistoryList({ items, state, now, selectedDate, locale = 
 function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
   const category = findEventCategory(event, state);
   const showRunning = event.running && isSameHistoryDay(selectedDate, now) && !event.endsAfterDay;
+  const categoryColor = event.type === 'task' ? category?.color : null;
 
   return (
-    <button type="button" className={'il-ev t-' + event.type} style={{ borderBottom: last ? 'none' : '0.5px solid var(--hair)' }} onClick={onEdit}>
+    <button type="button" className={'il-ev t-' + event.type} style={{ borderBottom: last ? 'none' : '0.5px solid var(--hair)', '--history-category-color': categoryColor ?? undefined }} onClick={onEdit}>
       <div className="dot" />
       <div className="ev-main">
         <div className="ev-title">{event.workDetail || event.label}</div>

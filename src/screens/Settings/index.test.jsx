@@ -9,6 +9,7 @@ afterEach(() => cleanup());
 function createActions() {
   return Object.fromEntries([
     'setLocale', 'setDark', 'setAccent', 'setTopAdd', 'setSortDue', 'setWorkSchedule',
+    'setReportProfile',
     'moveCategoryToIndex', 'moveInterruptCategoryToIndex', 'saveCategory', 'deleteCategory',
     'saveInterruptCategory', 'deleteInterruptCategory', 'saveChips', 'exportJson', 'importJson',
     'resetAll', 'openOverlapRepair',
@@ -43,6 +44,11 @@ describe('personal settings screen', () => {
     await user.click(screen.getByRole('button', { name: /よく使う発信者/ }));
     await user.click(screen.getByRole('button', { name: '保存' }));
 
+    await user.click(screen.getByRole('button', { name: /日報プロフィール/ }));
+    await user.type(screen.getByLabelText('所属'), '開発部');
+    await user.type(screen.getByLabelText('名前'), '山田');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
     await user.click(screen.getByRole('button', { name: /個人バックアップを書き出す/ }));
     await user.click(screen.getByRole('button', { name: /全データを削除/ }));
     await user.click(screen.getByRole('button', { name: '削除する' }));
@@ -53,7 +59,8 @@ describe('personal settings screen', () => {
     expect(actions.setWorkSchedule).toHaveBeenCalledWith({ start: null, end: '17:00' });
     expect(actions.saveCategory).toHaveBeenCalled();
     expect(actions.saveChips).toHaveBeenCalledWith('who', ['田中']);
+    expect(actions.setReportProfile).toHaveBeenCalledWith({ affiliation: '開発部', name: '山田' });
     expect(actions.exportJson).toHaveBeenCalledTimes(1);
     expect(actions.resetAll).toHaveBeenCalledTimes(1);
-  });
+  }, 10000);
 });

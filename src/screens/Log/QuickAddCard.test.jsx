@@ -60,4 +60,14 @@ describe('quick task entry', () => {
     fireEvent.wheel(row, { deltaY: 80, cancelable: true });
     expect(row.scrollLeft).toBe(80);
   });
+
+  it('starts an unplanned response independently of the task draft', async () => {
+    const user = userEvent.setup();
+    const actions = { createTask: vi.fn(), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
+    render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
+
+    await user.click(screen.getByRole('button', { name: '予定外の対応を記録' }));
+
+    expect(actions.openSheet).toHaveBeenCalledWith('newInterrupt');
+  });
 });

@@ -160,6 +160,30 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
   );
 }
 
+export function ReportProfileSheet({ profile, locale = 'ja-JP', onClose, onSave }) {
+  const [affiliation, setAffiliation] = useState(profile?.affiliation ?? '');
+  const [name, setName] = useState(profile?.name ?? '');
+
+  return (
+    <SheetShell title={t(locale, 'settings.reportProfile')} onClose={onClose} footer={
+      <>
+        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
+        <button className="btn primary" onClick={() => onSave({ affiliation, name })}>{t(locale, 'sheets.save')}</button>
+      </>
+    }>
+      <div className="il-sheet-copy">{t(locale, 'settings.reportProfileCopy')}</div>
+      <div className="il-field">
+        <label>{t(locale, 'settings.reportAffiliation')}</label>
+        <input className="il-input" value={affiliation} onChange={(event) => setAffiliation(event.target.value)} placeholder={t(locale, 'settings.reportAffiliationPlaceholder')} aria-label={t(locale, 'settings.reportAffiliation')} autoFocus />
+      </div>
+      <div className="il-field">
+        <label>{t(locale, 'settings.reportName')}</label>
+        <input className="il-input" value={name} onChange={(event) => setName(event.target.value)} placeholder={t(locale, 'settings.reportNamePlaceholder')} aria-label={t(locale, 'settings.reportName')} />
+      </div>
+    </SheetShell>
+  );
+}
+
 export function ImportSheet({ locale = 'ja-JP', onClose, onImport }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');

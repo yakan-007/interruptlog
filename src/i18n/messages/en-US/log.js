@@ -3,6 +3,7 @@ log: {
         title: 'Tasks',
         emptyTitle: 'No tasks for today yet',
         emptyCopy: 'Add a task from the input below.',
+        startUnexpected: 'Record unplanned work',
         completedToday: 'Completed today',
         completedArchive: 'Completed archive',
         archiveCopy: 'Older completed tasks are hidden from the main list. Restarting one keeps tracking on the same task.',

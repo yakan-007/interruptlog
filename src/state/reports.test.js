@@ -115,6 +115,10 @@ describe('personal reports', () => {
   it('exports personal report CSV columns without dropping personal event fields', () => {
     const state = {
       ...createEmptyState(),
+      preferences: {
+        ...createEmptyState().preferences,
+        reportProfile: { affiliation: '開発部', name: '山田 太郎' },
+      },
       events: [{
         id: 'int-1',
         type: 'interrupt',
@@ -130,13 +134,14 @@ describe('personal reports', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const [header, row] = csv.split('\n').map((line) => line.split(','));
 
-    expect(header).toEqual(['reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes']);
+    expect(header).toEqual(['reportDate', 'range', 'timezone', 'affiliation', 'memberName', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes']);
     expect(row[0]).toBe('2026-05-11');
     expect(row[1]).toBe('day');
     expect(row[2]).toBeTruthy();
-    expect(row[5]).toBe('interrupt');
-    expect(row[6]).toBe('仕様確認');
-    expect(row.slice(12)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+    expect(row.slice(3, 5)).toEqual(['開発部', '山田 太郎']);
+    expect(row[7]).toBe('interrupt');
+    expect(row[8]).toBe('仕様確認');
+    expect(row.slice(14)).toEqual(['田中', 'med', '画面の確認', '30.0']);
   });
 
   it('protects CSV cells that could be interpreted as spreadsheet formulas', () => {
@@ -157,8 +162,8 @@ describe('personal reports', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const row = csv.split('\n')[1].split(',');
 
-    expect(row[6]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
-    expect(row[12]).toBe("'+田中");
-    expect(row[14]).toBe("'@確認");
+    expect(row[8]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
+    expect(row[14]).toBe("'+田中");
+    expect(row[16]).toBe("'@確認");
   });
 });

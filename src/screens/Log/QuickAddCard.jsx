@@ -143,6 +143,13 @@ export default function QuickAddCard({ state, actions }) {
         >
           {Icons.play(16)}
         </button>
+        <button
+          className="il-quickdock-icon interrupt"
+          onClick={() => actions.openSheet('newInterrupt')}
+          aria-label={t(state.preferences.locale, 'log.startUnexpected')}
+        >
+          {Icons.bolt(16)}
+        </button>
       </div>
 
       <div className="il-quickdock-cats" onWheel={scrollCategoriesWithWheel}>

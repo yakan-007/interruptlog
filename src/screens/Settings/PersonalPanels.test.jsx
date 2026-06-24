@@ -7,6 +7,7 @@ import {
   ConfirmResetSheet,
   ImportSheet,
   InterruptCategorySheet,
+  ReportProfileSheet,
 } from './PersonalPanels';
 
 afterEach(() => cleanup());
@@ -54,6 +55,18 @@ describe('personal settings panels', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
 
     expect(onSave).toHaveBeenCalledWith(['佐藤', '鈴木']);
+  });
+
+  it('saves the structured daily-report profile', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<ReportProfileSheet profile={{ affiliation: '', name: '' }} onClose={vi.fn()} onSave={onSave} />);
+
+    await user.type(screen.getByLabelText('所属'), '開発部 プラットフォームチーム');
+    await user.type(screen.getByLabelText('名前'), '山田 太郎');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(onSave).toHaveBeenCalledWith({ affiliation: '開発部 プラットフォームチーム', name: '山田 太郎' });
   });
 
   it('surfaces an import error and confirms data reset', async () => {

@@ -44,6 +44,7 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
 
           {items.map((event) => {
             const category = findEventCategory(event, state);
+            const categoryColor = event.type === 'task' ? category?.color : null;
             return (
               <button
                 key={event.id}
@@ -55,6 +56,7 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                   left: `calc(${(event.lane * 100) / event.laneCount}% + 4px)`,
                   width: `calc(${100 / event.laneCount}% - 8px)`,
                   zIndex: 3 + event.lane,
+                  '--history-category-color': categoryColor ?? undefined,
                 }}
                 onClick={() => onEdit(event)}
               >

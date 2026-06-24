@@ -194,7 +194,7 @@ export default function ReportScreen({ state, actions }) {
             </div>
 
             {range === 'day' && (
-              <DailyReportPrintTemplate report={dailyReport} locale={state.preferences.locale} />
+              <DailyReportPrintTemplate report={dailyReport} profile={state.preferences.reportProfile} locale={state.preferences.locale} />
             )}
           </div>
       </>

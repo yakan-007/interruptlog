@@ -15,6 +15,7 @@ import {
   saveTaskRecordInState,
   setBreakTargetInState,
   stopPauseInState,
+  updateInterruptDraftInState,
 } from '../../state';
 
 export function createRecordCommands({
@@ -34,6 +35,7 @@ export function createRecordCommands({
     saveInterrupt: mutateWith(saveInterruptInState),
     cancelInterrupt: mutateWith(cancelPauseInState),
     stopInterrupt: mutateWith(stopPauseInState),
+    updateInterruptDraft: mutateWith(updateInterruptDraftInState),
     saveBreak: mutateWith(saveBreakInState),
     createInterruptFollowupTask(interruptData, taskData) {
       return applyResult(createInterruptFollowupTaskInState(getState(), interruptData, taskData));

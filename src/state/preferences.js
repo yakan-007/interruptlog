@@ -1,6 +1,6 @@
 import { newId } from './ids';
 import { normalizeCategory, normalizeInterruptCategory } from './schema';
-import { uniqueTexts } from './utils';
+import { cleanText, uniqueTexts } from './utils';
 
 export function saveCategoryInState(state, category, now = Date.now()) {
   const normalized = normalizeCategory({
@@ -88,6 +88,19 @@ export function setPreferenceInState(state, key, value) {
     preferences: {
       ...state.preferences,
       [key]: value,
+    },
+  };
+}
+
+export function setReportProfileInState(state, profile) {
+  return {
+    ...state,
+    preferences: {
+      ...state.preferences,
+      reportProfile: {
+        affiliation: cleanText(profile?.affiliation),
+        name: cleanText(profile?.name),
+      },
     },
   };
 }

@@ -72,6 +72,16 @@ describe('App smoke flow', () => {
     expect(localStorage.getItem(LEGACY_STATE_KEYS[0])).toBeNull();
   });
 
+  it('starts an unplanned response even when no task card exists', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'はじめる' }));
+
+    await user.click(screen.getByRole('button', { name: '予定外の対応を記録' }));
+
+    expect(await screen.findByText('割り込み作業を記録')).toBeTruthy();
+  });
+
   it('records an interruption and resumes the running task without render errors', async () => {
     const user = userEvent.setup();
     await startTaskFromFreshApp(user);

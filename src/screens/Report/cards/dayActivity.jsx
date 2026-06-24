@@ -33,19 +33,21 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
           </div>
         )}
       />
-      <ActivitySection
-        title={t(locale, 'report.recordOnlyWork')}
-        empty={t(locale, 'report.noRecordOnlyWork')}
-        items={activity.recordOnlyWork}
-        render={(work) => (
-          <div className="il-daily-line">
-            <span className="swatch" style={{ background: work.categoryColor }} />
-            <span>{work.name}</span>
-            <span className="meta">{work.categoryName}</span>
-            <span className="il-mono">{fmtDurationShort(work.time, locale)}</span>
-          </div>
-        )}
-      />
+      {activity.recordOnlyWork.length > 0 && (
+        <ActivitySection
+          title={t(locale, 'report.recordOnlyWork')}
+          empty={t(locale, 'report.noRecordOnlyWork')}
+          items={activity.recordOnlyWork}
+          render={(work) => (
+            <div className="il-daily-line">
+              <span className="swatch" style={{ background: work.categoryColor }} />
+              <span>{work.name}</span>
+              <span className="meta">{work.categoryName}</span>
+              <span className="il-mono">{fmtDurationShort(work.time, locale)}</span>
+            </div>
+          )}
+        />
+      )}
       <ActivitySection
         title={t(locale, 'report.recordedMemos')}
         empty={t(locale, 'report.noRecordedMemos')}

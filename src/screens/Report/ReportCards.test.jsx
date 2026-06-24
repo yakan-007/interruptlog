@@ -92,7 +92,7 @@ describe('personal report cards', () => {
           recordOnlyWork: [{ id: 'record-1', name: 'メモ作成', categoryColor: 'teal', categoryName: '開発', time: 10 * 60 * 1000 }],
           memos: [{ id: 'memo-1', label: '設計レビュー', memo: '論点を整理した' }],
         }} />
-        <DailyReportPrintTemplate locale="ja-JP" report={{
+        <DailyReportPrintTemplate locale="ja-JP" profile={{ affiliation: '開発部', name: '山田 太郎' }} report={{
           date: day,
           range: { since: day, until: day + 12 * hour },
           totals: { recorded: 2 * hour, focus: hour, interrupt: 30 * 60 * 1000, break: 30 * 60 * 1000 },
@@ -111,5 +111,6 @@ describe('personal report cards', () => {
     expect(screen.getByText('設計確認')).toBeTruthy();
     expect(screen.getAllByText('論点を整理した')).toHaveLength(2);
     expect(screen.getByLabelText('日報')).toBeTruthy();
+    expect(screen.getByText('開発部 · 山田 太郎')).toBeTruthy();
   });
 });

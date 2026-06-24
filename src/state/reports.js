@@ -18,11 +18,12 @@ export function buildReportCsv(state, range, now = Date.now(), snapshot = null) 
   const stats = calculateRangeStats(snapshot ?? createReportSnapshot(state, now), bounds.since, bounds.until);
   const reportDate = formatDateKey(bounds.since);
   const timezone = getTimezoneName();
+  const profile = state.preferences?.reportProfile ?? {};
   const taskById = new Map(state.tasks.map((task) => [task.id, task]));
   const categoryName = (id) =>
     state.categories.find((category) => category.id === id)?.name ?? id ?? '';
   const rows = [
-    ['reportDate', 'range', 'timezone', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes'],
+    ['reportDate', 'range', 'timezone', 'affiliation', 'memberName', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes'],
     ...stats.events
       .sort((a, b) => a.clippedStart - b.clippedStart)
       .map((event) => {
@@ -31,6 +32,8 @@ export function buildReportCsv(state, range, now = Date.now(), snapshot = null) 
           reportDate,
           range,
           timezone,
+          cleanText(profile.affiliation),
+          cleanText(profile.name),
           new Date(event.clippedStart).toISOString(),
           new Date(event.clippedEnd).toISOString(),
           event.type,

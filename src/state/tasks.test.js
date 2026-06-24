@@ -59,6 +59,19 @@ describe('personal tasks', () => {
     expect(created.state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: at(11, 9, 20) });
   });
 
+  it('starts a follow-up task when an unplanned interruption had no prior task', () => {
+    const paused = beginPauseInState(createEmptyState(), 'interrupt', at(11, 9, 10));
+    const created = createInterruptFollowupTaskInState(paused, {
+      label: '朝一の電話', who: '田中', urgency: 'high', categoryId: 'int-call', memo: '',
+    }, {
+      name: '電話の対応を続ける', categoryId: 'cat-sup', plannedDurationMinutes: 0, dueAt: null, memo: '',
+    }, at(11, 9, 20));
+
+    expect(created.state.events.filter((event) => event.type === 'interrupt')).toHaveLength(1);
+    expect(created.state.running).toMatchObject({ type: 'task', taskId: created.taskId, start: at(11, 9, 20) });
+    expect(created.state.events.at(-1)).toMatchObject({ type: 'task', taskId: created.taskId, end: null });
+  });
+
   it('clamps report stats to the selected range', () => {
     const stats = calcStats([
       { id: 'a', type: 'task', label: 'before overlap', start: 0, end: 10_000 },

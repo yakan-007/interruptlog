@@ -32,6 +32,11 @@ export default function InterruptSheet({ state, actions, onClose, onDraftChange,
     actions.openSheet('interruptFollowup', { who, saveWhoChip, label, urgency, categoryId, memo });
   };
 
+  const switchActivity = (nextSheet) => {
+    onDraftChange?.({ who, saveWhoChip, label, urgency, categoryId, memo });
+    actions.openSheet(nextSheet);
+  };
+
   const scrollChipRow = (event) => {
     const row = event.currentTarget;
     if (row.scrollWidth <= row.clientWidth) return;
@@ -64,6 +69,18 @@ export default function InterruptSheet({ state, actions, onClose, onDraftChange,
         eyebrow={t(locale, 'sheets.interrupting')}
         locale={locale}
       />
+
+      <div className="il-activity-switch">
+        <span>{t(locale, 'sheets.switchActivity')}</span>
+        <div className="il-activity-switch-actions">
+          <button className="il-activity-switch-btn interrupt" onClick={() => switchActivity('newInterrupt')}>
+            {Icons.bolt(14)} {t(locale, 'sheets.startAnotherInterrupt')}
+          </button>
+          <button className="il-activity-switch-btn break" onClick={() => switchActivity('newBreak')}>
+            {Icons.coffee(14)} {t(locale, 'sheets.startBreak')}
+          </button>
+        </div>
+      </div>
 
       <div className="il-field">
         <label>{t(locale, 'sheets.sender')}</label>

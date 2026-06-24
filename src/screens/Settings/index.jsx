@@ -11,6 +11,7 @@ import {
   ConfirmResetSheet,
   ImportSheet,
   InterruptCategorySheet,
+  ReportProfileSheet,
 } from './PersonalPanels';
 import {
   AddRowButton,
@@ -46,6 +47,8 @@ export default function SettingsScreen({ state, actions }) {
       : hasInvalidWorkSchedule
         ? t(locale, 'settings.workScheduleInvalid')
         : t(locale, 'settings.workScheduleNote');
+  const reportProfile = state.preferences.reportProfile ?? { affiliation: '', name: '' };
+  const reportProfileNote = [reportProfile.affiliation, reportProfile.name].filter(Boolean).join(' · ') || t(locale, 'settings.reportProfileUnset');
   const categoryReordering = reorderMode === 'categories';
   const interruptCategoryReordering = reorderMode === 'interruptCategories';
   const categoryReorder = useListReorderDrag({
@@ -196,6 +199,11 @@ export default function SettingsScreen({ state, actions }) {
           <NavRow title={t(locale, 'settings.subjectChips')} note={tx(locale, 'common.count', state.subjectChips.length)} onClick={() => setPanel({ type: 'chips', kind: 'subject' })} />
         </div>
 
+        <div className="il-section-h"><span>{t(locale, 'settings.reports')}</span></div>
+        <div className="il-settings-group">
+          <NavRow title={t(locale, 'settings.reportProfile')} note={reportProfileNote} onClick={() => setPanel({ type: 'reportProfile' })} />
+        </div>
+
         <div className="il-section-h"><span>{t(locale, 'settings.data')}</span></div>
         {state.overlapRepair.warning && (
           <div className="il-settings-group">
@@ -241,6 +249,14 @@ export default function SettingsScreen({ state, actions }) {
           locale={locale}
           onClose={() => setPanel(null)}
           onSave={(chips) => { actions.saveChips(panel.kind, chips); setPanel(null); }}
+        />
+      )}
+      {panel?.type === 'reportProfile' && (
+        <ReportProfileSheet
+          profile={reportProfile}
+          locale={locale}
+          onClose={() => setPanel(null)}
+          onSave={(profile) => { actions.setReportProfile(profile); setPanel(null); }}
         />
       )}
       {panel?.type === 'import' && (

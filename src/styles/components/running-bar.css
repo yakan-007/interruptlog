@@ -37,8 +37,19 @@
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px) + 126px);
 }
 
-.il-runbar.interrupt { background: var(--interrupt); }
-.il-runbar.break { background: var(--break); color: #1a1a16; }
+.il-runbar.interrupt { --runbar-state: var(--interrupt); }
+.il-runbar.break { --runbar-state: var(--break); }
+.il-runbar:not(.task) {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--runbar-state) 10%, var(--bg-elevated)),
+      color-mix(in oklch, var(--runbar-state) 5%, var(--bg-elevated))
+    );
+  color: var(--ink);
+  border-color: color-mix(in oklch, var(--runbar-state) 30%, var(--hair-strong));
+  box-shadow: 0 10px 26px color-mix(in oklch, var(--runbar-state) 10%, transparent), var(--sh-card);
+}
 .il-runbar.reopenable {
   cursor: pointer;
 }
@@ -46,30 +57,17 @@
   transform: translateY(1px) scale(0.995);
 }
 .il-runbar.break.target {
-  border-color: color-mix(in oklch, var(--break) 26%, var(--hair-strong));
-  box-shadow: 0 10px 24px rgba(23, 21, 18, 0.08);
+  border-color: color-mix(in oklch, var(--break) 38%, var(--hair-strong));
 }
 .il-runbar.break.warn {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklch, oklch(0.84 0.13 82) 86%, var(--bg-elevated)),
-      color-mix(in oklch, oklch(0.78 0.13 76) 76%, var(--bg-elevated))
-    );
-  color: oklch(0.28 0.05 72);
-  border-color: color-mix(in oklch, oklch(0.72 0.12 76) 54%, var(--hair-strong));
-  box-shadow: 0 12px 28px color-mix(in oklch, oklch(0.80 0.13 78) 18%, transparent);
+  --runbar-state: oklch(0.72 0.12 76);
+  background: color-mix(in oklch, var(--runbar-state) 15%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--runbar-state) 44%, var(--hair-strong));
 }
 .il-runbar.break.late {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in oklch, oklch(0.76 0.16 42) 82%, var(--bg-elevated)),
-      color-mix(in oklch, oklch(0.70 0.17 34) 76%, var(--bg-elevated))
-    );
-  color: oklch(0.24 0.07 28);
-  border-color: color-mix(in oklch, oklch(0.60 0.18 30) 58%, var(--hair-strong));
-  box-shadow: 0 14px 30px color-mix(in oklch, oklch(0.66 0.16 35) 20%, transparent);
+  --runbar-state: oklch(0.61 0.17 32);
+  background: color-mix(in oklch, var(--runbar-state) 14%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--runbar-state) 44%, var(--hair-strong));
 }
 
 .il-runbar .dot {
@@ -81,6 +79,12 @@
   animation: il-pulse 2s ease-out infinite;
   flex-shrink: 0;
   opacity: 0.85;
+}
+
+.il-runbar:not(.task) .dot {
+  background: var(--runbar-state);
+  color: var(--runbar-state);
+  opacity: 0.9;
 }
 
 .il-runbar.task .dot {
@@ -112,6 +116,11 @@
   line-height: 1;
 }
 
+.il-runbar:not(.task) .label .top {
+  color: color-mix(in oklch, var(--runbar-state) 62%, var(--ink-3) 38%);
+  opacity: 1;
+}
+
 .il-runbar.task .label .top {
   color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 52%, var(--ink) 48%);
   opacity: 0.88;
@@ -125,6 +134,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+}
+
+.il-runbar:not(.task) .label .name {
+  font-weight: 700;
 }
 
 .il-runbar .label.single .name {
@@ -155,6 +168,19 @@
   letter-spacing: 0;
   padding-right: 4px;
   font-variant-numeric: tabular-nums;
+}
+
+.il-runbar:not(.task) .time {
+  color: color-mix(in oklch, var(--runbar-state) 66%, var(--ink) 34%);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.il-runbar:not(.task) .rb-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .il-runbar.task .time {
@@ -281,6 +307,15 @@
   flex-shrink: 0;
 }
 
+.il-runbar:not(.task) .rb-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--runbar-state) 9%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--runbar-state) 20%, var(--hair));
+  color: color-mix(in oklch, var(--runbar-state) 74%, var(--ink) 26%);
+}
+
 .il-runbar.task .rb-btn {
   background: color-mix(in oklch, var(--runbar-accent, var(--accent)) 10%, var(--bg-elevated));
   border-color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 20%, var(--hair));
@@ -308,12 +343,12 @@
   box-shadow: 0 6px 16px color-mix(in oklch, var(--runbar-accent, var(--accent)) 14%, transparent);
 }
 .il-runbar.interrupt .rb-btn.stop {
-  background: color-mix(in oklch, var(--ink) 82%, var(--interrupt) 18%);
+  background: color-mix(in oklch, var(--ink) 88%, var(--interrupt) 12%);
   color: #fffdf8;
 }
 .il-runbar.break .rb-btn.stop,
 .il-runbar.break.warn .rb-btn.stop,
 .il-runbar.break.late .rb-btn.stop {
-  background: color-mix(in oklch, var(--ink) 82%, var(--break) 18%);
+  background: color-mix(in oklch, var(--ink) 88%, var(--break) 12%);
   color: #fffdf8;
 }

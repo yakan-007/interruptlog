@@ -170,6 +170,63 @@
 
 .il-followup-copy { margin-top: -2px; }
 
+.il-activity-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -6px 0 18px;
+  padding: 9px 10px 9px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--bg-sunken) 54%, var(--bg-elevated));
+}
+
+.il-activity-switch > span {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.il-activity-switch-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.il-activity-switch-btn {
+  min-height: 34px;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: var(--bg-elevated);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.il-activity-switch-btn.interrupt {
+  color: color-mix(in oklch, var(--interrupt) 74%, var(--ink) 26%);
+  border-color: color-mix(in oklch, var(--interrupt) 24%, var(--hair));
+}
+
+.il-activity-switch-btn.break {
+  color: color-mix(in oklch, var(--break) 74%, var(--ink) 26%);
+  border-color: color-mix(in oklch, var(--break) 24%, var(--hair));
+}
+
+.il-activity-switch-btn:active { transform: scale(0.98); }
+
 .il-hourinput-row {
   display: flex;
   gap: 4px;

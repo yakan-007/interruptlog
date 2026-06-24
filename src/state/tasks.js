@@ -109,7 +109,7 @@ export function saveTaskInState(state, data, now = Date.now()) {
   };
 }
 
-export function startTaskInState(state, taskId, now = Date.now()) {
+export function startTaskInState(state, taskId, now = Date.now(), options = {}) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const task = snapshotted.tasks.find((item) => item.id === taskId);
   if (!task) return state;
@@ -130,8 +130,19 @@ export function startTaskInState(state, taskId, now = Date.now()) {
   return {
     ...closed,
     events: [...closed.events, event],
-    running: { type: 'task', taskId, start: now, label: null, preTaskId: null },
+    running: {
+      type: 'task',
+      taskId,
+      start: now,
+      label: null,
+      preTaskId: findNearestTaskId(options.resumeStack ?? []),
+      resumeStack: options.resumeStack ?? [],
+    },
   };
+}
+
+function findNearestTaskId(resumeStack) {
+  return [...resumeStack].reverse().find((context) => context.type === 'task')?.taskId ?? null;
 }
 
 function closePauseSessionInState(state, now = Date.now()) {
@@ -234,14 +245,17 @@ export function deleteTaskInState(state, taskId, now = Date.now()) {
   const base = state.running?.type === 'task' && state.running.taskId === taskId
     ? closeTaskSessionInState(state, now)
     : state;
-  const running = base.running?.taskId === taskId || base.running?.preTaskId === taskId
-    ? { ...base.running, taskId: null, preTaskId: null }
-    : base.running;
+  const resumeStack = base.running?.resumeStack?.filter((context) => context.taskId !== taskId) ?? [];
+  const running = base.running?.taskId === taskId
+    ? null
+    : base.running
+      ? { ...base.running, resumeStack, preTaskId: findNearestTaskId(resumeStack) }
+      : null;
 
   return {
     ...base,
     tasks: base.tasks.filter((task) => task.id !== taskId),
-    running: running?.type === 'task' && !running.taskId ? null : running,
+    running,
   };
 }
 

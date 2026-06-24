@@ -365,7 +365,11 @@ describe('personal records and resolution', () => {
     expect(state.events.every((event) => event.end !== null)).toBe(true);
     expect(state.events.map((event) => event.type)).toEqual(['task', 'interrupt', 'task']);
     expect(state.whoChips).not.toContain('佐藤');
-    const savedSenderState = saveInterruptInState(state, { who: '佐藤', saveWhoChip: true, label: '追加確認', urgency: 'med', categoryId: 'int-chat', memo: '', resume: false }, 12_000);
+    const savedSenderState = saveInterruptInState(
+      beginPauseInState(state, 'interrupt', 11_500),
+      { who: '佐藤', saveWhoChip: true, label: '追加確認', urgency: 'med', categoryId: 'int-chat', memo: '', resume: false },
+      12_000
+    );
     expect(savedSenderState.whoChips).toContain('佐藤');
   });
 
@@ -392,6 +396,32 @@ describe('personal records and resolution', () => {
     });
     expect(state.running?.type).toBe('task');
     expect(state.running?.taskId).toBe(saved.taskId);
+  });
+
+  it('returns through nested interruptions and breaks without overlapping time', () => {
+    const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
+    let state = beginPauseInState(started.state, 'interrupt', 2000);
+    state = beginPauseInState(state, 'interrupt', 3000);
+    state = beginPauseInState(state, 'break', 4000);
+    state = saveBreakInState(state, { breakDurationMinutes: 5, resume: true }, 5000);
+    expect(state.running).toMatchObject({ type: 'interrupt', resumeStack: [{ type: 'task', taskId: started.taskId }, { type: 'interrupt' }] });
+
+    state = saveInterruptInState(state, { label: '二件目の電話', resume: true }, 6000);
+    expect(state.running).toMatchObject({ type: 'interrupt', resumeStack: [{ type: 'task', taskId: started.taskId }] });
+
+    state = saveInterruptInState(state, { label: '一件目の電話', resume: true }, 7000);
+    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 7000, resumeStack: [] });
+
+    const closedEvents = state.events.filter((event) => event.end !== null).sort((a, b) => a.start - b.start);
+    expect(closedEvents.map((event) => `${event.type}:${event.start}-${event.end}`)).toEqual([
+      'task:1000-2000',
+      'interrupt:2000-3000',
+      'interrupt:3000-4000',
+      'break:4000-5000',
+      'interrupt:5000-6000',
+      'interrupt:6000-7000',
+    ]);
+    expect(closedEvents.every((event, index) => index === 0 || closedEvents[index - 1].end <= event.start)).toBe(true);
   });
 
   it('updates the running break target in state', () => {

@@ -55,12 +55,16 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       <div className="time il-mono">{formatElapsedClock(elapsedMs)}</div>
       {running.type === 'task' ? (
         <div className="rb-actions">
-          <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('interrupt'); }}>{Icons.bolt(16)}</button>
-          <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('break'); }}>{Icons.coffee(16)}</button>
+          <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('newInterrupt'); }}>{Icons.bolt(16)}</button>
+          <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('newBreak'); }}>{Icons.coffee(16)}</button>
           <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('confirmStop'); }}>{Icons.stop(14)}</button>
         </div>
       ) : (
-        <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
+        <div className="rb-actions">
+          {running.type === 'interrupt' && <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('newBreak'); }}>{Icons.coffee(16)}</button>}
+          <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('newInterrupt'); }}>{Icons.bolt(16)}</button>
+          <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
+        </div>
       )}
     </div>
   );

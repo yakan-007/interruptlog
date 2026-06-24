@@ -10,6 +10,7 @@ import {
   saveChipsInState,
   saveInterruptCategoryInState,
   setPreferenceInState,
+  setReportProfileInState,
   setTodayWorkdayEndInState,
   setWorkScheduleInState,
 } from '../../state';
@@ -34,6 +35,7 @@ export function createPreferenceCommands({ mutate, mutateWith, setOverlapRepairU
     setTopAdd: setPreference('topAdd'),
     setSortDue: setPreference('sortDue'),
     setHistoryView: setPreference('historyView'),
+    setReportProfile: mutateWith(setReportProfileInState),
     setWorkSchedule: mutateWith(setWorkScheduleInState),
     setTodayWorkdayEnd: mutateWith(setTodayWorkdayEndInState),
     clearTodayWorkdayEnd: mutateWith(clearTodayWorkdayEndInState),

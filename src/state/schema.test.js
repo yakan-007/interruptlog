@@ -82,6 +82,31 @@ describe('personal schema and backup', () => {
     expect(saved.state.tasks[0].planning.dueAt).toBeNull();
   });
 
+  it('keeps a resumable activity stack across a reload and removes invalid task contexts', () => {
+    const state = normalizeState({
+      ...createEmptyState(),
+      tasks: [{ id: 't1', name: '元の作業', categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null } }],
+      running: {
+        type: 'break',
+        start: at(11, 10),
+        resumeStack: [
+          { type: 'task', taskId: 't1' },
+          { type: 'interrupt', draft: { label: '一次対応', who: '田中', urgency: 'high' } },
+          { type: 'task', taskId: 'missing' },
+        ],
+      },
+    }, at(11, 11));
+
+    expect(state.running).toMatchObject({
+      type: 'break',
+      preTaskId: 't1',
+      resumeStack: [
+        { type: 'task', taskId: 't1' },
+        { type: 'interrupt', draft: { label: '一次対応', who: '田中', urgency: 'high' } },
+      ],
+    });
+  });
+
   it('round-trips JSON backup payloads in the personal format', () => {
     const state = createPersonalState({
       events: [{ id: 'manual-note', type: 'task', label: 'バックアップ確認', memo: '復元後も残す', start: 1000, end: 2000 }],

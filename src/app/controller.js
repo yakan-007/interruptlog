@@ -120,6 +120,7 @@ function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
       'setTodayWorkdayEnd',
       'clearTodayWorkdayEnd',
       'setHistoryView',
+      'setReportProfile',
       'finishOnboarding',
       'resetAll',
     ]),

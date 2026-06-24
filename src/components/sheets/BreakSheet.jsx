@@ -1,6 +1,7 @@
 import { fmtDuration } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
 import { elapsedSince } from '../../lib/timer';
+import Icons from '../../icons';
 import { t, tx } from '../../i18n';
 import SheetShell from './SheetShell';
 import TimerPanel from './TimerPanel';
@@ -47,6 +48,15 @@ export default function BreakSheet({ state, actions, onClose }) {
         hint={timerMeta}
         locale={locale}
       />
+
+      <div className="il-activity-switch">
+        <span>{t(locale, 'sheets.switchActivity')}</span>
+        <div className="il-activity-switch-actions">
+          <button className="il-activity-switch-btn interrupt" onClick={() => actions.openSheet('newInterrupt')}>
+            {Icons.bolt(14)} {t(locale, 'sheets.startAnotherInterrupt')}
+          </button>
+        </div>
+      </div>
 
       <div className="il-field">
         <label>{t(locale, 'sheets.breakTarget')}</label>

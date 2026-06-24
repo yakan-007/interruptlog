@@ -1,14 +1,16 @@
 import { fmtDurationShort } from '../../../lib/formatters';
 import { formatDate, t } from '../../../i18n';
 
-export function DailyReportPrintTemplate({ report, locale = 'ja-JP' }) {
+export function DailyReportPrintTemplate({ report, profile = {}, locale = 'ja-JP' }) {
   const totals = report.totals;
+  const identity = [profile.affiliation, profile.name].filter(Boolean).join(' · ');
   return (
     <section className="il-daily-print" aria-label={t(locale, 'report.dailyReportPrintTitle')}>
       <header className="il-daily-print-head">
         <div>
           <div className="eyebrow">{t(locale, 'report.dailyReportPrintTitle')}</div>
           <h1>{formatDate(report.date, locale, { weekday: 'short' })}</h1>
+          {identity && <div className="identity">{identity}</div>}
         </div>
         <div className="range">{formatTimeRange(report.range, locale)}</div>
       </header>
