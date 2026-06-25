@@ -564,6 +564,13 @@
   padding: 4px 0 max(10px, env(safe-area-inset-bottom));
   display: flex;
   z-index: 20;
+  transition: opacity .18s ease, transform .22s ease;
+}
+
+.il-appshell[data-keyboard-open] .il-tabbar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
 }
 
 .il-tab {
