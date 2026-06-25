@@ -1,4 +1,5 @@
 import {
+  buildAnalysisCsv,
   buildBackup,
   buildReportCsv,
   parseBackup,
@@ -26,6 +27,9 @@ export function createDataCommands({ getState, setLastError, setOverlapRepairUi,
     },
     exportReportCsv(range) {
       return buildReportCsv(getState(), range);
+    },
+    exportAnalysisCsv(range) {
+      return buildAnalysisCsv(getState(), range);
     },
   };
 }

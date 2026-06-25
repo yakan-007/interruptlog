@@ -111,6 +111,7 @@ describe('personal app commands', () => {
 
     expect(JSON.parse(commands.actions.exportJson())).toMatchObject({ schemaVersion: 1 });
     expect(commands.actions.exportReportCsv('day')).toContain('reportDate,range,timezone');
+    expect(commands.actions.exportAnalysisCsv('day')).toContain('sequenceIndex,durationMs,durationBucket');
     expect(commands.actions.importJson(JSON.stringify(buildBackup(state)))).toMatchObject({ ok: true, requiresRepair: false });
     expect(commands.actions.importJson('{bad json')).toMatchObject({ ok: false, error: 'JSONを読み込めませんでした' });
     expect(commands.setLastError).toHaveBeenLastCalledWith('JSONを読み込めませんでした');

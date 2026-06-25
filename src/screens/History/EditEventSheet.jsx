@@ -15,8 +15,8 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
   const [taskTarget, setTaskTarget] = useState(() => event.taskTarget ?? taskTargetForEvent(event, state));
   const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? state.interruptCats[0]?.id ?? '' : state.interruptCats[0]?.id ?? '');
   const [error, setError] = useState('');
-  const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start));
-  const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end));
+  const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start, { includeSeconds: true }));
+  const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end, { includeSeconds: true }));
   const locale = state.preferences.locale;
 
   const handleTypeChange = (nextType) => {
@@ -145,11 +145,11 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       <div className="il-inline-fields">
         <div className="il-field">
           <label>{t(locale, 'sheets.start')}</label>
-          <input className="il-input il-mono" type="datetime-local" value={startAt} onChange={(current) => setStartAt(current.target.value)} />
+          <input className="il-input il-mono" type="datetime-local" step="1" value={startAt} onChange={(current) => setStartAt(current.target.value)} />
         </div>
         <div className="il-field">
           <label>{t(locale, 'sheets.end')}</label>
-          <input className="il-input il-mono" type="datetime-local" value={endAt} onChange={(current) => setEndAt(current.target.value)} />
+          <input className="il-input il-mono" type="datetime-local" step="1" value={endAt} onChange={(current) => setEndAt(current.target.value)} />
         </div>
       </div>
 

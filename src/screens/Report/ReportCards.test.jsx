@@ -7,6 +7,7 @@ import {
   DailyReportPrintTemplate,
   DayActivityCard,
   HourlyInterruptsCard,
+  MicroInterruptionsCard,
   SendersCard,
   TaskEngagementCard,
   TaskStatusCard,
@@ -53,6 +54,28 @@ describe('personal report cards', () => {
           reactive: { total: 30 * 60 * 1000, direct: 10 * 60 * 1000, followup: 20 * 60 * 1000 },
         }} />
         <HourlyInterruptsCard hasInterruptTrend hourly={[0, 30 * 60 * 1000]} maxHourly={30 * 60 * 1000} peakHour={1} quietHour={0} locale="ja-JP" />
+        <MicroInterruptionsCard locale="ja-JP" stats={{
+          interruptCount: 3,
+          totalMs: 50_000,
+          microCount: 3,
+          microTotalMs: 50_000,
+          microMedianMs: 20_000,
+          microCountShare: 1,
+          microTimeShare: 1,
+          peakHour: 10,
+          peakHourCount: 3,
+          chainCount: 1,
+          chainRate: 1 / 3,
+          returnedCount: 1,
+          returnedRate: 1 / 3,
+          buckets: [
+            { label: '0-10s', count: 0, time: 0 },
+            { label: '10-30s', count: 3, time: 50_000 },
+            { label: '30s-1m', count: 0, time: 0 },
+            { label: '1-5m', count: 0, time: 0 },
+            { label: '5m+', count: 0, time: 0 },
+          ],
+        }} />
         <UrgencyBreakdownCard locale="ja-JP" maxUrgencyTime={hour} topUrgency={{ key: 'high', time: hour }} urgencyStats={[
           { key: 'low', time: 10 * 60 * 1000, count: 1, color: 'blue' },
           { key: 'med', time: 20 * 60 * 1000, count: 1, color: 'orange' },
@@ -76,6 +99,7 @@ describe('personal report cards', () => {
     expect(screen.getByText('時間の内訳')).toBeTruthy();
     expect(screen.getByText('基本の作業時間')).toBeTruthy();
     expect(screen.getByText('時間帯別の割り込み作業')).toBeTruthy();
+    expect(screen.getByText('短時間割り込み')).toBeTruthy();
     expect(screen.getByText('緊急度別の割り込み作業')).toBeTruthy();
     expect(screen.getByText('主な発信者')).toBeTruthy();
     expect(screen.getByText('完了タスク')).toBeTruthy();

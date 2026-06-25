@@ -398,19 +398,13 @@ describe('personal records and resolution', () => {
     expect(state.running?.taskId).toBe(saved.taskId);
   });
 
-  it('returns through nested interruptions and breaks without overlapping time', () => {
+  it('returns to the originating task after chained interruptions and breaks', () => {
     const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
     let state = beginPauseInState(started.state, 'interrupt', 2000);
     state = beginPauseInState(state, 'interrupt', 3000);
     state = beginPauseInState(state, 'break', 4000);
     state = saveBreakInState(state, { breakDurationMinutes: 5, resume: true }, 5000);
-    expect(state.running).toMatchObject({ type: 'interrupt', resumeStack: [{ type: 'task', taskId: started.taskId }, { type: 'interrupt' }] });
-
-    state = saveInterruptInState(state, { label: '二件目の電話', resume: true }, 6000);
-    expect(state.running).toMatchObject({ type: 'interrupt', resumeStack: [{ type: 'task', taskId: started.taskId }] });
-
-    state = saveInterruptInState(state, { label: '一件目の電話', resume: true }, 7000);
-    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 7000, resumeStack: [] });
+    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 5000, resumeStack: [] });
 
     const closedEvents = state.events.filter((event) => event.end !== null).sort((a, b) => a.start - b.start);
     expect(closedEvents.map((event) => `${event.type}:${event.start}-${event.end}`)).toEqual([
@@ -418,10 +412,22 @@ describe('personal records and resolution', () => {
       'interrupt:2000-3000',
       'interrupt:3000-4000',
       'break:4000-5000',
-      'interrupt:5000-6000',
-      'interrupt:6000-7000',
     ]);
     expect(closedEvents.every((event, index) => index === 0 || closedEvents[index - 1].end <= event.start)).toBe(true);
+  });
+
+  it('does not resume a previous interruption after saving the next interruption', () => {
+    const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
+    let state = beginPauseInState(started.state, 'interrupt', 2000);
+    state = beginPauseInState(state, 'interrupt', 3000);
+    state = saveInterruptInState(state, { label: '二件目の電話', resume: true }, 4000);
+
+    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 4000, resumeStack: [] });
+    expect(state.events.filter((event) => event.end !== null).map((event) => `${event.type}:${event.start}-${event.end}`)).toEqual([
+      'task:1000-2000',
+      'interrupt:2000-3000',
+      'interrupt:3000-4000',
+    ]);
   });
 
   it('updates the running break target in state', () => {

@@ -42,11 +42,16 @@ export {
 } from './preferences';
 
 export {
+  buildAnalysisCsv,
   buildReportCsv,
   buildWeeklyReview,
   calcStats,
   getRangeBounds,
 } from './reports';
+
+export {
+  buildMicroInterruptionStats,
+} from './eventAnalysis';
 
 export {
   calculateRangeStats,

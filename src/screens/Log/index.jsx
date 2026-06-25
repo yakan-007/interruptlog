@@ -91,7 +91,10 @@ export default function LogScreen({ state, actions }) {
                   onStop={() => actions.openSheet('confirmStop')}
                   onComplete={() => actions.completeTask(task.id)}
                   onEdit={() => actions.openSheet('editTask', task)}
-                  onCardPointerDown={(event) => armDrag(event, task.id, activeIndexById.get(task.id) ?? index)}
+                  onDragPointerDown={(event) => armDrag(event, task.id, activeIndexById.get(task.id) ?? index)}
+                  onMoveToIndex={(targetIndex) => actions.moveTaskToIndex(task.id, targetIndex)}
+                  taskIndex={activeIndexById.get(task.id) ?? index}
+                  taskCount={state.activeTasks.length}
                   dragState={{
                     isArming: pressing?.id === task.id,
                   }}

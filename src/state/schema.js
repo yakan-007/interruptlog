@@ -195,17 +195,15 @@ function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {
   const source = Array.isArray(raw)
     ? raw
     : legacyPreTaskId ? [{ type: 'task', taskId: legacyPreTaskId }] : [];
-  return source.flatMap((context) => {
+  const taskContexts = source.flatMap((context) => {
     if (!isObject(context)) return [];
     if (context.type === 'task' && context.taskId && taskIds.has(context.taskId)) {
       return [{ type: 'task', taskId: String(context.taskId) }];
     }
-    if (context.type === 'interrupt') return [{ type: 'interrupt', draft: normalizeInterruptDraft(context.draft) }];
-    if (context.type === 'break') {
-      return [{ type: 'break', plannedBreakDurationMinutes: Math.max(0, asNumber(context.plannedBreakDurationMinutes, 0) ?? 0) }];
-    }
     return [];
   });
+  const nearestTask = taskContexts.at(-1);
+  return nearestTask ? [nearestTask] : [];
 }
 
 function normalizeInterruptDraft(raw) {

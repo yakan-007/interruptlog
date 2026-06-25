@@ -11,14 +11,14 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: var(--keyboard-inset, 0px);
+  bottom: var(--content-keyboard-inset, 0px);
   background: var(--bg);
   border-radius: 20px 20px 0 0;
   box-shadow: var(--sh-sheet);
   z-index: 101;
   max-height: min(
     calc(86% - env(safe-area-inset-top)),
-    calc(100dvh - env(safe-area-inset-top) - var(--keyboard-inset, 0px))
+    calc(var(--app-height, 100dvh) - env(safe-area-inset-top) - var(--keyboard-inset, 0px))
   );
   display: flex;
   flex-direction: column;

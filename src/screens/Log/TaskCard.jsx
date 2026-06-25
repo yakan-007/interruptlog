@@ -13,7 +13,10 @@ export default function TaskCard({
   onStop,
   onComplete,
   onEdit,
-  onCardPointerDown,
+  onDragPointerDown,
+  onMoveToIndex,
+  taskIndex = 0,
+  taskCount = 1,
   dragState,
   onToggle,
   onRestart,
@@ -47,6 +50,16 @@ export default function TaskCard({
     '--drag-float-left': dragState?.left != null ? `${Math.round(dragState.left)}px` : undefined,
     '--drag-float-top': dragState?.top != null ? `${Math.round(dragState.top)}px` : undefined,
     '--drag-float-width': dragState?.width != null ? `${Math.round(dragState.width)}px` : undefined,
+  };
+  const handleDragKeyDown = (event) => {
+    let targetIndex = null;
+    if (event.key === 'ArrowUp') targetIndex = taskIndex - 1;
+    if (event.key === 'ArrowDown') targetIndex = taskIndex + 1;
+    if (event.key === 'Home') targetIndex = 0;
+    if (event.key === 'End') targetIndex = taskCount - 1;
+    if (targetIndex == null) return;
+    event.preventDefault();
+    onMoveToIndex?.(Math.max(0, Math.min(taskCount - 1, targetIndex)));
   };
 
   if (task.isCompleted) {
@@ -92,7 +105,6 @@ export default function TaskCard({
       }
       data-task-id={floating ? undefined : task.id}
       style={cardStyle}
-      onPointerDown={floating ? undefined : onCardPointerDown}
     >
       <div className="cat-rail" style={{ background: category?.color }} />
       <button className="check" onClick={onComplete} aria-label="complete" />
@@ -127,6 +139,17 @@ export default function TaskCard({
         )}
         <button className="il-ghostbtn" onClick={onEdit} aria-label="edit">{Icons.edit(15)}</button>
       </div>
+      {!floating && <button
+        type="button"
+        className="il-drag-handle"
+        onPointerDown={onDragPointerDown}
+        onKeyDown={handleDragKeyDown}
+        aria-label={t(locale, 'log.reorder')}
+        aria-keyshortcuts="ArrowUp ArrowDown Home End"
+        title={t(locale, 'log.reorderHint')}
+      >
+        {Icons.grip(18)}
+      </button>}
     </div>
   );
 }

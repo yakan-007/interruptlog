@@ -25,6 +25,8 @@ log: {
         workdayAfterEnd: (time) => `Ended at ${time}`,
         workdayOverflow: (duration) => `${duration} over estimate`,
         interruptOrigin: 'From an interruption',
+        reorder: 'Reorder task',
+        reorderHint: 'Press and hold to reorder. You can also use the up and down arrow keys.',
       },
 };
 

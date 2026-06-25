@@ -1,5 +1,11 @@
 import { categoryLabel, interruptCategoryLabel, normalizeLocale } from '../../i18n';
-import { calculateRangeStats, createReportSnapshot, getWorkdayBounds, selectRangeEvents } from '../../state';
+import {
+  buildMicroInterruptionStats,
+  calculateRangeStats,
+  createReportSnapshot,
+  getWorkdayBounds,
+  selectRangeEvents,
+} from '../../state';
 
 const URGENCY_META = {
   low: { color: 'var(--urg-low)' },
@@ -29,6 +35,7 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
   const dayActivity = buildDayActivity(state, currentStats.events, taskGroups);
   const dailyReport = buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity);
   const workday = buildWorkdayReport(state, currentStats.events, bounds, now);
+  const microInterruptions = buildMicroInterruptionStats(currentStats.events);
   const peakHour = hourly.indexOf(Math.max(...hourly));
   const quietHour = hourly.indexOf(Math.min(...hourly));
   const hasInterruptTrend = hourly.some((value) => value >= 60000);
@@ -53,6 +60,7 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
     dayActivity,
     dailyReport,
     workday,
+    microInterruptions,
     ...taskReport,
   };
 }

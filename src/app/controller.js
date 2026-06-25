@@ -85,6 +85,15 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
         successKey: 'toasts.csvExported',
       });
     },
+    async exportAnalysisCsv(range) {
+      await exportText({
+        filename: datedFilename(`interruptlog-analysis-${range}`, 'csv'),
+        content: () => app.actions.exportAnalysisCsv(range),
+        type: 'text/csv;charset=utf-8',
+        downloadOnly: true,
+        successKey: 'toasts.csvExported',
+      });
+    },
   };
 }
 

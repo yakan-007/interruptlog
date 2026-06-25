@@ -11,6 +11,7 @@ import {
   DailyReportPrintTemplate,
   DayActivityCard,
   HourlyInterruptsCard,
+  MicroInterruptionsCard,
   SendersCard,
   TaskEngagementCard,
   TaskStatusCard,
@@ -67,6 +68,7 @@ export default function ReportScreen({ state, actions }) {
     dayActivity,
     dailyReport,
     workday,
+    microInterruptions,
   } = useMemo(
     () => buildReportMetrics(state, currentStats, bounds, reportNow, reportSnapshot),
     [bounds, currentStats, reportNow, reportSnapshot, state]
@@ -162,6 +164,8 @@ export default function ReportScreen({ state, actions }) {
                   quietHour={quietHour}
                 />
 
+                <MicroInterruptionsCard stats={microInterruptions} locale={state.preferences.locale} />
+
                 {currentStats.interrupt > 0 && (
                   <UrgencyBreakdownCard
                     locale={state.preferences.locale}
@@ -188,6 +192,7 @@ export default function ReportScreen({ state, actions }) {
 
             <div className="il-report-export">
               <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
+              <button className="btn secondary fill" onClick={() => actions.exportAnalysisCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.analysisCsvSave')}</button>
               <div className="il-report-exportcopy">
                 {t(state.preferences.locale, 'report.csvCopy')}
               </div>

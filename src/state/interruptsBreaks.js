@@ -6,9 +6,7 @@ import { ensureWorkdayScheduleInState } from './workday';
 export function beginPauseInState(state, type, now = Date.now()) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const running = snapshotted.running;
-  const resumeStack = running
-    ? [...getResumeStack(running), toResumeContext(running)]
-    : [];
+  const resumeStack = buildResumeStackForNextPause(running);
   const suspended = running?.type === 'task'
     ? closeTaskSessionInState(snapshotted, now)
     : closeRunningPauseSegmentInState(snapshotted, now);
@@ -49,18 +47,11 @@ function resumeOrStopInState(state, resume, now = Date.now()) {
   const running = state.running;
   const resumeStack = getResumeStack(running);
   const base = { ...state, running: null };
-  if (!resume || resumeStack.length === 0) return base;
+  const taskContext = findNearestTaskContext(resumeStack);
+  if (!resume || !taskContext) return base;
 
-  const context = resumeStack.at(-1);
-  const remainingStack = resumeStack.slice(0, -1);
-  if (context?.type === 'task' && base.tasks.some((task) => task.id === context.taskId)) {
-    return startTaskInState(base, context.taskId, now, { resumeStack: remainingStack });
-  }
-  if (context?.type === 'interrupt' || context?.type === 'break') {
-    return {
-      ...base,
-      running: createPauseRunning(context.type, now, remainingStack, context),
-    };
+  if (base.tasks.some((task) => task.id === taskContext.taskId)) {
+    return startTaskInState(base, taskContext.taskId, now, { resumeStack: [] });
   }
   return base;
 }
@@ -154,14 +145,20 @@ function getResumeStack(running) {
   return running?.preTaskId ? [{ type: 'task', taskId: running.preTaskId }] : [];
 }
 
-function toResumeContext(running) {
-  if (running.type === 'task') return { type: 'task', taskId: running.taskId };
-  if (running.type === 'interrupt') return { type: 'interrupt', draft: normalizeInterruptDraft(running.draft) };
-  return { type: 'break', plannedBreakDurationMinutes: running.plannedBreakDurationMinutes ?? 0 };
+function buildResumeStackForNextPause(running) {
+  if (!running) return [];
+  if (running.type === 'task' && running.taskId) return [{ type: 'task', taskId: running.taskId }];
+  const taskContext = findNearestTaskContext(getResumeStack(running));
+  return taskContext ? [taskContext] : [];
 }
 
 function findNearestTaskId(resumeStack) {
-  return [...resumeStack].reverse().find((context) => context.type === 'task')?.taskId ?? null;
+  return findNearestTaskContext(resumeStack)?.taskId ?? null;
+}
+
+function findNearestTaskContext(resumeStack) {
+  const context = [...resumeStack].reverse().find((item) => item.type === 'task' && item.taskId);
+  return context ? { type: 'task', taskId: context.taskId } : null;
 }
 
 function normalizeInterruptDraft(data = {}) {

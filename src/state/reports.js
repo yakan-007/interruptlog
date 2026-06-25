@@ -1,5 +1,41 @@
 import { cleanText, csvCell } from './utils';
+import { buildEventSequenceAnalysis } from './eventAnalysis';
 import { calculateRangeStats, createReportSnapshot } from './reportFacts';
+
+const REPORT_CSV_HEADER = [
+  'reportDate',
+  'range',
+  'timezone',
+  'affiliation',
+  'memberName',
+  'start',
+  'end',
+  'type',
+  'label',
+  'category',
+  'categoryId',
+  'taskId',
+  'sourceTaskId',
+  'interruptOriginId',
+  'who',
+  'urgency',
+  'memo',
+  'durationMinutes',
+];
+
+const ANALYSIS_CSV_HEADER = [
+  ...REPORT_CSV_HEADER,
+  'sequenceIndex',
+  'durationMs',
+  'durationBucket',
+  'isMicroEvent',
+  'previousEventType',
+  'nextEventType',
+  'gapFromPreviousMs',
+  'gapToNextMs',
+  'returnedToTask',
+  'isFollowedByInterrupt',
+];
 
 export function getRangeBounds(range, now = Date.now()) {
   const today = startOfDay(now);
@@ -14,41 +50,35 @@ export function calcStats(events, since, until, now = Date.now()) {
 }
 
 export function buildReportCsv(state, range, now = Date.now(), snapshot = null) {
-  const bounds = getRangeBounds(range, now);
-  const stats = calculateRangeStats(snapshot ?? createReportSnapshot(state, now), bounds.since, bounds.until);
-  const reportDate = formatDateKey(bounds.since);
-  const timezone = getTimezoneName();
-  const profile = state.preferences?.reportProfile ?? {};
-  const taskById = new Map(state.tasks.map((task) => [task.id, task]));
-  const categoryName = (id) =>
-    state.categories.find((category) => category.id === id)?.name ?? id ?? '';
+  const { events, reportDate, timezone, context } = prepareReportCsvData(state, range, now, snapshot);
   const rows = [
-    ['reportDate', 'range', 'timezone', 'affiliation', 'memberName', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes'],
-    ...stats.events
-      .sort((a, b) => a.clippedStart - b.clippedStart)
-      .map((event) => {
-        const task = event.taskId ? taskById.get(event.taskId) : null;
-        return [
-          reportDate,
-          range,
-          timezone,
-          cleanText(profile.affiliation),
-          cleanText(profile.name),
-          new Date(event.clippedStart).toISOString(),
-          new Date(event.clippedEnd).toISOString(),
-          event.type,
-          event.label ?? '',
-          categoryName(event.categoryId),
-          event.categoryId ?? '',
-          event.taskId ?? '',
-          event.sourceTaskId ?? task?.sourceTaskId ?? '',
-          event.interruptOriginId ?? task?.interruptOriginId ?? '',
-          event.who ?? '',
-          event.urgency ?? '',
-          event.memo ?? task?.memo ?? '',
-          (event.durationMs / 60000).toFixed(1),
-        ];
-      }),
+    REPORT_CSV_HEADER,
+    ...events.map((event) => buildReportCsvRow(event, { context, range, reportDate, timezone })),
+  ];
+  return rows.map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
+export function buildAnalysisCsv(state, range, now = Date.now(), snapshot = null) {
+  const { events, reportDate, timezone, context } = prepareReportCsvData(state, range, now, snapshot);
+  const sequence = buildEventSequenceAnalysis(events);
+  const rows = [
+    ANALYSIS_CSV_HEADER,
+    ...sequence.events.map((event) => {
+      const meta = sequence.metaById.get(event.id);
+      return [
+        ...buildReportCsvRow(event, { context, range, reportDate, timezone }),
+        meta.sequenceIndex,
+        Math.round(meta.durationMs),
+        meta.durationBucket,
+        meta.isMicroEvent ? 'true' : 'false',
+        meta.previousEventType,
+        meta.nextEventType,
+        meta.gapFromPreviousMs ?? '',
+        meta.gapToNextMs ?? '',
+        meta.returnedToTask == null ? '' : meta.returnedToTask ? 'true' : 'false',
+        meta.isFollowedByInterrupt ? 'true' : 'false',
+      ];
+    }),
   ];
   return rows.map((row) => row.map(csvCell).join(',')).join('\n');
 }
@@ -109,6 +139,52 @@ function startOfDay(ts) {
   const date = new Date(ts);
   date.setHours(0, 0, 0, 0);
   return date.getTime();
+}
+
+function prepareReportCsvData(state, range, now, snapshot) {
+  const bounds = getRangeBounds(range, now);
+  const stats = calculateRangeStats(snapshot ?? createReportSnapshot(state, now), bounds.since, bounds.until);
+  const profile = state.preferences?.reportProfile ?? {};
+  return {
+    events: [...stats.events].sort(compareCsvEvents),
+    reportDate: formatDateKey(bounds.since),
+    timezone: getTimezoneName(),
+    context: {
+      profile,
+      taskById: new Map(state.tasks.map((task) => [task.id, task])),
+      categoryName: (id) => state.categories.find((category) => category.id === id)?.name ?? id ?? '',
+    },
+  };
+}
+
+function buildReportCsvRow(event, { context, range, reportDate, timezone }) {
+  const task = event.taskId ? context.taskById.get(event.taskId) : null;
+  return [
+    reportDate,
+    range,
+    timezone,
+    cleanText(context.profile.affiliation),
+    cleanText(context.profile.name),
+    new Date(event.clippedStart).toISOString(),
+    new Date(event.clippedEnd).toISOString(),
+    event.type,
+    event.label ?? '',
+    context.categoryName(event.categoryId),
+    event.categoryId ?? '',
+    event.taskId ?? '',
+    event.sourceTaskId ?? task?.sourceTaskId ?? '',
+    event.interruptOriginId ?? task?.interruptOriginId ?? '',
+    event.who ?? '',
+    event.urgency ?? '',
+    event.memo ?? task?.memo ?? '',
+    (event.durationMs / 60000).toFixed(1),
+  ];
+}
+
+function compareCsvEvents(a, b) {
+  return (a.clippedStart - b.clippedStart) ||
+    (a.clippedEnd - b.clippedEnd) ||
+    String(a.id ?? '').localeCompare(String(b.id ?? ''));
 }
 
 function calendarRange(now, days) {

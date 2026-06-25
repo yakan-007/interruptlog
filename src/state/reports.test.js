@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
+  buildAnalysisCsv,
   buildReportCsv,
   calcStats,
   createEmptyState,
@@ -142,6 +143,63 @@ describe('personal reports', () => {
     expect(row[7]).toBe('interrupt');
     expect(row[8]).toBe('仕様確認');
     expect(row.slice(14)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+  });
+
+  it('exports analysis CSV with derived sequence and short-event fields', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [{
+        id: 'task-1',
+        name: '設計',
+        memo: '',
+        isCompleted: false,
+        order: 0,
+        categoryId: 'cat-dev',
+        planning: { plannedDurationMinutes: 0, dueAt: null },
+        createdAt: at(11, 9),
+        completedAt: null,
+      }],
+      events: [
+        { id: 'task-a', type: 'task', taskId: 'task-1', label: '設計', start: at(11, 10), end: at(11, 10, 5) },
+        { id: 'int-return', type: 'interrupt', label: '確認', start: at(11, 10, 5), end: at(11, 10, 5, 20) },
+        { id: 'task-b', type: 'task', taskId: 'task-1', label: '設計', start: at(11, 10, 5, 20), end: at(11, 10, 6) },
+        { id: 'int-chain-a', type: 'interrupt', label: '電話', start: at(11, 10, 6), end: at(11, 10, 6, 10) },
+        { id: 'int-chain-b', type: 'interrupt', label: 'チャット', start: at(11, 10, 6, 20), end: at(11, 10, 6, 40) },
+      ],
+    };
+
+    const table = buildAnalysisCsv(state, 'day', at(11, 11))
+      .split('\n')
+      .map((line) => line.split(','));
+    const header = table[0];
+    const rows = table.slice(1);
+    const column = (name) => header.indexOf(name);
+    const rowByLabel = (label) => rows.find((row) => row[column('label')] === label);
+    const returned = rowByLabel('確認');
+    const chained = rowByLabel('電話');
+
+    expect(header.slice(-10)).toEqual([
+      'sequenceIndex',
+      'durationMs',
+      'durationBucket',
+      'isMicroEvent',
+      'previousEventType',
+      'nextEventType',
+      'gapFromPreviousMs',
+      'gapToNextMs',
+      'returnedToTask',
+      'isFollowedByInterrupt',
+    ]);
+    expect(returned[column('sequenceIndex')]).toBe('2');
+    expect(returned[column('durationMs')]).toBe('20000');
+    expect(returned[column('durationBucket')]).toBe('10-30s');
+    expect(returned[column('isMicroEvent')]).toBe('true');
+    expect(returned[column('previousEventType')]).toBe('task');
+    expect(returned[column('nextEventType')]).toBe('task');
+    expect(returned[column('returnedToTask')]).toBe('true');
+    expect(chained[column('nextEventType')]).toBe('interrupt');
+    expect(chained[column('gapToNextMs')]).toBe('10000');
+    expect(chained[column('isFollowedByInterrupt')]).toBe('true');
   });
 
   it('protects CSV cells that could be interpreted as spreadsheet formulas', () => {

@@ -19,6 +19,13 @@ describe('duration helpers', () => {
     expect(toDateTimeLocalValue(null)).toBe('');
   });
 
+  it('can keep seconds for editing short history records', () => {
+    const timestamp = new Date(2026, 5, 25, 9, 10, 7, 999).getTime();
+
+    expect(toDateTimeLocalValue(timestamp)).toBe('2026-06-25T09:10');
+    expect(toDateTimeLocalValue(timestamp, { includeSeconds: true })).toBe('2026-06-25T09:10:07');
+  });
+
   it('keeps every timer elapsed value non-negative and consistently formatted', () => {
     expect(elapsedSince(2_000, 1_000)).toBe(0);
     expect(formatElapsedClock(elapsedSince(1_000, 3_500))).toBe('00:00:03');

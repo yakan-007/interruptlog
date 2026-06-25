@@ -25,6 +25,8 @@ log: {
         workdayAfterEnd: (time) => `終了 ${time} を過ぎました`,
         workdayOverflow: (duration) => `見積が ${duration} 超過`,
         interruptOrigin: '割り込みから発生',
+        reorder: 'タスクを並べ替え',
+        reorderHint: '長押しして並べ替え。上下の矢印キーでも移動できます',
       },
 };
 

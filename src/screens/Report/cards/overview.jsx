@@ -93,6 +93,50 @@ export function HourlyInterruptsCard({
   );
 }
 
+export function MicroInterruptionsCard({ stats, locale = 'ja-JP' }) {
+  if (!stats || stats.interruptCount === 0) return null;
+
+  const microShare = Math.round(stats.microCountShare * 100);
+  const chainRate = Math.round(stats.chainRate * 100);
+  const maxBucketCount = Math.max(...stats.buckets.map((bucket) => bucket.count), 1);
+
+  return (
+    <div className="il-card">
+      <h3>{t(locale, 'report.microInterruptions')}</h3>
+      <div className="il-report-taskstats">
+        <TaskStat label={t(locale, 'report.microCount')} value={tx(locale, 'common.count', stats.microCount)} accent />
+        <TaskStat label={t(locale, 'report.microTotal')} value={fmtDurationShort(stats.microTotalMs, locale)} />
+        <TaskStat label={t(locale, 'report.microMedian')} value={stats.microCount ? fmtDurationShort(stats.microMedianMs, locale) : '-'} />
+      </div>
+      <div className="il-review-lines">
+        <div>
+          {stats.microCount
+            ? tx(locale, 'report.microPeak', { hour: stats.peakHour, count: stats.peakHourCount })
+            : t(locale, 'report.noMicroInterruptions')}
+        </div>
+        <div>{tx(locale, 'report.microShare', { percent: microShare })}</div>
+        <div>{tx(locale, 'report.interruptionChainRate', { percent: chainRate, count: stats.chainCount })}</div>
+      </div>
+      <div className="il-urgency-report">
+        {stats.buckets.map((bucket) => (
+          <div key={bucket.label} className="il-urgency-report-row">
+            <div className="main">
+              <span className="il-chip sm">{bucket.label}</span>
+              <span className="copy">{tx(locale, 'common.count', bucket.count)}</span>
+            </div>
+            <div className="meter">
+              <div style={{ width: `${(bucket.count / maxBucketCount) * 100}%`, background: 'var(--interrupt)' }} />
+            </div>
+            <div className="value">
+              <strong className="il-mono">{fmtDurationShort(bucket.time, locale)}</strong>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WeeklyReviewCard({ state, now, snapshot }) {
   const review = useMemo(() => buildWeeklyReview(state, now, snapshot), [state, now, snapshot]);
   return (

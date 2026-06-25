@@ -82,7 +82,7 @@ describe('personal schema and backup', () => {
     expect(saved.state.tasks[0].planning.dueAt).toBeNull();
   });
 
-  it('keeps a resumable activity stack across a reload and removes invalid task contexts', () => {
+  it('keeps only the originating task as the resumable activity across a reload', () => {
     const state = normalizeState({
       ...createEmptyState(),
       tasks: [{ id: 't1', name: '元の作業', categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null } }],
@@ -102,7 +102,6 @@ describe('personal schema and backup', () => {
       preTaskId: 't1',
       resumeStack: [
         { type: 'task', taskId: 't1' },
-        { type: 'interrupt', draft: { label: '一次対応', who: '田中', urgency: 'high' } },
       ],
     });
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculateRangeStats, calcStats, createEmptyState, createReportSnapshot, getRangeBounds, selectRangeEvents, setWorkScheduleInState } from '../../state';
 import { buildReportMetrics } from './reportMetrics';
 
-const at = (hour, minute = 0) => new Date(2026, 4, 11, hour, minute).getTime();
+const at = (hour, minute = 0, second = 0) => new Date(2026, 4, 11, hour, minute, second).getTime();
 
 describe('workday report metrics', () => {
   it('splits task and interruption time at workday boundaries and groups reactive follow-up work', () => {
@@ -47,6 +47,37 @@ describe('workday report metrics', () => {
     expect(metrics.taskEngagement.rows[0].sessions[0].workDetail).toBe('構成を検討');
     expect(metrics.dayActivity.recordOnlyWork).toEqual([expect.objectContaining({ name: 'メール返信', time: 20 * 60000 })]);
     expect(metrics.dailyReport.recordOnlyWork).toHaveLength(1);
+  });
+
+  it('summarizes short interruptions without storing extra event fields', () => {
+    const state = {
+      ...createEmptyState(),
+      events: [
+        { id: 'task-a', type: 'task', taskId: 'task-1', label: '設計', start: at(10), end: at(10, 5) },
+        { id: 'int-return', type: 'interrupt', label: '確認', start: at(10, 5), end: at(10, 5, 20) },
+        { id: 'task-b', type: 'task', taskId: 'task-1', label: '設計', start: at(10, 5, 20), end: at(10, 6) },
+        { id: 'int-chain-a', type: 'interrupt', label: '電話', start: at(10, 6), end: at(10, 6, 10) },
+        { id: 'int-chain-b', type: 'interrupt', label: 'チャット', start: at(10, 6, 20), end: at(10, 6, 40) },
+      ],
+    };
+    const bounds = { since: at(0), until: at(23, 59) };
+    const currentStats = calcStats(state.events, bounds.since, bounds.until, bounds.until);
+    const metrics = buildReportMetrics(state, currentStats, bounds, bounds.until);
+
+    expect(metrics.microInterruptions).toMatchObject({
+      interruptCount: 3,
+      microCount: 3,
+      microTotalMs: 50_000,
+      microMedianMs: 20_000,
+      peakHour: 10,
+      peakHourCount: 3,
+      chainCount: 1,
+      returnedCount: 1,
+    });
+    expect(metrics.microInterruptions.buckets.find((bucket) => bucket.label === '10-30s')).toMatchObject({
+      count: 3,
+      time: 50_000,
+    });
   });
 
   it('keeps task aggregation linear over a large event history', () => {

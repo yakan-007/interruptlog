@@ -2,7 +2,7 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--keyboard-inset, 0px));
+  bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--content-keyboard-inset, 0px));
   z-index: 24;
   padding: 12px;
   border-radius: 20px;
@@ -198,10 +198,9 @@
   box-shadow: var(--sh-card), inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 34%, var(--hair-strong));
 }
 .il-taskcard.draggable {
-  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr) 32px auto;
   padding-left: 18px;
-  cursor: grab;
-  touch-action: pan-y;
+  cursor: default;
 }
 
 .il-taskcard .cat-rail {
@@ -374,7 +373,7 @@
 }
 
 .il-taskcard .task-actions {
-  grid-column: 3;
+  grid-column: 4;
   grid-row: 1;
   display: flex;
   flex-direction: column;
@@ -384,6 +383,34 @@
   min-width: 40px;
   align-self: center;
 }
+
+.il-drag-handle {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: stretch;
+  width: 32px;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-4);
+  cursor: grab;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  transition: background .15s, color .15s, transform .1s;
+}
+
+.il-drag-handle:hover,
+.il-drag-handle:focus-visible {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 11%, var(--bg-sunken));
+  color: color-mix(in oklch, var(--task-cat, var(--accent)) 66%, var(--ink) 34%);
+  outline: none;
+}
+
+.il-drag-handle:active { cursor: grabbing; transform: scale(0.94); }
 
 .il-taskcard.completed .il-task-action {
   grid-column: 3;
