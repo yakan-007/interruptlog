@@ -65,6 +65,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
         filename: datedFilename('interruptlog-backup', 'json'),
         content: () => app.actions.exportJson(),
         type: 'application/json',
+        downloadOnly: true,
         successKey: 'toasts.jsonExported',
       });
     },
@@ -217,12 +218,20 @@ export function useViewActions(args) {
   );
 }
 
-async function shareOrDownloadText(filename, content, type, options = {}) {
+export async function shareOrDownloadText(filename, content, type, options = {}) {
   const file = new File([content], filename, { type });
   if (!options.downloadOnly && navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: filename });
-    return;
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error;
+    }
   }
+  downloadFile(file, filename);
+}
+
+function downloadFile(file, filename) {
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
