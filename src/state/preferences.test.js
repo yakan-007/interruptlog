@@ -61,7 +61,7 @@ describe('personal preferences', () => {
     const subjectMoved = moveChipToIndexInState(whoMoved, 'subject', '相談', 2);
 
     expect(categoriesMoved.categories.map((category) => category.id).slice(0, 3)).toEqual(['cat-doc', 'cat-mtg', 'cat-dev']);
-    expect(interruptsMoved.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-q', 'int-other', 'int-chat']);
+    expect(interruptsMoved.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-q', 'int-other', 'int-chat', 'break-rest', 'break-lunch', 'break-personal']);
     expect(whoMoved.whoChips).toEqual(['田中', '鈴木', '佐藤']);
     expect(subjectMoved.subjectChips).toEqual(['確認', '会議', '相談']);
     expect(subjectMoved.tasks[0].categoryId).toBe('cat-dev');

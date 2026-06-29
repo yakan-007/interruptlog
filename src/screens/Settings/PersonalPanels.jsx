@@ -45,6 +45,8 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
 
 export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
+  const [kind, setKind] = useState(category?.kind ?? 'interrupt');
+  const [defaultDurationMinutes, setDefaultDurationMinutes] = useState(category?.defaultDurationMinutes ?? 0);
   const [error, setError] = useState('');
 
   const save = () => {
@@ -52,11 +54,17 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       setError(locale === 'ja-JP' ? '種類名を入力してください' : 'Enter a type name');
       return;
     }
-    onSave({ id: category?.id, name, icon: null });
+    onSave({
+      id: category?.id,
+      name,
+      icon: category?.kind === kind ? category?.icon : kind === 'break' ? 'coffee' : null,
+      kind,
+      defaultDurationMinutes: kind === 'break' ? defaultDurationMinutes : 0,
+    });
   };
 
   return (
-    <SheetShell title={category ? (locale === 'ja-JP' ? '割り込みの種類を編集' : 'Edit interruption type') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} footer={
+    <SheetShell title={category ? (locale === 'ja-JP' ? '中断カテゴリを編集' : 'Edit pause category') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} footer={
       <>
         {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
@@ -67,6 +75,22 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
         <label>{locale === 'ja-JP' ? '種類名' : 'Type name'}</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
       </div>
+      <div className="il-field">
+        <label>{locale === 'ja-JP' ? '性質' : 'Kind'}</label>
+        <div className="il-segmented">
+          <button className={kind === 'interrupt' ? 'active' : ''} onClick={() => setKind('interrupt')}>{t(locale, 'sheets.pauseKindInterrupt')}</button>
+          <button className={kind === 'break' ? 'active' : ''} onClick={() => setKind('break')}>{t(locale, 'sheets.pauseKindBreak')}</button>
+        </div>
+      </div>
+      {kind === 'break' && (
+        <div className="il-field">
+          <label>{t(locale, 'sheets.breakTarget')}</label>
+          <div className="il-breakplan-row">
+            <input className="il-input short" type="number" value={defaultDurationMinutes} onChange={(event) => setDefaultDurationMinutes(Number(event.target.value) || 0)} />
+            <span className="suffix">{t(locale, 'sheets.minutes')}</span>
+          </div>
+        </div>
+      )}
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );

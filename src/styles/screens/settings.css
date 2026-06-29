@@ -117,6 +117,24 @@
   color: var(--ink);
 }
 
+.il-settings-pauseicon {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--bg-sunken);
+}
+
+.il-settings-pauseicon.interrupt {
+  color: var(--interrupt);
+}
+
+.il-settings-pauseicon.break {
+  color: color-mix(in oklch, var(--break) 74%, var(--ink) 26%);
+}
+
 .il-reorder-handle {
   width: 44px;
   min-height: 50px;

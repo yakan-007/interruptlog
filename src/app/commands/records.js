@@ -2,6 +2,7 @@ import {
   addMissedEventInState,
   applyResolutionPreviewInState,
   beginPauseInState,
+  beginPauseWithCategoryInState,
   cancelPauseInState,
   createInterruptFollowupTaskInState,
   deleteEventInState,
@@ -12,6 +13,7 @@ import {
   saveBreakInState,
   saveEventInState,
   saveInterruptInState,
+  selectPauseCategoryInState,
   saveTaskRecordInState,
   setBreakTargetInState,
   stopPauseInState,
@@ -29,8 +31,10 @@ export function createRecordCommands({
   setTrackedAppState,
 }) {
   return {
+    beginPause: (categoryId) => mutate((state) => beginPauseWithCategoryInState(state, categoryId)),
     beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt')),
     beginBreak: () => mutate((state) => beginPauseInState(state, 'break')),
+    selectPauseCategory: mutateWith(selectPauseCategoryInState),
     setBreakTarget: mutateWith(setBreakTargetInState),
     saveInterrupt: mutateWith(saveInterruptInState),
     cancelInterrupt: mutateWith(cancelPauseInState),

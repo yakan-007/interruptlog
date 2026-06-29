@@ -137,6 +137,120 @@
   flex: 1;
 }
 
+.il-pause-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.il-pause-kind-tabs {
+  margin-bottom: 8px;
+}
+
+.il-pause-category {
+  min-height: 54px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  color: var(--ink-2);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-areas:
+    "icon main"
+    "icon kind";
+  align-items: center;
+  column-gap: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .1s;
+}
+
+.il-pause-category:active {
+  transform: scale(0.98);
+}
+
+.il-pause-category .icon {
+  grid-area: icon;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-sunken);
+}
+
+.il-pause-category .main {
+  grid-area: main;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.il-pause-category .kind {
+  grid-area: kind;
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.il-pause-category.compact {
+  grid-template-areas: "icon main";
+}
+
+.il-pause-category.compact .main {
+  align-self: center;
+}
+
+.il-pause-category.interrupt.sel {
+  background: color-mix(in oklch, var(--interrupt) 10%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--interrupt) 34%, var(--hair));
+  color: color-mix(in oklch, var(--interrupt) 74%, var(--ink) 26%);
+}
+
+.il-pause-category.break.sel {
+  background: color-mix(in oklch, var(--break) 14%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--break) 36%, var(--hair));
+  color: color-mix(in oklch, var(--break) 74%, var(--ink) 26%);
+}
+
+.il-pause-category.sel .icon {
+  background: color-mix(in oklch, currentColor 12%, var(--bg-elevated));
+}
+
+.il-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--bg-sunken);
+}
+
+.il-segmented button {
+  min-height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.il-segmented button.active {
+  background: var(--bg-elevated);
+  color: var(--ink);
+  box-shadow: var(--sh-card);
+}
+
 .il-sheet-presetrow {
   display: flex;
   gap: 8px;

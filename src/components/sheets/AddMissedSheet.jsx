@@ -5,6 +5,7 @@ import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
 
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
+  const interruptCategories = state.interruptCats.filter((category) => category.kind !== 'break');
   const [type, setType] = useState(initialDraft?.type ?? 'task');
   const [label, setLabel] = useState(initialDraft?.label ?? '');
   const [taskTarget, setTaskTarget] = useState(initialDraft?.taskTarget ?? {
@@ -16,7 +17,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [who, setWho] = useState(initialDraft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(Boolean(initialDraft?.saveWhoChip));
   const [urgency, setUrgency] = useState(initialDraft?.urgency ?? 'med');
-  const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? state.interruptCats[0]?.id ?? '');
+  const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? interruptCategories[0]?.id ?? state.interruptCats[0]?.id ?? '');
   const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
   const [initial] = useState(() => new Date(initialDraft?.dayStart ?? Date.now()));
@@ -156,7 +157,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           <div className="il-field">
             <label>{t(locale, 'sheets.interruptCategory')}</label>
             <div className="il-chiprow">
-              {state.interruptCats.map((category) => (
+              {interruptCategories.map((category) => (
                 <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
                   {interruptCategoryLabel(locale, category)}
                 </button>

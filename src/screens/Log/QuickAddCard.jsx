@@ -145,10 +145,10 @@ export default function QuickAddCard({ state, actions }) {
         </button>
         <button
           className="il-quickdock-icon interrupt"
-          onClick={() => actions.openSheet('newInterrupt')}
-          aria-label={t(state.preferences.locale, 'log.startUnexpected')}
+          onClick={() => actions.openSheet('newPause')}
+          aria-label={t(state.preferences.locale, 'log.startPause')}
         >
-          {Icons.bolt(16)}
+          {Icons.pause(16)}
         </button>
       </div>
 

@@ -4,6 +4,7 @@ log: {
         emptyTitle: '今日のタスクはまだありません',
         emptyCopy: '下の入力欄からタスクを追加できます。',
         startUnexpected: '予定外の対応を記録',
+        startPause: '中断を記録',
         completedToday: '今日完了',
         completedArchive: '完了アーカイブ',
         archiveCopy: '過去に完了したタスクです。メイン一覧からは外れますが、再開すると同じタスクとして時間を続けて記録できます。',

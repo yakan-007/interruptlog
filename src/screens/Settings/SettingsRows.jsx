@@ -37,7 +37,15 @@ export function CategoryRow({ category, locale, onClick, rowProps, dragHandlePro
 }
 
 export function InterruptCategoryRow({ category, locale, onClick, rowProps, dragHandleProps, dragging = false, dropPosition = null, reorderMode = false }) {
-  const content = <span className="tg"><span className="t">{interruptCategoryLabel(locale, category)}</span></span>;
+  const content = (
+    <>
+      <span className={'il-settings-pauseicon ' + category.kind}>{category.kind === 'break' ? Icons.coffee(14) : Icons.bolt(14)}</span>
+      <span className="tg">
+        <span className="t">{interruptCategoryLabel(locale, category)}</span>
+        <span className="s">{category.kind === 'break' ? t(locale, 'sheets.pauseKindBreak') : t(locale, 'sheets.pauseKindInterrupt')}</span>
+      </span>
+    </>
+  );
   return (
     <div className={getReorderRowClass(dragging, dropPosition, reorderMode)} {...rowProps}>
       {reorderMode && (

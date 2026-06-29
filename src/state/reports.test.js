@@ -31,7 +31,7 @@ describe('personal reports', () => {
     };
     const deleted = deleteInterruptCategoryInState(withEvent, customId);
 
-    expect(legacy.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
+    expect(legacy.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other', 'break-rest', 'break-lunch', 'break-personal']);
     expect(customId).toBeTruthy();
     expect(saved.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客', icon: null });
     expect(renamed.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客対応', icon: 'bolt' });

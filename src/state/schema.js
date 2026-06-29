@@ -14,10 +14,13 @@ const defaultCategories = [
 ];
 
 const defaultInterruptCats = [
-  { id: 'int-call', name: '電話', icon: 'phone' },
-  { id: 'int-chat', name: 'チャット', icon: 'chat' },
-  { id: 'int-q', name: '質問', icon: 'q' },
-  { id: 'int-other', name: 'その他', icon: 'dots' },
+  { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt', defaultDurationMinutes: 0 },
+  { id: 'int-chat', name: 'チャット', icon: 'chat', kind: 'interrupt', defaultDurationMinutes: 0 },
+  { id: 'int-q', name: '質問', icon: 'q', kind: 'interrupt', defaultDurationMinutes: 0 },
+  { id: 'int-other', name: 'その他', icon: 'dots', kind: 'interrupt', defaultDurationMinutes: 0 },
+  { id: 'break-rest', name: '休憩', icon: 'coffee', kind: 'break', defaultDurationMinutes: 10 },
+  { id: 'break-lunch', name: '昼食', icon: 'coffee', kind: 'break', defaultDurationMinutes: 30 },
+  { id: 'break-personal', name: '私用', icon: 'dots', kind: 'break', defaultDurationMinutes: 0 },
 ];
 
 const defaultPreferences = {
@@ -60,7 +63,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
 
   const tasks = asArray(raw.tasks).map(normalizeTask).filter(Boolean);
   const categories = asArray(raw.categories).map(normalizeCategory).filter(Boolean);
-  const interruptCats = asArray(raw.interruptCats).map(normalizeInterruptCategory).filter(Boolean);
+  const interruptCats = normalizePauseCategoryList(asArray(raw.interruptCats).map(normalizeInterruptCategory).filter(Boolean));
   const events = asArray(raw.events).map(normalizeEvent).filter(Boolean);
   const taskIds = new Set(tasks.map((task) => task.id));
   const running = normalizeRunning(raw.running, taskIds);
@@ -70,7 +73,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
     tasks,
     events: resolveOpenEvents(events, running, now),
     categories: categories.length ? categories : clone(defaultCategories),
-    interruptCats: interruptCats.length ? interruptCats : clone(defaultInterruptCats),
+    interruptCats,
     whoChips: uniqueTexts(raw.whoChips),
     subjectChips: uniqueTexts(raw.subjectChips),
     workdaySchedules: normalizeWorkdaySchedules(raw.workdaySchedules),
@@ -141,10 +144,15 @@ export function normalizeCategory(category) {
 export function normalizeInterruptCategory(category) {
   if (!isObject(category) || !category.id) return null;
   const rawIcon = category.icon;
+  const kind = category.kind === 'break' ? 'break' : 'interrupt';
   return {
     id: String(category.id),
     name: cleanText(category.name) || 'カテゴリ',
     icon: rawIcon === null ? null : cleanText(rawIcon) || 'dots',
+    kind,
+    defaultDurationMinutes: kind === 'break'
+      ? Math.max(0, asNumber(category.defaultDurationMinutes, 0) ?? 0)
+      : 0,
   };
 }
 
@@ -184,11 +192,21 @@ function normalizeRunning(running, taskIds) {
     label: running.label ?? null,
     preTaskId: resumeStack.slice().reverse().find((context) => context.type === 'task')?.taskId ?? null,
     resumeStack,
+    categoryId: cleanText(running.categoryId) || cleanText(running.draft?.categoryId) || null,
     draft: running.type === 'interrupt' ? normalizeInterruptDraft(running.draft) : null,
     plannedBreakDurationMinutes: running.type === 'break'
       ? Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0)
       : null,
   };
+}
+
+function normalizePauseCategoryList(categories) {
+  if (categories.length === 0) return clone(defaultInterruptCats);
+  const usedIds = new Set(categories.map((category) => category.id));
+  const missingBreakDefaults = defaultInterruptCats
+    .filter((category) => category.kind === 'break' && !usedIds.has(category.id))
+    .map(clone);
+  return [...categories, ...missingBreakDefaults];
 }
 
 function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {

@@ -3,7 +3,7 @@ import { asNumber, cleanText } from './utils';
 import { closeTaskSessionInState, createTaskInState, startTaskInState } from './tasks';
 import { ensureWorkdayScheduleInState } from './workday';
 
-export function beginPauseInState(state, type, now = Date.now()) {
+export function beginPauseInState(state, type, now = Date.now(), context = {}) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const running = snapshotted.running;
   const resumeStack = buildResumeStackForNextPause(running);
@@ -13,7 +13,50 @@ export function beginPauseInState(state, type, now = Date.now()) {
 
   return {
     ...suspended,
-    running: createPauseRunning(type, now, resumeStack),
+    running: createPauseRunning(type, now, resumeStack, context),
+  };
+}
+
+export function beginPauseWithCategoryInState(state, categoryId = null, now = Date.now()) {
+  const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
+  const type = pauseTypeFromCategory(category);
+  return beginPauseInState(state, type, now, pauseContextFromCategory(category, type));
+}
+
+export function selectPauseCategoryInState(state, categoryId) {
+  const running = state.running;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
+  const category = findPauseCategory(state, categoryId);
+  if (!category) return state;
+
+  const type = pauseTypeFromCategory(category);
+  if (type === 'interrupt') {
+    const draft = normalizeInterruptDraft({ ...running.draft, categoryId: category.id });
+    return {
+      ...state,
+      running: {
+        ...running,
+        type,
+        categoryId: category.id,
+        label: interruptLabel(draft, category.name),
+        draft,
+        plannedBreakDurationMinutes: null,
+      },
+    };
+  }
+
+  return {
+    ...state,
+    running: {
+      ...running,
+      type,
+      categoryId: category.id,
+      label: category.name || '休憩中',
+      draft: null,
+      plannedBreakDurationMinutes: running.type === 'break' && running.categoryId === category.id
+        ? Math.max(0, asNumber(running.plannedBreakDurationMinutes, category.defaultDurationMinutes) ?? 0)
+        : Math.max(0, asNumber(category.defaultDurationMinutes, 0) ?? 0),
+    },
   };
 }
 
@@ -33,12 +76,14 @@ export function updateInterruptDraftInState(state, draft) {
   const nextDraft = normalizeInterruptDraft(draft);
   const currentDraft = normalizeInterruptDraft(state.running.draft);
   if (Object.entries(nextDraft).every(([key, value]) => currentDraft[key] === value)) return state;
+  const category = findPauseCategory(state, nextDraft.categoryId);
   return {
     ...state,
     running: {
       ...state.running,
+      categoryId: nextDraft.categoryId,
       draft: nextDraft,
-      label: interruptLabel(nextDraft),
+      label: interruptLabel(nextDraft, category?.name),
     },
   };
 }
@@ -126,14 +171,16 @@ function closeRunningPauseSegmentInState(state, now) {
 }
 
 function createPauseRunning(type, now, resumeStack, context = {}) {
+  const draft = type === 'interrupt' ? normalizeInterruptDraft(context.draft) : null;
   return {
     type,
     taskId: null,
     start: now,
-    label: type === 'break' ? '休憩中' : interruptLabel(context.draft),
+    label: type === 'break' ? (context.label || '休憩中') : interruptLabel(draft, context.label),
     preTaskId: findNearestTaskId(resumeStack),
     resumeStack,
-    draft: type === 'interrupt' ? normalizeInterruptDraft(context.draft) : null,
+    categoryId: type === 'interrupt' ? draft.categoryId : context.categoryId ?? null,
+    draft,
     plannedBreakDurationMinutes: type === 'break'
       ? Math.max(0, asNumber(context.plannedBreakDurationMinutes, 0) ?? 0)
       : null,
@@ -183,10 +230,13 @@ function appendInterruptEvent(state, event, saveWhoChip) {
 }
 
 function buildBreakEvent(running, data, now, fallbackLabel = '休憩') {
+  const runningLabel = cleanText(running.label);
   return {
     id: newId('ev', now),
     type: 'break',
-    label: fallbackLabel,
+    label: cleanText(data.label) || (running.categoryId && runningLabel ? runningLabel : fallbackLabel),
+    categoryId: cleanText(data.categoryId) || running.categoryId || null,
+    memo: cleanText(data.memo),
     breakType: data.breakType ?? null,
     breakDurationMinutes: Math.max(0, asNumber(data.breakDurationMinutes ?? running.plannedBreakDurationMinutes, 0) ?? 0),
     start: running.start ?? now,
@@ -208,6 +258,34 @@ function buildInterruptEvent(data = {}, start, end, fallbackLabel = null) {
   };
 }
 
-function interruptLabel(data = {}) {
-  return cleanText(data.label) || (data.who ? `${data.who}から` : '割り込み作業中');
+function interruptLabel(data = {}, categoryName = null) {
+  return cleanText(data.label) || (data.who ? `${data.who}から` : cleanText(categoryName) || '割り込み作業中');
+}
+
+function findPauseCategory(state, categoryId) {
+  if (!categoryId) return null;
+  return state.interruptCats.find((category) => category.id === categoryId) ?? null;
+}
+
+function firstPauseCategory(state, kind) {
+  return state.interruptCats.find((category) => !kind || category.kind === kind) ?? null;
+}
+
+function pauseTypeFromCategory(category) {
+  return category?.kind === 'break' ? 'break' : 'interrupt';
+}
+
+function pauseContextFromCategory(category, type) {
+  if (!category) return {};
+  if (type === 'break') {
+    return {
+      categoryId: category.id,
+      label: category.name,
+      plannedBreakDurationMinutes: category.defaultDurationMinutes,
+    };
+  }
+  return {
+    label: category.name,
+    draft: { categoryId: category.id },
+  };
 }

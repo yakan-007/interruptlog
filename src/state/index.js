@@ -19,10 +19,12 @@ export {
 
 export {
   beginPauseInState,
+  beginPauseWithCategoryInState,
   cancelPauseInState,
   createInterruptFollowupTaskInState,
   saveBreakInState,
   saveInterruptInState,
+  selectPauseCategoryInState,
   setBreakTargetInState,
   stopPauseInState,
   updateInterruptDraftInState,

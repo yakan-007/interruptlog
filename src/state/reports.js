@@ -109,7 +109,9 @@ export function buildWeeklyReview(state, now = Date.now(), snapshot = null) {
   const topSender = [...senders.values()].sort((a, b) => b.time - a.time || b.count - a.count)[0] ?? null;
   const topCategoryId = [...categories.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   const categoryName = topCategoryId
-    ? state.categories.find((category) => category.id === topCategoryId)?.name ?? topCategoryId
+    ? state.categories.find((category) => category.id === topCategoryId)?.name
+      ?? state.interruptCats.find((category) => category.id === topCategoryId)?.name
+      ?? topCategoryId
     : '';
   const focusRate = stats.focus + stats.interrupt + stats.break > 0
     ? Math.round((stats.focus / (stats.focus + stats.interrupt + stats.break)) * 100)
@@ -152,7 +154,11 @@ function prepareReportCsvData(state, range, now, snapshot) {
     context: {
       profile,
       taskById: new Map(state.tasks.map((task) => [task.id, task])),
-      categoryName: (id) => state.categories.find((category) => category.id === id)?.name ?? id ?? '',
+      categoryName: (id) =>
+        state.categories.find((category) => category.id === id)?.name
+        ?? state.interruptCats.find((category) => category.id === id)?.name
+        ?? id
+        ?? '',
     },
   };
 }

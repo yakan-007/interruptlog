@@ -39,6 +39,8 @@ export function saveInterruptCategoryInState(state, category, now = Date.now()) 
     id: category.id || newId('int', now),
     name: category.name,
     icon: category.icon,
+    kind: category.kind,
+    defaultDurationMinutes: category.defaultDurationMinutes,
   });
   if (!normalized) return state;
   const exists = state.interruptCats.some((item) => item.id === normalized.id);
@@ -54,11 +56,7 @@ export function deleteInterruptCategoryInState(state, categoryId) {
   return {
     ...state,
     interruptCats: state.interruptCats.filter((category) => category.id !== categoryId),
-    events: state.events.map((event) =>
-      event.type === 'interrupt' && event.categoryId === categoryId
-        ? { ...event, categoryId: null }
-        : event
-    ),
+    events: state.events.map((event) => event.categoryId === categoryId ? { ...event, categoryId: null } : event),
   };
 }
 

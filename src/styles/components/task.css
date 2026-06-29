@@ -197,6 +197,18 @@
     );
   box-shadow: var(--sh-card), inset 0 0 0 1px color-mix(in oklch, var(--task-cat, var(--accent)) 34%, var(--hair-strong));
 }
+
+.il-body-log.has-live-dock .il-taskcard.running {
+  grid-template-columns: 22px minmax(0, 1fr);
+  padding-right: 18px;
+}
+
+.il-body-log.has-live-dock .il-taskcard.running .task-actions,
+.il-body-log.has-live-dock .il-taskcard.running .il-drag-handle,
+.il-body-log.has-live-dock .il-taskcard.running .il-meta > .il-mono.subtle {
+  display: none;
+}
+
 .il-taskcard.draggable {
   grid-template-columns: 22px minmax(0, 1fr) 32px auto;
   padding-left: 18px;

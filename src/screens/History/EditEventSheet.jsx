@@ -7,13 +7,14 @@ import TaskTargetFields from './TaskTargetFields';
 import { taskTargetForEvent } from './taskRecordHelpers';
 
 export default function EditEventSheet({ event, state, actions, onClose }) {
+  const interruptCategories = state.interruptCats.filter((category) => category.kind !== 'break');
   const [label, setLabel] = useState(event.label ?? '');
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
   const [urgency, setUrgency] = useState(event.urgency ?? 'med');
   const [taskTarget, setTaskTarget] = useState(() => event.taskTarget ?? taskTargetForEvent(event, state));
-  const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? state.interruptCats[0]?.id ?? '' : state.interruptCats[0]?.id ?? '');
+  const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? interruptCategories[0]?.id ?? '' : interruptCategories[0]?.id ?? '');
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start, { includeSeconds: true }));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end, { includeSeconds: true }));
@@ -123,7 +124,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           <div className="il-field">
             <label>{t(locale, 'sheets.interruptCategory')}</label>
             <div className="il-chiprow">
-              {state.interruptCats.map((category) => (
+              {interruptCategories.map((category) => (
                 <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
                   {interruptCategoryLabel(locale, category)}
                 </button>

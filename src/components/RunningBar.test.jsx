@@ -23,14 +23,12 @@ describe('shared running timer bar', () => {
 
     const bar = screen.getByRole('button', { name: 'タスクを編集' });
     fireEvent.keyDown(bar, { key: 'Enter' });
-    await user.click(screen.getByRole('button', { name: 'interrupt' }));
-    await user.click(screen.getByRole('button', { name: 'break' }));
+    await user.click(screen.getByRole('button', { name: '中断を記録' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
 
     expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'editTask', expect.objectContaining({ id: 'task-1' }));
-    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'newInterrupt');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'newBreak');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'confirmStop');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'newPause');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'confirmStop');
   });
 
   it('uses the same detail and stop behavior for interruptions and breaks', async () => {
@@ -38,15 +36,15 @@ describe('shared running timer bar', () => {
     const actions = { openSheet: vi.fn() };
     const { rerender } = render(<RunningBar state={stateForRunning({ type: 'interrupt', start: Date.now() - 2000 })} actions={actions} />);
 
-    await user.click(screen.getByRole('button', { name: '割り込み作業を記録' }));
+    await user.click(screen.getByRole('button', { name: '中断を記録' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
     rerender(<RunningBar state={stateForRunning({ type: 'break', start: Date.now() - 180000, plannedBreakDurationMinutes: 1 })} actions={actions} compact raised />);
-    await user.click(screen.getByRole('button', { name: '休憩記録' }));
+    await user.click(screen.getByRole('button', { name: '中断を記録' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
 
-    expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'interrupt');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'pause');
     expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'resumeOrStop');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'break');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'pause');
     expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'resumeOrStop');
   });
 });

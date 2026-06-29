@@ -24,8 +24,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
     : undefined;
   const openRunningDetails = () => {
     if (running.type === 'task' && meta.task) actions.openSheet('editTask', meta.task);
-    else if (running.type === 'interrupt') actions.openSheet('interrupt');
-    else if (running.type === 'break') actions.openSheet('break');
+    else actions.openSheet('pause');
   };
   const stopEvent = (event) => event.stopPropagation();
   const handleKeyDown = (event) => {
@@ -45,7 +44,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={running.type === 'task' ? t(locale, 'sheets.taskEdit') : running.type === 'interrupt' ? t(locale, 'sheets.interruptTitle') : t(locale, 'sheets.breakTitle')}
+      aria-label={running.type === 'task' ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.pauseTitle')}
     >
       <div className="dot" />
       <div className={'label' + (running.type === 'task' ? ' single' : '')}>
@@ -55,14 +54,11 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       <div className="time il-mono">{formatElapsedClock(elapsedMs)}</div>
       {running.type === 'task' ? (
         <div className="rb-actions">
-          <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('newInterrupt'); }}>{Icons.bolt(16)}</button>
-          <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('newBreak'); }}>{Icons.coffee(16)}</button>
+          <button className="rb-btn" aria-label={t(locale, 'log.startPause')} onClick={(event) => { stopEvent(event); actions.openSheet('newPause'); }}>{Icons.pause(16)}</button>
           <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('confirmStop'); }}>{Icons.stop(14)}</button>
         </div>
       ) : (
         <div className="rb-actions">
-          {running.type === 'interrupt' && <button className="rb-btn" aria-label="break" onClick={(event) => { stopEvent(event); actions.openSheet('newBreak'); }}>{Icons.coffee(16)}</button>}
-          <button className="rb-btn" aria-label="interrupt" onClick={(event) => { stopEvent(event); actions.openSheet('newInterrupt'); }}>{Icons.bolt(16)}</button>
           <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
         </div>
       )}

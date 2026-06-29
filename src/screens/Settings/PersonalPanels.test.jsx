@@ -39,7 +39,7 @@ describe('personal settings panels', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
     await user.click(screen.getByRole('button', { name: '削除' }));
 
-    expect(onSave).toHaveBeenCalledWith({ id: 'int-custom', name: '相談', icon: null });
+    expect(onSave).toHaveBeenCalledWith({ id: 'int-custom', name: '相談', icon: null, kind: 'interrupt', defaultDurationMinutes: 0 });
     expect(onDelete).toHaveBeenCalledWith('int-custom');
   });
 

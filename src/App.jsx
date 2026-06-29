@@ -10,6 +10,7 @@ import {
   BreakSheet,
   ConfirmStopSheet,
   InterruptSheet,
+  PauseSheet,
   RepairOverlapsSheet,
   ResolveEventSheet,
   ResumeOrStopSheet,
@@ -111,6 +112,7 @@ export default function App() {
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
+            {activeSheet === 'pause' && <PauseSheet key={`${state.running?.start ?? 'pause'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg ?? state.running?.draft} />}
             {activeSheet === 'interrupt' && <InterruptSheet key={`${state.running?.start ?? 'interrupt'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg ?? state.running?.draft} />}
             {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}

@@ -112,6 +112,7 @@ function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
       'uncompleteTask',
       'reorderTask',
       'moveTaskToIndex',
+      'selectPauseCategory',
       'setBreakTarget',
       'saveCategory',
       'deleteCategory',
