@@ -1,6 +1,7 @@
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
+  beginNextPauseWithCategoryInState,
   beginPauseInState,
   beginPauseWithCategoryInState,
   cancelPauseInState,
@@ -32,6 +33,7 @@ export function createRecordCommands({
 }) {
   return {
     beginPause: (categoryId) => mutate((state) => beginPauseWithCategoryInState(state, categoryId)),
+    beginNextPause: (categoryId, currentPauseData) => mutate((state) => beginNextPauseWithCategoryInState(state, categoryId, currentPauseData)),
     beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt')),
     beginBreak: () => mutate((state) => beginPauseInState(state, 'break')),
     selectPauseCategory: mutateWith(selectPauseCategoryInState),

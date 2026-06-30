@@ -57,7 +57,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
     onSave({
       id: category?.id,
       name,
-      icon: category?.kind === kind ? category?.icon : kind === 'break' ? 'coffee' : null,
+      icon: null,
       kind,
       defaultDurationMinutes: kind === 'break' ? defaultDurationMinutes : 0,
     });

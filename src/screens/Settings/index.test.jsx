@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createEmptyState } from '../../state';
 import SettingsScreen from './index';
 
@@ -17,8 +16,7 @@ function createActions() {
 }
 
 describe('personal settings screen', () => {
-  it('renders the personal settings groups and dispatches their commands', async () => {
-    const user = userEvent.setup();
+  it('renders the personal settings groups and dispatches their commands', () => {
     const state = createEmptyState();
     state.preferences.onboardingDone = true;
     state.overlapRepair = { warning: null };
@@ -28,30 +26,30 @@ describe('personal settings screen', () => {
     render(<SettingsScreen state={state} actions={actions} />);
 
     expect(screen.getByRole('heading', { name: '設定' })).toBeTruthy();
-    await user.selectOptions(screen.getByRole('combobox', { name: '言語' }), 'en-US');
-    await user.click(screen.getByRole('button', { name: 'ダークモード' }));
-    await user.click(screen.getAllByRole('button', { name: 'アクセントカラー' })[1]);
-    await user.click(screen.getByRole('button', { name: '基本の作業時間' }));
-    await user.type(screen.getByLabelText('開始時刻'), '09:00');
-    await user.type(screen.getByLabelText('終了時刻'), '17:00');
-    await user.click(screen.getAllByRole('button', { name: '並べ替え' })[0]);
+    fireEvent.change(screen.getByRole('combobox', { name: '言語' }), { target: { value: 'en-US' } });
+    fireEvent.click(screen.getByRole('button', { name: 'ダークモード' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'アクセントカラー' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: '基本の作業時間' }));
+    fireEvent.change(screen.getByLabelText('開始時刻'), { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('終了時刻'), { target: { value: '17:00' } });
+    fireEvent.click(screen.getAllByRole('button', { name: '並べ替え' })[0]);
     expect(screen.getAllByRole('button', { name: '並べ替え' }).length).toBeGreaterThan(1);
-    await user.click(screen.getByRole('button', { name: '完了' }));
+    fireEvent.click(screen.getByRole('button', { name: '完了' }));
 
-    await user.click(screen.getByRole('button', { name: '開発' }));
+    fireEvent.click(screen.getByRole('button', { name: '開発' }));
     expect(screen.getByText('カテゴリを編集')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '保存' }));
-    await user.click(screen.getByRole('button', { name: /よく使う発信者/ }));
-    await user.click(screen.getByRole('button', { name: '保存' }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    fireEvent.click(screen.getByRole('button', { name: /よく使う発信者/ }));
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
-    await user.click(screen.getByRole('button', { name: /日報プロフィール/ }));
-    await user.type(screen.getByLabelText('所属'), '開発部');
-    await user.type(screen.getByLabelText('名前'), '山田');
-    await user.click(screen.getByRole('button', { name: '保存' }));
+    fireEvent.click(screen.getByRole('button', { name: /日報プロフィール/ }));
+    fireEvent.change(screen.getByLabelText('所属'), { target: { value: '開発部' } });
+    fireEvent.change(screen.getByLabelText('名前'), { target: { value: '山田' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
 
-    await user.click(screen.getByRole('button', { name: /個人バックアップを書き出す/ }));
-    await user.click(screen.getByRole('button', { name: /全データを削除/ }));
-    await user.click(screen.getByRole('button', { name: '削除する' }));
+    fireEvent.click(screen.getByRole('button', { name: /個人バックアップを書き出す/ }));
+    fireEvent.click(screen.getByRole('button', { name: /全データを削除/ }));
+    fireEvent.click(screen.getByRole('button', { name: '削除する' }));
 
     expect(actions.setLocale).toHaveBeenCalledWith('en-US');
     expect(actions.setDark).toHaveBeenCalledWith(true);

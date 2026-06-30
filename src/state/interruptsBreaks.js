@@ -9,7 +9,7 @@ export function beginPauseInState(state, type, now = Date.now(), context = {}) {
   const resumeStack = buildResumeStackForNextPause(running);
   const suspended = running?.type === 'task'
     ? closeTaskSessionInState(snapshotted, now)
-    : closeRunningPauseSegmentInState(snapshotted, now);
+    : closeRunningPauseSegmentInState(snapshotted, now, context.currentPauseData);
 
   return {
     ...suspended,
@@ -21,6 +21,15 @@ export function beginPauseWithCategoryInState(state, categoryId = null, now = Da
   const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
   const type = pauseTypeFromCategory(category);
   return beginPauseInState(state, type, now, pauseContextFromCategory(category, type));
+}
+
+export function beginNextPauseWithCategoryInState(state, categoryId = null, currentPauseData = {}, now = Date.now()) {
+  const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
+  const type = pauseTypeFromCategory(category);
+  return beginPauseInState(state, type, now, {
+    ...pauseContextFromCategory(category, type),
+    currentPauseData,
+  });
 }
 
 export function selectPauseCategoryInState(state, categoryId) {
@@ -155,16 +164,16 @@ export function stopPauseInState(state, resume, now = Date.now()) {
   return resumeOrStopInState(next, resume, now);
 }
 
-function closeRunningPauseSegmentInState(state, now) {
+function closeRunningPauseSegmentInState(state, now, data = {}) {
   const running = state.running;
   if (running?.type === 'interrupt') {
-    const event = buildInterruptEvent(running.draft, running.start, now);
-    return appendInterruptEvent(state, event, running.draft?.saveWhoChip);
+    const event = buildInterruptEvent({ ...running.draft, ...data }, running.start, now);
+    return appendInterruptEvent(state, event, data.saveWhoChip ?? running.draft?.saveWhoChip);
   }
   if (running?.type === 'break') {
     return {
       ...state,
-      events: [...state.events, buildBreakEvent(running, {}, now)],
+      events: [...state.events, buildBreakEvent(running, data, now)],
     };
   }
   return state;

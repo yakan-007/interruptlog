@@ -134,6 +134,7 @@ function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
       'setReportProfile',
       'finishOnboarding',
       'resetAll',
+      'beginNextPause',
     ]),
     ...bindActions(app.actions, callAndClose, [
       'stopTask',

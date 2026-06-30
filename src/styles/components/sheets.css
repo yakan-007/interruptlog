@@ -154,13 +154,13 @@
   background: var(--bg-elevated);
   color: var(--ink-2);
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
-    "icon main"
-    "icon kind";
+    "main"
+    "kind";
   align-items: center;
-  column-gap: 8px;
-  padding: 8px 10px;
+  row-gap: 3px;
+  padding: 10px 14px;
   text-align: left;
   font: inherit;
   cursor: pointer;
@@ -169,16 +169,6 @@
 
 .il-pause-category:active {
   transform: scale(0.98);
-}
-
-.il-pause-category .icon {
-  grid-area: icon;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  background: var(--bg-sunken);
 }
 
 .il-pause-category .main {
@@ -200,7 +190,8 @@
 }
 
 .il-pause-category.compact {
-  grid-template-areas: "icon main";
+  grid-template-areas: "main";
+  align-content: center;
 }
 
 .il-pause-category.compact .main {
@@ -217,10 +208,6 @@
   background: color-mix(in oklch, var(--break) 14%, var(--bg-elevated));
   border-color: color-mix(in oklch, var(--break) 36%, var(--hair));
   color: color-mix(in oklch, var(--break) 74%, var(--ink) 26%);
-}
-
-.il-pause-category.sel .icon {
-  background: color-mix(in oklch, currentColor 12%, var(--bg-elevated));
 }
 
 .il-segmented {

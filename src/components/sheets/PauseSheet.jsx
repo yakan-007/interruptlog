@@ -82,6 +82,28 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
     actions.openSheet('interruptFollowup', { who, saveWhoChip, label: label || selectedLabel, urgency, categoryId, memo });
   };
 
+  const currentPauseData = () => mode === 'break'
+    ? {
+        breakDurationMinutes: planned,
+        categoryId: selectedCategory?.id ?? null,
+        label: selectedLabel || t(locale, 'common.break'),
+        memo: breakMemo,
+      }
+    : {
+        who,
+        saveWhoChip,
+        label: label || selectedLabel,
+        urgency,
+        categoryId,
+        memo,
+      };
+
+  const startNextPause = (nextKind) => {
+    const nextCategory = state.interruptCats.find((category) => category.kind === nextKind);
+    if (!nextCategory) return;
+    actions.beginNextPause(nextCategory.id, currentPauseData());
+  };
+
   const scrollChipRow = (event) => {
     const row = event.currentTarget;
     if (row.scrollWidth <= row.clientWidth) return;
@@ -118,6 +140,8 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
         locale={locale}
       />
 
+      <ActivitySwitch mode={mode} locale={locale} onStartNextPause={startNextPause} />
+
       <div className="il-field">
         <label>{t(locale, 'sheets.pauseCategory')}</label>
         <div className="il-pause-kind-tabs il-segmented">
@@ -138,7 +162,6 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
               className={'il-pause-category ' + category.kind + (detail ? '' : ' compact') + (categoryId === category.id ? ' sel' : '')}
               onClick={() => selectCategory(category)}
             >
-              <span className="icon">{pauseCategoryIcon(category, 14)}</span>
               <span className="main">{interruptCategoryLabel(locale, category)}</span>
               {detail && <span className="kind">{detail}</span>}
             </button>
@@ -176,6 +199,24 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
         />
       )}
     </SheetShell>
+  );
+}
+
+function ActivitySwitch({ mode, locale, onStartNextPause }) {
+  return (
+    <div className="il-activity-switch">
+      <span>{t(locale, 'sheets.switchActivity')}</span>
+      <div className="il-activity-switch-actions">
+        <button type="button" className="il-activity-switch-btn interrupt" onClick={() => onStartNextPause('interrupt')}>
+          {Icons.bolt(14)} {t(locale, 'sheets.startAnotherInterrupt')}
+        </button>
+        {mode === 'interrupt' && (
+          <button type="button" className="il-activity-switch-btn break" onClick={() => onStartNextPause('break')}>
+            {Icons.coffee(14)} {t(locale, 'sheets.startBreak')}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -334,11 +375,6 @@ function getBreakTimerMeta(elapsed, planned, locale) {
   return overMs < 60000
     ? t(locale, 'sheets.overTarget')
     : `+${fmtDuration(overMs, { showSec: overMs < 60000, locale })}`;
-}
-
-function pauseCategoryIcon(category, size) {
-  if (category?.icon && Icons[category.icon]) return Icons[category.icon](size);
-  return category?.kind === 'break' ? Icons.coffee(size) : Icons.bolt(size);
 }
 
 function pauseCategoryDetail(category, locale) {

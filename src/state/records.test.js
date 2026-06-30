@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
+  beginNextPauseWithCategoryInState,
   beginPauseInState,
   createEmptyState,
   createTaskAndStartInState,
@@ -428,6 +429,37 @@ describe('personal records and resolution', () => {
       'interrupt:2000-3000',
       'interrupt:3000-4000',
     ]);
+  });
+
+  it('starts the next interruption using the current pause draft data', () => {
+    const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
+    let state = beginPauseInState(started.state, 'interrupt', 2000);
+    state = beginNextPauseWithCategoryInState(state, 'int-chat', {
+      who: '佐藤',
+      label: '仕様確認',
+      urgency: 'high',
+      categoryId: 'int-q',
+      memo: 'その場で確認',
+      saveWhoChip: true,
+    }, 3000);
+
+    expect(state.events[1]).toMatchObject({
+      type: 'interrupt',
+      label: '仕様確認',
+      who: '佐藤',
+      urgency: 'high',
+      categoryId: 'int-q',
+      memo: 'その場で確認',
+      start: 2000,
+      end: 3000,
+    });
+    expect(state.whoChips).toContain('佐藤');
+    expect(state.running).toMatchObject({
+      type: 'interrupt',
+      categoryId: 'int-chat',
+      start: 3000,
+      preTaskId: started.taskId,
+    });
   });
 
   it('updates the running break target in state', () => {

@@ -19,6 +19,7 @@ export {
 
 export {
   beginPauseInState,
+  beginNextPauseWithCategoryInState,
   beginPauseWithCategoryInState,
   cancelPauseInState,
   createInterruptFollowupTaskInState,
