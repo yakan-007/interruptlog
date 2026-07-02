@@ -28,7 +28,7 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
         render={(event) => (
           <div className="il-daily-line">
             <span>{event.label}</span>
-            <span className="meta">{[event.who, event.categoryName].filter(Boolean).join(' · ')}</span>
+            <span className="meta">{formatInterruptMeta(event)}</span>
             <span className="il-mono">{fmtDurationShort(event.durationMs, locale)}</span>
           </div>
         )}
@@ -61,6 +61,12 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
       />
     </div>
   );
+}
+
+function formatInterruptMeta(event) {
+  return [event.who, event.categoryName]
+    .filter((item) => item && item !== event.label)
+    .join(' · ');
 }
 
 function ActivitySection({ title, empty, items, render }) {

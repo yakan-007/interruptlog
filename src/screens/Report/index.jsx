@@ -41,8 +41,9 @@ export default function ReportScreen({ state, actions }) {
   );
 
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
-  const deltaHours = (current, previous) => (current - previous) / 3600000;
   const localizedCompareLabel = t(state.preferences.locale, `report.compareLabels.${range}`);
+  const currentInterruptCount = countInterruptions(currentStats);
+  const previousInterruptCount = countInterruptions(previousStats);
   const {
     hourly,
     maxHourly,
@@ -129,9 +130,10 @@ export default function ReportScreen({ state, actions }) {
             )}
 
             <div className="il-report-statgrid">
-              <StatCard label={t(state.preferences.locale, 'report.focus')} color="var(--task)" value={currentStats.focus} delta={deltaHours(currentStats.focus, previousStats.focus)} deltaLabel={localizedCompareLabel || compareLabel} />
-              <StatCard label={t(state.preferences.locale, 'report.interrupt')} color="var(--interrupt)" value={currentStats.interrupt} delta={deltaHours(currentStats.interrupt, previousStats.interrupt)} deltaLabel={localizedCompareLabel || compareLabel} deltaInvert />
-              <StatCard label={t(state.preferences.locale, 'report.break')} color="var(--break)" value={currentStats.break} delta={deltaHours(currentStats.break, previousStats.break)} deltaLabel={localizedCompareLabel || compareLabel} />
+              <StatCard locale={state.preferences.locale} label={t(state.preferences.locale, 'report.focus')} color="var(--task)" value={currentStats.focus} previousValue={previousStats.focus} deltaLabel={localizedCompareLabel || compareLabel} />
+              <StatCard locale={state.preferences.locale} label={t(state.preferences.locale, 'report.interrupt')} color="var(--interrupt)" value={currentStats.interrupt} previousValue={previousStats.interrupt} deltaLabel={localizedCompareLabel || compareLabel} deltaInvert />
+              <StatCard locale={state.preferences.locale} label={t(state.preferences.locale, 'report.interruptCount')} color="var(--interrupt)" value={currentInterruptCount} previousValue={previousInterruptCount} deltaLabel={localizedCompareLabel || compareLabel} deltaInvert kind="count" />
+              <StatCard locale={state.preferences.locale} label={t(state.preferences.locale, 'report.break')} color="var(--break)" value={currentStats.break} previousValue={previousStats.break} deltaLabel={localizedCompareLabel || compareLabel} />
             </div>
 
             {range === 'day' && <WorkdayCard workday={workday} locale={state.preferences.locale} />}
@@ -217,6 +219,10 @@ function startOfDay(timestamp) {
 
 function endOfDay(timestamp) {
   return startOfDay(timestamp) + DAY_MS - 1;
+}
+
+function countInterruptions(stats) {
+  return stats.events.filter((event) => event.type === 'interrupt').length;
 }
 
 function toDateInputValue(timestamp) {

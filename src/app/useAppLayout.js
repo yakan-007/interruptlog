@@ -5,8 +5,16 @@ export function useAppLayout(containerRef, preferences) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    containerRef.current.setAttribute('data-theme', preferences.dark ? 'dark' : 'light');
+    const theme = preferences.dark ? 'dark' : 'light';
+    containerRef.current.setAttribute('data-theme', theme);
     containerRef.current.style.setProperty('--accent', preferences.accent);
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.setProperty('--accent', preferences.accent);
+
+    return () => {
+      document.documentElement.removeAttribute('data-theme');
+      document.documentElement.style.removeProperty('--accent');
+    };
   }, [containerRef, preferences.accent, preferences.dark]);
 
   useEffect(() => {

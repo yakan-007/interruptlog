@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import StatCard from './StatCard';
 import {
   BreakdownCard,
   CategoryTimeCard,
@@ -42,6 +43,36 @@ const engagement = {
 };
 
 describe('personal report cards', () => {
+  it('keeps short duration and delta units aligned in stat cards', () => {
+    const { container } = render(
+      <StatCard
+        label="割り込み作業時間"
+        color="var(--interrupt)"
+        value={30_000}
+        previousValue={0}
+        deltaLabel="昨日比"
+        deltaInvert
+        locale="ja-JP"
+      />,
+    );
+
+    expect(container.querySelector('.il-stat')?.textContent).toBe('<1m');
+    expect(container.querySelector('.il-delta')?.textContent).toBe('昨日比 +<1m');
+  });
+
+  it('omits empty chart frames when there is not enough trend data', () => {
+    const { container } = render(
+      <>
+        <HourlyInterruptsCard hasInterruptTrend={false} hourly={Array(12).fill(0)} maxHourly={1} peakHour={0} quietHour={0} locale="ja-JP" />
+        <WeekdayTrendCard locale="ja-JP" maxDay={1} dayStats={[{ day: '月', focus: 0, interrupt: 0 }]} />
+      </>,
+    );
+
+    expect(screen.getByText('まだ傾向を出せるほど割り込み作業の記録がありません')).toBeTruthy();
+    expect(screen.getByText('まだ曜日別の傾向を出せるほど記録がありません')).toBeTruthy();
+    expect(container.querySelector('.il-vchart')).toBeNull();
+  });
+
   it('renders the overview and detailed analysis cards with personal data', () => {
     render(
       <>
@@ -136,5 +167,19 @@ describe('personal report cards', () => {
     expect(screen.getAllByText('論点を整理した')).toHaveLength(2);
     expect(screen.getByLabelText('日報')).toBeTruthy();
     expect(screen.getByText('開発部 · 山田 太郎')).toBeTruthy();
+  });
+
+  it('does not repeat the same interruption label as category metadata', () => {
+    render(
+      <DayActivityCard locale="ja-JP" activity={{
+        touchedTasks: [],
+        interruptions: [{ id: 'int-1', label: '電話', who: '', categoryName: '電話', durationMs: 10 * 60 * 1000 }],
+        recordOnlyWork: [],
+        memos: [],
+      }} />,
+    );
+
+    expect(screen.getByText('電話')).toBeTruthy();
+    expect(screen.queryByText('電話 · 電話')).toBeNull();
   });
 });

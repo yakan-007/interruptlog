@@ -61,7 +61,7 @@ export function DailyReportPrintTemplate({ report, profile = {}, locale = 'ja-JP
         {(event) => (
           <div className="il-daily-print-row">
             <span>{event.label}</span>
-            <span>{[event.who, event.categoryName].filter(Boolean).join(' · ')}</span>
+            <span>{formatInterruptMeta(event)}</span>
             <strong>{fmtDurationShort(event.durationMs, locale)}</strong>
           </div>
         )}
@@ -86,6 +86,12 @@ function PrintStat({ label, value }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function formatInterruptMeta(event) {
+  return [event.who, event.categoryName]
+    .filter((item) => item && item !== event.label)
+    .join(' · ');
 }
 
 function PrintTaskSection({ title, empty, tasks, locale }) {

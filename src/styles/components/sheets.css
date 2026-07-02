@@ -65,7 +65,11 @@
   background: var(--bg);
 }
 
-.il-sheet .sheet-foot .btn { flex: 1; }
+.il-sheet .sheet-foot .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
 
 .il-sheet-infobox {
   display: flex;
@@ -511,6 +515,20 @@
 
 .il-sheet-chipremove:disabled {
   opacity: 0.25;
+}
+
+@media (max-width: 430px) {
+  .il-sheet .sheet-foot {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 6px;
+  }
+
+  .il-sheet .sheet-foot .btn {
+    height: 42px;
+    padding: 0 7px;
+    font-size: 13px;
+  }
 }
 
 .il-confirmstop-copy {

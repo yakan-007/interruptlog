@@ -65,6 +65,17 @@ export function HourlyInterruptsCard({
   peakHour,
   quietHour,
 }) {
+  if (!hasInterruptTrend) {
+    return (
+      <div className="il-card">
+        <h3>{t(locale, 'report.hourlyInterrupts')}</h3>
+        <div className="il-report-emptytrend">
+          {t(locale, 'report.noInterruptTrend')}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="il-card">
       <h3>{t(locale, 'report.hourlyInterrupts')}</h3>
@@ -79,16 +90,10 @@ export function HourlyInterruptsCard({
           );
         })}
       </div>
-      {hasInterruptTrend ? (
-        <div className="il-report-meta">
-          <span>{t(locale, 'report.peak')}: <strong className="peak">{9 + peakHour}:00</strong> · {fmtDurationShort(hourly[peakHour], locale)}</span>
-          <span>{t(locale, 'report.quietHour')}: {9 + quietHour}:00</span>
-        </div>
-      ) : (
-        <div className="il-report-emptytrend">
-          {t(locale, 'report.noInterruptTrend')}
-        </div>
-      )}
+      <div className="il-report-meta">
+        <span>{t(locale, 'report.peak')}: <strong className="peak">{9 + peakHour}:00</strong> · {fmtDurationShort(hourly[peakHour], locale)}</span>
+        <span>{t(locale, 'report.quietHour')}: {9 + quietHour}:00</span>
+      </div>
     </div>
   );
 }
@@ -149,7 +154,11 @@ export function WeeklyReviewCard({ state, now, snapshot }) {
       </div>
       <div className="il-review-lines">
         <div>{tx(state.preferences.locale, 'report.focusAndInterrupt', { focus: fmtDurationShort(review.focus, state.preferences.locale), interrupt: fmtDurationShort(review.interrupt, state.preferences.locale) })}</div>
-        <div>{review.topSender ? `${t(state.preferences.locale, 'report.topSender')}: ${review.topSender.label} (${tx(state.preferences.locale, 'common.count', review.topSender.count)})` : t(state.preferences.locale, 'report.noSender')}</div>
+        <div>{review.topSender ? (
+          <>
+            {t(state.preferences.locale, 'report.topSender')}: <span className="il-nowrap">{formatSenderCount(review.topSender, state.preferences.locale)}</span>
+          </>
+        ) : t(state.preferences.locale, 'report.noSender')}</div>
         <div>{review.categoryName ? `${t(state.preferences.locale, 'report.topCategory')}: ${review.categoryName}` : t(state.preferences.locale, 'report.noCategory')}</div>
       </div>
       <div className="il-report-emptytrend">{state.preferences.locale === 'ja-JP' ? review.suggestion : 'Use this week’s interruption trend to choose one request rule to try next week.'}</div>
@@ -191,6 +200,18 @@ export function UrgencyBreakdownCard({ urgencyStats, maxUrgencyTime, topUrgency,
 }
 
 export function WeekdayTrendCard({ dayStats, maxDay, locale = 'ja-JP' }) {
+  const hasTrend = dayStats.some((day) => day.focus > 0 || day.interrupt > 0);
+  if (!hasTrend) {
+    return (
+      <div className="il-card">
+        <h3>{t(locale, 'report.weekdayTrend')}</h3>
+        <div className="il-report-emptytrend">
+          {t(locale, 'report.noWeekdayTrend')}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="il-card">
       <h3>{t(locale, 'report.weekdayTrend')}</h3>
@@ -205,6 +226,11 @@ export function WeekdayTrendCard({ dayStats, maxDay, locale = 'ja-JP' }) {
       </div>
     </div>
   );
+}
+
+function formatSenderCount(sender, locale) {
+  const count = tx(locale, 'common.count', sender.count);
+  return locale === 'ja-JP' ? `${sender.label}（${count}）` : `${sender.label} (${count})`;
 }
 
 export function SendersCard({ senders, maxSenderTime, locale = 'ja-JP' }) {

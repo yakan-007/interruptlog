@@ -5,7 +5,13 @@ import SettingRow from './SettingRow';
 export function ToggleSetting({ title, note, value, onToggle, ariaLabel }) {
   return (
     <SettingRow title={title} note={note}>
-      <button className={'il-toggle' + (value ? ' on' : '')} onClick={onToggle} aria-label={ariaLabel} />
+      <button
+        type="button"
+        className={'il-toggle' + (value ? ' on' : '')}
+        onClick={onToggle}
+        aria-label={ariaLabel}
+        aria-pressed={value}
+      />
     </SettingRow>
   );
 }

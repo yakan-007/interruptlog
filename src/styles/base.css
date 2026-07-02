@@ -19,7 +19,7 @@ body,
   color-scheme: light;
 }
 
-[data-theme="dark"].il { color-scheme: dark; }
+[data-theme="dark"] { color-scheme: dark; }
 
 .il-mono {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;

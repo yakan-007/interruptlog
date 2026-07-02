@@ -75,6 +75,7 @@ describe('app layout viewport vars', () => {
     expect(shell.style.getPropertyValue('--app-height')).toBe('800px');
     expect(shell.style.getPropertyValue('--keyboard-inset')).toBe('0px');
     expect(shell.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
     screen.getByRole('textbox', { name: 'タスク名' }).focus();
     setInnerHeight(500);
