@@ -113,6 +113,16 @@ sheets: {
         after: '整理後',
         added: '新しく追加されます',
         removed: '削除されます',
+        changeActions: {
+          'trim-start': '開始を短縮',
+          'trim-end': '終了を短縮',
+          'trim-both': '前後を短縮',
+          split: '前後に分割',
+          remove: '削除',
+          merge: '前後を統合',
+          insert: '追加',
+        },
+        changeRemoveOverwrite: '上書きで削除',
       },
 };
 

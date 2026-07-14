@@ -1,9 +1,10 @@
 import { newId } from './ids';
 import { asNumber, asPositiveTimestamp, cleanText } from './utils';
 import { ensureWorkdayScheduleInState } from './workday';
+import { ERROR_CODES } from '../domain/errors';
 
 function validateTaskInput(data) {
-  if (!cleanText(data.name)) return 'タスク名を入力してください';
+  if (!cleanText(data.name)) return ERROR_CODES.TASK_NAME_REQUIRED;
   return null;
 }
 
@@ -43,37 +44,37 @@ function getNextTaskOrder(state) {
     : Math.max(...orders) + 1;
 }
 
-export function createTaskInState(state, data, now = Date.now()) {
-  const error = validateTaskInput(data);
-  if (error) return { state, taskId: null, error };
+export function createTaskInState(state, data, now = Date.now(), { createId = newId } = {}) {
+  const errorCode = validateTaskInput(data);
+  if (errorCode) return { state, taskId: null, errorCode };
 
-  const taskId = newId('tn', now);
+  const taskId = createId('tn', now);
   const task = buildTask(state, data, taskId, now);
   const tasks = state.preferences.topAdd ? [task, ...state.tasks] : [...state.tasks, task];
   return {
     state: { ...state, tasks },
     taskId,
-    error: null,
+    errorCode: null,
   };
 }
 
-export function createTaskAndStartInState(state, data, now = Date.now()) {
+export function createTaskAndStartInState(state, data, now = Date.now(), dependencies = {}) {
   if (state.running?.type === 'interrupt' || state.running?.type === 'break') {
-    return { state, taskId: null, error: '先に現在の割り込みや休憩を処理してください' };
+    return { state, taskId: null, errorCode: ERROR_CODES.PAUSE_ACTIVE };
   }
-  const created = createTaskInState(state, data, now);
-  if (created.error || !created.taskId) return created;
+  const created = createTaskInState(state, data, now, dependencies);
+  if (created.errorCode || !created.taskId) return created;
   return {
-    state: startTaskInState(created.state, created.taskId, now),
+    state: startTaskInState(created.state, created.taskId, now, dependencies),
     taskId: created.taskId,
-    error: null,
+    errorCode: null,
   };
 }
 
-export function saveTaskInState(state, data, now = Date.now()) {
-  const error = validateTaskInput(data);
-  if (error) return { state, taskId: data.id ?? null, error };
-  if (!data.id) return createTaskInState(state, data, now);
+export function saveTaskInState(state, data, now = Date.now(), dependencies = {}) {
+  const errorCode = validateTaskInput(data);
+  if (errorCode) return { state, taskId: data.id ?? null, errorCode };
+  if (!data.id) return createTaskInState(state, data, now, dependencies);
 
   const name = cleanText(data.name);
   const memo = cleanText(data.memo);
@@ -105,18 +106,19 @@ export function saveTaskInState(state, data, now = Date.now()) {
       }),
     },
     taskId: data.id,
-    error: null,
+    errorCode: null,
   };
 }
 
 export function startTaskInState(state, taskId, now = Date.now(), options = {}) {
+  const { createId = newId } = options;
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const task = snapshotted.tasks.find((item) => item.id === taskId);
   if (!task) return state;
-  const pauseClosed = closePauseSessionInState(snapshotted, now);
-  const closed = closeTaskSessionInState(pauseClosed, now);
+  const pauseClosed = closePauseSessionInState(snapshotted, now, createId);
+  const closed = closeTaskSessionInState(pauseClosed, now, { createId });
   const event = {
-    id: newId('ev', now),
+    id: createId('ev', now),
     type: 'task',
     taskId,
     label: task.name,
@@ -145,13 +147,13 @@ function findNearestTaskId(resumeStack) {
   return [...resumeStack].reverse().find((context) => context.type === 'task')?.taskId ?? null;
 }
 
-function closePauseSessionInState(state, now = Date.now()) {
+function closePauseSessionInState(state, now = Date.now(), createId = newId) {
   const running = state.running;
   if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
   return {
     ...state,
     events: [...state.events, {
-      id: newId('ev', now),
+      id: createId('ev', now),
       type: running.type,
       label: running.type === 'break' ? '未記録の休憩' : '未記録の割り込み',
       ...(running.type === 'break' ? { breakDurationMinutes: Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0) } : {}),
@@ -162,7 +164,7 @@ function closePauseSessionInState(state, now = Date.now()) {
   };
 }
 
-export function closeTaskSessionInState(state, now = Date.now()) {
+export function closeTaskSessionInState(state, now = Date.now(), { createId = newId } = {}) {
   const running = state.running;
   if (running?.type !== 'task' || !running.taskId || running.start == null) return state;
   const task = state.tasks.find((item) => item.id === running.taskId);
@@ -182,7 +184,7 @@ export function closeTaskSessionInState(state, now = Date.now()) {
   return {
     ...state,
     events: [...state.events, {
-      id: newId('ev', now),
+      id: createId('ev', now),
       type: 'task',
       taskId: running.taskId,
       label: task?.name ?? 'タスク',
@@ -196,9 +198,9 @@ export function closeTaskSessionInState(state, now = Date.now()) {
   };
 }
 
-export function stopTaskInState(state, complete, now = Date.now()) {
+export function stopTaskInState(state, complete, now = Date.now(), dependencies = {}) {
   const runningTaskId = state.running?.taskId;
-  const closed = closeTaskSessionInState(state, now);
+  const closed = closeTaskSessionInState(state, now, dependencies);
   return {
     ...closed,
     tasks: complete && runningTaskId
@@ -208,9 +210,9 @@ export function stopTaskInState(state, complete, now = Date.now()) {
   };
 }
 
-export function completeTaskInState(state, taskId, now = Date.now()) {
+export function completeTaskInState(state, taskId, now = Date.now(), dependencies = {}) {
   const shouldStop = state.running?.type === 'task' && state.running.taskId === taskId;
-  const base = shouldStop ? closeTaskSessionInState(state, now) : state;
+  const base = shouldStop ? closeTaskSessionInState(state, now, dependencies) : state;
   return {
     ...base,
     tasks: base.tasks.map((task) => task.id === taskId ? { ...task, isCompleted: true, completedAt: now } : task),
@@ -225,15 +227,15 @@ export function restoreTaskInState(state, taskId) {
   };
 }
 
-export function restoreTaskAndStartInState(state, taskId, now = Date.now()) {
+export function restoreTaskAndStartInState(state, taskId, now = Date.now(), dependencies = {}) {
   if (state.running?.type === 'interrupt' || state.running?.type === 'break') {
-    return { state, taskId: null, error: '先に現在の割り込みや休憩を処理してください' };
+    return { state, taskId: null, errorCode: ERROR_CODES.PAUSE_ACTIVE };
   }
   const restored = restoreTaskInState(state, taskId);
   return {
-    state: startTaskInState(restored, taskId, now),
+    state: startTaskInState(restored, taskId, now, dependencies),
     taskId,
-    error: null,
+    errorCode: null,
   };
 }
 
@@ -241,9 +243,9 @@ export function uncompleteTaskInState(state, taskId) {
   return restoreTaskInState(state, taskId);
 }
 
-export function deleteTaskInState(state, taskId, now = Date.now()) {
+export function deleteTaskInState(state, taskId, now = Date.now(), dependencies = {}) {
   const base = state.running?.type === 'task' && state.running.taskId === taskId
-    ? closeTaskSessionInState(state, now)
+    ? closeTaskSessionInState(state, now, dependencies)
     : state;
   const resumeStack = base.running?.resumeStack?.filter((context) => context.taskId !== taskId) ?? [];
   const running = base.running?.taskId === taskId

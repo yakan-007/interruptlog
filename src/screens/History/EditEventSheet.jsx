@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
-import { interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateError, typeLabel, urgencyLabel } from '../../i18n';
 import TaskTargetFields from './TaskTargetFields';
 import { taskTargetForEvent } from './taskRecordHelpers';
 
@@ -45,8 +45,8 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
       return;
     }
     const previewResult = actions.previewTaskRecord(draft);
-    if (previewResult.error) {
-      setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.invalidWindow')));
+    if (previewResult.errorCode) {
+      setError(translateError(locale, previewResult.errorCode, 'errors.invalidWindow'));
       return;
     }
 
@@ -65,11 +65,11 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
 
     const result = actions.saveTaskRecord(draft);
     if (result.ok) onClose();
-    else setError(translateMessage(locale, result.error ?? t(locale, 'errors.invalidWindow')));
+    else setError(translateError(locale, result.errorCode, 'errors.invalidWindow'));
   };
 
   return (
-    <SheetShell title={t(locale, 'sheets.editWorkRecord')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.editWorkRecord')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); }}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>

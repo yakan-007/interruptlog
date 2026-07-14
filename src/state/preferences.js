@@ -2,9 +2,9 @@ import { newId } from './ids';
 import { normalizeCategory, normalizeInterruptCategory } from './schema';
 import { cleanText, uniqueTexts } from './utils';
 
-export function saveCategoryInState(state, category, now = Date.now()) {
+export function saveCategoryInState(state, category, now = Date.now(), { createId = newId } = {}) {
   const normalized = normalizeCategory({
-    id: category.id || newId('cat', now),
+    id: category.id || createId('cat', now),
     name: category.name,
     color: category.color,
   });
@@ -34,9 +34,9 @@ export function moveCategoryToIndexInState(state, categoryId, targetIndex) {
   };
 }
 
-export function saveInterruptCategoryInState(state, category, now = Date.now()) {
+export function saveInterruptCategoryInState(state, category, now = Date.now(), { createId = newId } = {}) {
   const normalized = normalizeInterruptCategory({
-    id: category.id || newId('int', now),
+    id: category.id || createId('int', now),
     name: category.name,
     icon: category.icon,
     kind: category.kind,

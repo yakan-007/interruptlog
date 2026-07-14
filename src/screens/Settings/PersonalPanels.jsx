@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import Icons from '../../icons';
 import SheetShell from '../../components/sheets/SheetShell';
 import { CATEGORY_COLORS } from './constants';
-import { t, translateMessage } from '../../i18n';
+import { t, translateError, tx } from '../../i18n';
 import { useListReorderDrag } from '../../lib/useListReorderDrag';
 
 export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
@@ -12,14 +12,14 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
 
   const save = () => {
     if (!name.trim()) {
-      setError(locale === 'ja-JP' ? 'カテゴリ名を入力してください' : 'Enter a category name');
+      setError(t(locale, 'settings.categoryNameRequired'));
       return;
     }
     onSave({ id: category?.id, name, color });
   };
 
   return (
-    <SheetShell title={category ? (locale === 'ja-JP' ? 'カテゴリを編集' : 'Edit category') : t(locale, 'settings.addCategory')} onClose={onClose} footer={
+    <SheetShell title={category ? t(locale, 'settings.editCategory') : t(locale, 'settings.addCategory')} onClose={onClose} locale={locale} footer={
       <>
         {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
@@ -27,14 +27,14 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
       </>
     }>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? 'カテゴリ名' : 'Category name'}</label>
+        <label>{t(locale, 'settings.categoryName')}</label>
         <input className="il-input" value={name} onChange={(event) => setName(event.target.value)} autoFocus />
       </div>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? '色' : 'Color'}</label>
+        <label>{t(locale, 'settings.categoryColor')}</label>
         <div className="il-colorrow">
           {CATEGORY_COLORS.map((item) => (
-            <button key={item} className={color === item ? 'sel' : ''} style={{ background: item }} onClick={() => setColor(item)} aria-label="カテゴリ色を選択" />
+            <button key={item} className={color === item ? 'sel' : ''} style={{ background: item }} onClick={() => setColor(item)} aria-label={t(locale, 'settings.selectCategoryColor')} />
           ))}
         </div>
       </div>
@@ -51,7 +51,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
 
   const save = () => {
     if (!name.trim()) {
-      setError(locale === 'ja-JP' ? '種類名を入力してください' : 'Enter a type name');
+      setError(t(locale, 'settings.interruptCategoryNameRequired'));
       return;
     }
     onSave({
@@ -64,7 +64,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
   };
 
   return (
-    <SheetShell title={category ? (locale === 'ja-JP' ? '中断カテゴリを編集' : 'Edit pause category') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} footer={
+    <SheetShell title={category ? t(locale, 'settings.editInterruptCategory') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} locale={locale} footer={
       <>
         {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
@@ -72,11 +72,11 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       </>
     }>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? '種類名' : 'Type name'}</label>
+        <label>{t(locale, 'settings.interruptCategoryName')}</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
       </div>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? '性質' : 'Kind'}</label>
+        <label>{t(locale, 'settings.interruptCategoryKind')}</label>
         <div className="il-segmented">
           <button className={kind === 'interrupt' ? 'active' : ''} onClick={() => setKind('interrupt')}>{t(locale, 'sheets.pauseKindInterrupt')}</button>
           <button className={kind === 'break' ? 'active' : ''} onClick={() => setKind('break')}>{t(locale, 'sheets.pauseKindBreak')}</button>
@@ -107,9 +107,9 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
   const chipReorder = useListReorderDrag({
     onMove: moveChip,
   });
-  const placeholder = kind === 'subject'
-    ? (locale === 'ja-JP' ? '例: 見積確認\n例: 定例会\n改行やカンマでまとめて追加できます' : 'Example: Estimate review\nExample: Weekly sync\nAdd multiple items with line breaks or commas')
-    : (locale === 'ja-JP' ? '例: 田中\n例: 佐藤\n改行やカンマでまとめて追加できます' : 'Example: Alex\nExample: Morgan\nAdd multiple items with line breaks or commas');
+  const placeholder = t(locale, kind === 'subject'
+    ? 'settings.subjectChipPlaceholder'
+    : 'settings.whoChipPlaceholder');
 
   const addDraft = () => {
     const next = uniqueChipTexts([...items, ...splitChipDraft(draft)]);
@@ -122,17 +122,17 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
   };
 
   return (
-    <SheetShell title={label} onClose={onClose} footer={
+    <SheetShell title={label} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={() => onSave(items)}>{t(locale, 'sheets.save')}</button>
       </>
     }>
       <div className="il-sheet-copy">
-        {locale === 'ja-JP' ? '追加したい候補を入力して登録します。登録済みのチップは下で確認でき、タップすると外せます。' : 'Enter candidates to save. Saved chips appear below, and tapping one removes it.'}
+        {t(locale, 'settings.chipsCopy')}
       </div>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? '追加する候補' : 'Candidates to add'}</label>
+        <label>{t(locale, 'settings.chipCandidates')}</label>
         <textarea
           className="il-textarea"
           value={draft}
@@ -140,12 +140,12 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
           placeholder={placeholder}
           autoFocus
         />
-        <div className="il-sheet-help">{locale === 'ja-JP' ? '改行、`,`、`、` で区切ってまとめて追加できます。' : 'Separate multiple items with line breaks or commas.'}</div>
-        <button className="btn secondary fill" onClick={addDraft} disabled={!draft.trim()}>{Icons.plus(14)} {locale === 'ja-JP' ? '候補を追加' : 'Add candidates'}</button>
+        <div className="il-sheet-help">{t(locale, 'settings.chipHelp')}</div>
+        <button className="btn secondary fill" onClick={addDraft} disabled={!draft.trim()}>{Icons.plus(14)} {t(locale, 'settings.addCandidates')}</button>
       </div>
       <div className="il-field">
         <div className="il-sheet-listhead">
-          <label>{locale === 'ja-JP' ? `登録済み ${items.length}件` : `Saved ${items.length}`}</label>
+          <label>{tx(locale, 'settings.savedChipCount', items.length)}</label>
           {items.length > 1 && (
             <button
               type="button"
@@ -157,7 +157,7 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
           )}
         </div>
         {items.length === 0 ? (
-          <div className="il-sheet-emptyhint">{locale === 'ja-JP' ? 'まだ登録はありません。' : 'Nothing saved yet.'}</div>
+          <div className="il-sheet-emptyhint">{t(locale, 'settings.noSavedChips')}</div>
         ) : (
           <div className={'il-sheet-chiplist reorder' + (reorderMode ? ' active' : '')}>
             {items.map((chip, index) => (
@@ -172,7 +172,7 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
                   </button>
                 )}
                 <span>{chip}</span>
-                <button className="il-sheet-chipremove" onClick={() => removeItem(chip)} aria-label={locale === 'ja-JP' ? `${chip}を削除` : `Remove ${chip}`} disabled={reorderMode}>
+                <button className="il-sheet-chipremove" onClick={() => removeItem(chip)} aria-label={tx(locale, 'settings.removeChip', chip)} disabled={reorderMode}>
                   {Icons.close(12)}
                 </button>
               </div>
@@ -189,7 +189,7 @@ export function ReportProfileSheet({ profile, locale = 'ja-JP', onClose, onSave 
   const [name, setName] = useState(profile?.name ?? '');
 
   return (
-    <SheetShell title={t(locale, 'settings.reportProfile')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'settings.reportProfile')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={() => onSave({ affiliation, name })}>{t(locale, 'sheets.save')}</button>
@@ -214,24 +214,22 @@ export function ImportSheet({ locale = 'ja-JP', onClose, onImport }) {
 
   const importNow = () => {
     const result = onImport(text);
-    if (!result.ok) setError(translateMessage(locale, result.error));
+    if (!result.ok) setError(translateError(locale, result.errorCode));
   };
 
   return (
-    <SheetShell title={t(locale, 'settings.importBackup')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'settings.importBackup')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
-        <button className="btn primary" onClick={importNow}>{locale === 'ja-JP' ? '読み込む' : 'Import'}</button>
+        <button className="btn primary" onClick={importNow}>{t(locale, 'settings.importAction')}</button>
       </>
     }>
       <div className="il-sheet-copy">
-        {locale === 'ja-JP'
-          ? 'このブラウザに保存されている現在のデータを、貼り付けた個人バックアップで置き換えます。必要なら先に個人バックアップを書き出して控えてください。'
-          : 'This replaces the current data in this browser with the pasted personal backup. Export a backup first if needed.'}
+        {t(locale, 'settings.importCopy')}
       </div>
       <div className="il-field">
-        <label>{locale === 'ja-JP' ? '個人バックアップJSON' : 'Personal backup JSON'}</label>
-        <textarea className="il-textarea tall" value={text} onChange={(event) => setText(event.target.value)} placeholder={locale === 'ja-JP' ? 'JSONを貼り付け' : 'Paste JSON'} autoFocus />
+        <label>{t(locale, 'settings.backupJson')}</label>
+        <textarea className="il-textarea tall" value={text} onChange={(event) => setText(event.target.value)} placeholder={t(locale, 'settings.pasteJson')} autoFocus />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
@@ -240,16 +238,14 @@ export function ImportSheet({ locale = 'ja-JP', onClose, onImport }) {
 
 export function ConfirmResetSheet({ locale = 'ja-JP', onClose, onConfirm }) {
   return (
-    <SheetShell title={t(locale, 'settings.resetAll')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'settings.resetAll')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
-        <button className="btn danger fill" onClick={onConfirm}>{locale === 'ja-JP' ? '削除する' : 'Delete'}</button>
+        <button className="btn danger fill" onClick={onConfirm}>{t(locale, 'settings.deleteAction')}</button>
       </>
     }>
       <div className="il-settings-resetcopy">
-        {locale === 'ja-JP'
-          ? 'このブラウザに保存されているタスク、履歴、カテゴリ、入力候補、外観設定を初期状態に戻します。消したあとに戻せないので、必要なデータは先に JSON エクスポートしてください。'
-          : 'This resets tasks, history, categories, input chips, and appearance settings saved in this browser. This cannot be undone, so export JSON first if needed.'}
+        {t(locale, 'settings.resetCopy')}
       </div>
     </SheetShell>
   );

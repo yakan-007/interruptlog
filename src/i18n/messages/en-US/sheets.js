@@ -113,6 +113,16 @@ sheets: {
         after: 'After',
         added: 'Will be added',
         removed: 'Will be removed',
+        changeActions: {
+          'trim-start': 'Trim start',
+          'trim-end': 'Trim end',
+          'trim-both': 'Trim both',
+          split: 'Split',
+          remove: 'Remove',
+          merge: 'Merge',
+          insert: 'Add',
+        },
+        changeRemoveOverwrite: 'Remove',
       },
 };
 

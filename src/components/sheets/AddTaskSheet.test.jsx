@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createEmptyState } from '../../state';
+import { ERROR_CODES } from '../../domain/errors';
 import AddTaskSheet from './AddTaskSheet';
 
 afterEach(() => cleanup());
@@ -44,7 +45,7 @@ describe('task detail sheet', () => {
       id: 'task-1', name: '既存タスク', memo: '', categoryId: 'cat-dev',
       planning: { plannedDurationMinutes: 15, dueAt: null },
     };
-    const actions = actionsWith({ ok: false, error: '入力を確認してください' });
+    const actions = actionsWith({ ok: false, errorCode: ERROR_CODES.CHECK_INPUT });
     const onClose = vi.fn();
     render(<AddTaskSheet state={state} actions={actions} onClose={onClose} editing={editing} />);
 

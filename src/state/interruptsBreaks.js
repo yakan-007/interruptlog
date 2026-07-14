@@ -2,14 +2,15 @@ import { newId } from './ids';
 import { asNumber, cleanText } from './utils';
 import { closeTaskSessionInState, createTaskInState, startTaskInState } from './tasks';
 import { ensureWorkdayScheduleInState } from './workday';
+import { ERROR_CODES } from '../domain/errors';
 
-export function beginPauseInState(state, type, now = Date.now(), context = {}) {
+export function beginPauseInState(state, type, now = Date.now(), context = {}, dependencies = {}) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const running = snapshotted.running;
   const resumeStack = buildResumeStackForNextPause(running);
   const suspended = running?.type === 'task'
-    ? closeTaskSessionInState(snapshotted, now)
-    : closeRunningPauseSegmentInState(snapshotted, now, context.currentPauseData);
+    ? closeTaskSessionInState(snapshotted, now, dependencies)
+    : closeRunningPauseSegmentInState(snapshotted, now, context.currentPauseData, dependencies);
 
   return {
     ...suspended,
@@ -17,19 +18,19 @@ export function beginPauseInState(state, type, now = Date.now(), context = {}) {
   };
 }
 
-export function beginPauseWithCategoryInState(state, categoryId = null, now = Date.now()) {
+export function beginPauseWithCategoryInState(state, categoryId = null, now = Date.now(), dependencies = {}) {
   const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
   const type = pauseTypeFromCategory(category);
-  return beginPauseInState(state, type, now, pauseContextFromCategory(category, type));
+  return beginPauseInState(state, type, now, pauseContextFromCategory(category, type), dependencies);
 }
 
-export function beginNextPauseWithCategoryInState(state, categoryId = null, currentPauseData = {}, now = Date.now()) {
+export function beginNextPauseWithCategoryInState(state, categoryId = null, currentPauseData = {}, now = Date.now(), dependencies = {}) {
   const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
   const type = pauseTypeFromCategory(category);
   return beginPauseInState(state, type, now, {
     ...pauseContextFromCategory(category, type),
     currentPauseData,
-  });
+  }, dependencies);
 }
 
 export function selectPauseCategoryInState(state, categoryId) {
@@ -97,7 +98,7 @@ export function updateInterruptDraftInState(state, draft) {
   };
 }
 
-function resumeOrStopInState(state, resume, now = Date.now()) {
+function resumeOrStopInState(state, resume, now = Date.now(), dependencies = {}) {
   const running = state.running;
   const resumeStack = getResumeStack(running);
   const base = { ...state, running: null };
@@ -105,75 +106,75 @@ function resumeOrStopInState(state, resume, now = Date.now()) {
   if (!resume || !taskContext) return base;
 
   if (base.tasks.some((task) => task.id === taskContext.taskId)) {
-    return startTaskInState(base, taskContext.taskId, now, { resumeStack: [] });
+    return startTaskInState(base, taskContext.taskId, now, { ...dependencies, resumeStack: [] });
   }
   return base;
 }
 
-export function saveInterruptInState(state, data, now = Date.now()) {
+export function saveInterruptInState(state, data, now = Date.now(), dependencies = {}) {
   if (state.running?.type !== 'interrupt') return state;
-  const event = buildInterruptEvent({ ...state.running.draft, ...data }, state.running.start ?? now, now);
+  const event = buildInterruptEvent({ ...state.running.draft, ...data }, state.running.start ?? now, now, null, dependencies);
   const next = appendInterruptEvent(state, event, data.saveWhoChip ?? state.running.draft?.saveWhoChip);
-  return resumeOrStopInState(next, data.resume, now);
+  return resumeOrStopInState(next, data.resume, now, dependencies);
 }
 
-export function createInterruptFollowupTaskInState(state, interruptData, taskData, now = Date.now()) {
-  if (state.running?.type !== 'interrupt') return { state, taskId: null, error: '割り込み作業が開始されていません' };
+export function createInterruptFollowupTaskInState(state, interruptData, taskData, now = Date.now(), dependencies = {}) {
+  if (state.running?.type !== 'interrupt') return { state, taskId: null, errorCode: ERROR_CODES.INTERRUPT_NOT_ACTIVE };
 
-  const validation = createTaskInState(state, taskData, now);
-  if (validation.error) return validation;
-
-  const event = buildInterruptEvent({ ...state.running.draft, ...interruptData }, state.running.start ?? now, now);
+  const event = buildInterruptEvent({ ...state.running.draft, ...interruptData }, state.running.start ?? now, now, null, dependencies);
   const withInterrupt = appendInterruptEvent(state, event, interruptData.saveWhoChip ?? state.running.draft?.saveWhoChip);
   const created = createTaskInState(withInterrupt, {
     ...taskData,
     interruptOriginId: event.id,
-  }, now);
+  }, now, dependencies);
+  if (created.errorCode || !created.taskId) {
+    return { state, taskId: null, errorCode: created.errorCode ?? ERROR_CODES.TASK_CREATE_FAILED };
+  }
   const hadResumeTarget = getResumeStack(state.running).length > 0;
-  const resumed = resumeOrStopInState({ ...created.state, running: state.running }, true, now);
+  const resumed = resumeOrStopInState({ ...created.state, running: state.running }, true, now, dependencies);
   return {
-    state: hadResumeTarget ? resumed : startTaskInState(resumed, created.taskId, now),
+    state: hadResumeTarget ? resumed : startTaskInState(resumed, created.taskId, now, dependencies),
     taskId: created.taskId,
-    error: null,
+    errorCode: null,
   };
 }
 
-export function saveBreakInState(state, data, now = Date.now()) {
+export function saveBreakInState(state, data, now = Date.now(), dependencies = {}) {
   if (state.running?.type !== 'break') return state;
   const next = {
     ...state,
-    events: [...state.events, buildBreakEvent(state.running, data, now)],
+    events: [...state.events, buildBreakEvent(state.running, data, now, '休憩', dependencies)],
   };
-  return resumeOrStopInState(next, data.resume, now);
+  return resumeOrStopInState(next, data.resume, now, dependencies);
 }
 
-export function cancelPauseInState(state, now = Date.now()) {
-  return resumeOrStopInState(state, true, now);
+export function cancelPauseInState(state, now = Date.now(), dependencies = {}) {
+  return resumeOrStopInState(state, true, now, dependencies);
 }
 
-export function stopPauseInState(state, resume, now = Date.now()) {
+export function stopPauseInState(state, resume, now = Date.now(), dependencies = {}) {
   const running = state.running;
   const next = running?.type === 'interrupt' || running?.type === 'break'
     ? {
         ...state,
         events: [...state.events, running.type === 'interrupt'
-          ? buildInterruptEvent(running.draft, running.start, now, '未記録の割り込み')
-          : buildBreakEvent(running, {}, now, '未記録の休憩')],
+          ? buildInterruptEvent(running.draft, running.start, now, '未記録の割り込み', dependencies)
+          : buildBreakEvent(running, {}, now, '未記録の休憩', dependencies)],
       }
     : state;
-  return resumeOrStopInState(next, resume, now);
+  return resumeOrStopInState(next, resume, now, dependencies);
 }
 
-function closeRunningPauseSegmentInState(state, now, data = {}) {
+function closeRunningPauseSegmentInState(state, now, data = {}, dependencies = {}) {
   const running = state.running;
   if (running?.type === 'interrupt') {
-    const event = buildInterruptEvent({ ...running.draft, ...data }, running.start, now);
+    const event = buildInterruptEvent({ ...running.draft, ...data }, running.start, now, null, dependencies);
     return appendInterruptEvent(state, event, data.saveWhoChip ?? running.draft?.saveWhoChip);
   }
   if (running?.type === 'break') {
     return {
       ...state,
-      events: [...state.events, buildBreakEvent(running, data, now)],
+      events: [...state.events, buildBreakEvent(running, data, now, '休憩', dependencies)],
     };
   }
   return state;
@@ -238,10 +239,10 @@ function appendInterruptEvent(state, event, saveWhoChip) {
   };
 }
 
-function buildBreakEvent(running, data, now, fallbackLabel = '休憩') {
+function buildBreakEvent(running, data, now, fallbackLabel = '休憩', { createId = newId } = {}) {
   const runningLabel = cleanText(running.label);
   return {
-    id: newId('ev', now),
+    id: createId('ev', now),
     type: 'break',
     label: cleanText(data.label) || (running.categoryId && runningLabel ? runningLabel : fallbackLabel),
     categoryId: cleanText(data.categoryId) || running.categoryId || null,
@@ -253,9 +254,9 @@ function buildBreakEvent(running, data, now, fallbackLabel = '休憩') {
   };
 }
 
-function buildInterruptEvent(data = {}, start, end, fallbackLabel = null) {
+function buildInterruptEvent(data = {}, start, end, fallbackLabel = null, { createId = newId } = {}) {
   return {
-    id: newId('ev', end),
+    id: createId('ev', end),
     type: 'interrupt',
     label: cleanText(data.label) || (data.who ? `${data.who}から` : fallbackLabel || '割り込み作業'),
     who: cleanText(data.who),

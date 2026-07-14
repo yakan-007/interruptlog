@@ -9,22 +9,18 @@ import {
 } from './state';
 import { createAppActions } from './app/actions';
 import { resyncTickersNow } from './lib/ticker';
-import { createSerializedPersistenceController } from './persistence/controller';
-import { loadPersistedState, savePersistedState } from './persistence/storage';
+import { browserStateStorage } from './persistence/storage';
+import { useStatePersistence } from './persistence/useStatePersistence';
+import { systemClock } from './platform/clock';
+import { systemIdGenerator } from './platform/idGenerator';
 
 const STABLE_PREVIEW_NOW = 0;
 
-export function useAppState() {
+export function useAppState({ clock = systemClock, idGenerator = systemIdGenerator, storage = browserStateStorage } = {}) {
   const [appState, setAppState] = useState(() => createEmptyState());
   const appStateRef = useRef(appState);
-  const persistenceRef = useRef(null);
   const [hydrated, setHydrated] = useState(false);
-  const [lastError, setLastError] = useState(null);
   const [overlapRepairUi, setOverlapRepairUi] = useState({ sheetOpen: false, deferred: false });
-
-  if (persistenceRef.current == null) {
-    persistenceRef.current = createSerializedPersistenceController(savePersistedState);
-  }
 
   const setTrackedAppState = useCallback((nextState) => {
     setAppState((current) => {
@@ -36,21 +32,24 @@ export function useAppState() {
 
   useEffect(() => {
     let active = true;
-    loadPersistedState().then((stored) => {
+    storage.load().then((stored) => {
       if (!active) return;
-      const normalized = normalizeState(stored, Date.now(), { assumeOnboarded: stored != null });
+      const currentTime = clock.now();
+      const normalized = normalizeState(stored, currentTime, { assumeOnboarded: stored != null });
       setTrackedAppState(normalized);
-      const preview = previewOverlapRepairInState(normalized, Date.now());
+      const preview = previewOverlapRepairInState(normalized, currentTime);
       setOverlapRepairUi({ sheetOpen: Boolean(preview), deferred: false });
       setHydrated(true);
     });
     return () => { active = false; };
-  }, [setTrackedAppState]);
+  }, [clock, setTrackedAppState, storage]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    void persistenceRef.current.schedule(appState).catch(() => null);
-  }, [appState, hydrated]);
+  const persistence = useStatePersistence({
+    hydrated,
+    state: appState,
+    stateRef: appStateRef,
+    storage,
+  });
 
   const overlapRepairPreview = useMemo(
     () => hydrated ? previewOverlapRepairInState(appState, STABLE_PREVIEW_NOW) : null,
@@ -66,18 +65,18 @@ export function useAppState() {
   );
 
   const mutate = useCallback((recipe) => {
-    setLastError(null);
     setTrackedAppState((current) => recipe(current));
   }, [setTrackedAppState]);
 
   const actions = useMemo(() => createAppActions({
+    clock,
     currentState: appState,
+    idGenerator,
     mutate,
     overlapRepairPreview,
-    setLastError,
     setOverlapRepairUi,
     setTrackedAppState,
-  }), [appState, mutate, overlapRepairPreview, setTrackedAppState]);
+  }), [appState, clock, idGenerator, mutate, overlapRepairPreview, setTrackedAppState]);
 
   const derived = useMemo(() => ({
     activeTasks: selectActiveTasks(appState),
@@ -85,23 +84,18 @@ export function useAppState() {
     runningTaskMeta: selectRunningTaskMeta(appState),
   }), [appState]);
 
-  const persistNow = useCallback(() => {
-    if (!hydrated) return Promise.resolve();
-    return persistenceRef.current.schedule(appStateRef.current).catch(() => null);
-  }, [hydrated]);
-
   const resyncNow = useCallback(() => {
     resyncTickersNow();
   }, []);
 
   return {
     ready: hydrated,
-    lastError,
+    persistenceError: persistence.error,
     state: appState,
     derived,
     overlapRepair,
     actions,
-    persistNow,
+    persistNow: persistence.persistNow,
     resyncNow,
   };
 }

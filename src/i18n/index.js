@@ -1,4 +1,20 @@
 import { getLocaleConfig, LOCALES, normalizeLocale, SUPPORTED_LOCALES } from './localeConfig.js';
+import { ERROR_CODES } from '../domain/errors.js';
+
+const ERROR_MESSAGE_PATHS = {
+  [ERROR_CODES.CHECK_INPUT]: 'errors.checkInput',
+  [ERROR_CODES.END_NOT_AFTER_START]: 'errors.invalidWindow',
+  [ERROR_CODES.EVENT_NOT_FOUND]: 'errors.eventNotFound',
+  [ERROR_CODES.INTERRUPT_NOT_ACTIVE]: 'errors.interruptNotActive',
+  [ERROR_CODES.INVALID_BACKUP]: 'errors.invalidBackup',
+  [ERROR_CODES.INVALID_EVENT_WINDOW]: 'errors.invalidEventWindow',
+  [ERROR_CODES.PAUSE_ACTIVE]: 'errors.pauseActive',
+  [ERROR_CODES.RUNNING_OVERLAP]: 'errors.runningOverlap',
+  [ERROR_CODES.SAME_DAY_REQUIRED]: 'errors.sameDayRequired',
+  [ERROR_CODES.TASK_CREATE_FAILED]: 'errors.taskCreateFailed',
+  [ERROR_CODES.TASK_NAME_REQUIRED]: 'errors.taskNameRequired',
+  [ERROR_CODES.TASK_NOT_FOUND]: 'errors.taskNotFound',
+};
 
 export { LOCALES, normalizeLocale, SUPPORTED_LOCALES };
 export { categoryLabel, interruptCategoryLabel } from './taxonomy.js';
@@ -32,23 +48,6 @@ export function urgencyLabel(locale, urgency) {
   return t(locale, 'common.medium');
 }
 
-export function translateMessage(locale, message) {
-  if (normalizeLocale(locale) === 'ja-JP' || !message) return message;
-  const messages = {
-    '入力を確認してください': 'Check your input',
-    '終了は開始より後にしてください': 'End must be after start',
-    '開始と終了を正しく入力してください': 'Enter a valid start and end',
-    'イベントが見つかりませんでした': 'Event not found',
-    '現在進行中の時間帯は、いったん停止してから編集してください': 'Stop the current session before editing this time range',
-    'JSONを読み込めませんでした': 'Could not read JSON',
-    'タスク実行中': 'Task running',
-    '割り込み中': 'Interruption active',
-    '割り込み作業中': 'Handling interruption',
-    '休憩中': 'On break',
-    '割り込み': 'Interruption',
-    '割り込み作業': 'Interruption',
-    '割り込み作業が開始されていません': 'No interruption is in progress',
-    '休憩': 'Break',
-  };
-  return messages[message] ?? message;
+export function translateError(locale, errorCode, fallbackPath = 'errors.checkInput') {
+  return t(locale, ERROR_MESSAGE_PATHS[errorCode] ?? fallbackPath);
 }

@@ -23,64 +23,65 @@ import {
 
 export function createRecordCommands({
   applyResult,
+  createId,
   getState,
   mutate,
   mutateWith,
+  now,
   overlapRepairPreview,
-  setLastError,
   setOverlapRepairUi,
   setTrackedAppState,
 }) {
+  const dependencies = { createId };
   return {
-    beginPause: (categoryId) => mutate((state) => beginPauseWithCategoryInState(state, categoryId)),
-    beginNextPause: (categoryId, currentPauseData) => mutate((state) => beginNextPauseWithCategoryInState(state, categoryId, currentPauseData)),
-    beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt')),
-    beginBreak: () => mutate((state) => beginPauseInState(state, 'break')),
+    beginPause: (categoryId) => mutate((state) => beginPauseWithCategoryInState(state, categoryId, now(), dependencies)),
+    beginNextPause: (categoryId, currentPauseData) => mutate((state) => beginNextPauseWithCategoryInState(state, categoryId, currentPauseData, now(), dependencies)),
+    beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt', now(), {}, dependencies)),
+    beginBreak: () => mutate((state) => beginPauseInState(state, 'break', now(), {}, dependencies)),
     selectPauseCategory: mutateWith(selectPauseCategoryInState),
     setBreakTarget: mutateWith(setBreakTargetInState),
-    saveInterrupt: mutateWith(saveInterruptInState),
-    cancelInterrupt: mutateWith(cancelPauseInState),
-    stopInterrupt: mutateWith(stopPauseInState),
+    saveInterrupt: (data) => mutate((state) => saveInterruptInState(state, data, now(), dependencies)),
+    cancelInterrupt: () => mutate((state) => cancelPauseInState(state, now(), dependencies)),
+    stopInterrupt: (resume) => mutate((state) => stopPauseInState(state, resume, now(), dependencies)),
     updateInterruptDraft: mutateWith(updateInterruptDraftInState),
-    saveBreak: mutateWith(saveBreakInState),
+    saveBreak: (data) => mutate((state) => saveBreakInState(state, data, now(), dependencies)),
     createInterruptFollowupTask(interruptData, taskData) {
-      return applyResult(createInterruptFollowupTaskInState(getState(), interruptData, taskData));
+      return applyResult(createInterruptFollowupTaskInState(getState(), interruptData, taskData, now(), dependencies));
     },
     previewSaveEvent(updated) {
-      return previewSaveEventInState(getState(), updated);
+      return previewSaveEventInState(getState(), updated, now());
     },
     saveEvent(updated) {
-      return applyResult(saveEventInState(getState(), updated));
+      return applyResult(saveEventInState(getState(), updated, now()));
     },
     previewTaskRecord(record) {
-      return previewTaskRecordInState(getState(), record);
+      return previewTaskRecordInState(getState(), record, now(), dependencies);
     },
     saveTaskRecord(record) {
-      return applyResult(saveTaskRecordInState(getState(), record));
+      return applyResult(saveTaskRecordInState(getState(), record, now(), dependencies));
     },
     deleteEvent: mutateWith(deleteEventInState),
     addMissedEvent(event, options) {
-      return applyResult(addMissedEventInState(getState(), event, options));
+      return applyResult(addMissedEventInState(getState(), event, { ...options, ...dependencies }, now()));
     },
     previewAddMissedEvent(event, options) {
-      return previewAddMissedEventInState(getState(), event, options);
+      return previewAddMissedEventInState(getState(), event, { ...options, ...dependencies }, now());
     },
     applyResolution(preview) {
-      setLastError(null);
       const nextState = applyResolutionPreviewInState(getState(), preview);
       setTrackedAppState(nextState);
-      const nextRepair = previewOverlapRepairInState(nextState, Date.now());
+      const nextRepair = previewOverlapRepairInState(nextState, now());
       setOverlapRepairUi({ sheetOpen: false, deferred: Boolean(nextRepair) });
-      return { ok: true, error: null };
+      return { ok: true, errorCode: null };
     },
     openOverlapRepair() {
-      const preview = overlapRepairPreview ?? previewOverlapRepairInState(getState(), Date.now());
+      const preview = overlapRepairPreview ?? previewOverlapRepairInState(getState(), now());
       if (!preview) {
         setOverlapRepairUi({ sheetOpen: false, deferred: false });
-        return { ok: false, error: null, preview: null };
+        return { ok: false, errorCode: null, preview: null };
       }
       setOverlapRepairUi({ sheetOpen: true, deferred: false });
-      return { ok: true, error: null, preview };
+      return { ok: true, errorCode: null, preview };
     },
     deferOverlapRepair() {
       setOverlapRepairUi({ sheetOpen: false, deferred: Boolean(overlapRepairPreview) });

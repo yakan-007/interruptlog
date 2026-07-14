@@ -18,6 +18,7 @@ import {
   selectActiveTasks,
 } from './index';
 import { at } from '../test/factories';
+import { ERROR_CODES } from '../domain/errors';
 
 describe('personal tasks', () => {
   it('calculates remaining committed estimate and overflow against today’s end time', () => {
@@ -53,7 +54,7 @@ describe('personal tasks', () => {
     const followup = created.state.tasks.find((task) => task.id === created.taskId);
     const interrupt = created.state.events.find((event) => event.type === 'interrupt');
 
-    expect(created.error).toBeNull();
+    expect(created.errorCode).toBeNull();
     expect(followup?.interruptOriginId).toBe(interrupt?.id);
     expect(interrupt).toMatchObject({ label: '確認依頼', who: '田中', start: at(11, 9, 10), end: at(11, 9, 20) });
     expect(created.state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: at(11, 9, 20) });
@@ -106,7 +107,7 @@ describe('personal tasks', () => {
     expect(restored.tasks[0].completedAt).toBe(null);
 
     const resumed = restoreTaskAndStartInState(state, 't1', 9000);
-    expect(resumed.error).toBe(null);
+    expect(resumed.errorCode).toBe(null);
     expect(resumed.state.tasks[0].isCompleted).toBe(false);
     expect(resumed.state.running?.taskId).toBe('t1');
     expect(resumed.state.events).toHaveLength(2);
@@ -200,7 +201,7 @@ describe('personal tasks', () => {
     const state = createEmptyState();
     const result = createTaskInState(state, { name: 'あとでやる', categoryId: 'cat-dev', plannedDurationMinutes: 30 }, 1000);
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.state.tasks).toHaveLength(1);
     expect(result.state.running).toBe(null);
     expect(result.state.events).toHaveLength(0);
@@ -210,7 +211,7 @@ describe('personal tasks', () => {
     const state = createEmptyState();
     const result = createTaskAndStartInState(state, { name: '今やる', categoryId: 'cat-dev', plannedDurationMinutes: 45 }, 3000);
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.state.tasks).toHaveLength(1);
     expect(result.state.running?.type).toBe('task');
     expect(result.state.running?.taskId).toBe(result.taskId);
@@ -227,9 +228,9 @@ describe('personal tasks', () => {
       tasks: [{ id: 't1', name: '既存タスク', categoryId: 'cat-dev', planning: { plannedDurationMinutes: 15, dueAt: null } }],
     }, { id: 't1', name: '   ', categoryId: 'cat-doc', plannedDurationMinutes: 30 }, 2000);
 
-    expect(created.error).toBeTruthy();
+    expect(created.errorCode).toBe(ERROR_CODES.TASK_NAME_REQUIRED);
     expect(created.state).toBe(state);
-    expect(edited.error).toBeTruthy();
+    expect(edited.errorCode).toBe(ERROR_CODES.TASK_NAME_REQUIRED);
     expect(edited.state.tasks[0].name).toBe('既存タスク');
   });
 
@@ -237,7 +238,7 @@ describe('personal tasks', () => {
     let state = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev', plannedDurationMinutes: 20 }, 1000).state;
     const result = createTaskAndStartInState(state, { name: '次の作業', categoryId: 'cat-doc', plannedDurationMinutes: 40 }, 5000);
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.state.tasks).toHaveLength(2);
     expect(result.state.events).toHaveLength(2);
     expect(result.state.events[0].label).toBe('元の作業');
@@ -254,7 +255,7 @@ describe('personal tasks', () => {
     };
     const result = createTaskAndStartInState(state, { name: 'あとで切り替えたい', categoryId: 'cat-dev', plannedDurationMinutes: 10 }, 5000);
 
-    expect(result.error).toBeTruthy();
+    expect(result.errorCode).toBe(ERROR_CODES.PAUSE_ACTIVE);
     expect(result.state).toBe(state);
     expect(result.state.tasks).toHaveLength(0);
   });

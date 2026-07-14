@@ -1,14 +1,13 @@
 import { useMemo } from 'react';
-import { formatDate, t, translateMessage } from '../i18n';
+import { formatDate, t, translateError } from '../i18n';
+import { ERROR_CODES } from '../domain/errors';
+import { systemClock } from '../platform/clock';
 
-const PAUSED_START_MESSAGE = '先に現在の割り込みや休憩を処理してください';
-
-export function buildViewState(app) {
+export function buildViewState(app, clock = systemClock) {
   return {
     ...app.state,
     ready: app.ready,
-    lastError: app.lastError,
-    todayLabel: formatDate(Date.now(), app.state.preferences.locale, { month: 'long', weekday: 'short' }),
+    todayLabel: formatDate(clock.now(), app.state.preferences.locale, { month: 'long', weekday: 'short' }),
     activeTasks: app.derived.activeTasks,
     completedTasks: app.derived.completedTasks,
     runningTaskMeta: app.derived.runningTaskMeta,
@@ -19,14 +18,14 @@ export function buildViewState(app) {
   };
 }
 
-function createViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft }) {
+function createViewActions({ app, showToast, openSheet, closeSheet }) {
   const locale = app.state.preferences.locale;
-  const toast = (message) => showToast(translateMessage(locale, message));
+  const toast = (message) => showToast(message);
   const exportText = createTextExporter({ locale, toast });
   return {
     openSheet,
     closeSheet,
-    ...createPassthroughActions({ app, closeSheet, clearInterruptDraft }),
+    ...createPassthroughActions({ app, closeSheet }),
     saveTask(data) {
       const result = app.actions.saveTask(data);
       if (result.ok) closeSheet();
@@ -38,16 +37,16 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
     },
     createTaskAndStart(data) {
       if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
-        toast(PAUSED_START_MESSAGE);
-        return { ok: false, error: PAUSED_START_MESSAGE };
+        toast(translateError(locale, ERROR_CODES.PAUSE_ACTIVE));
+        return { ok: false, errorCode: ERROR_CODES.PAUSE_ACTIVE };
       }
       const result = app.actions.createTaskAndStart(data);
-      if (!result.ok && result.error) toast(result.error);
+      if (!result.ok && result.errorCode) toast(translateError(locale, result.errorCode));
       return result;
     },
     restoreTaskAndStart(id) {
       const result = app.actions.restoreTaskAndStart(id);
-      if (!result.ok && result.error) toast(result.error);
+      if (!result.ok && result.errorCode) toast(translateError(locale, result.errorCode));
       return result;
     },
     addMissedEvent(event, options) {
@@ -56,7 +55,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
         closeSheet();
         toast(t(locale, 'toasts.eventAdded'));
       } else {
-        toast(result.error ?? t(locale, 'errors.checkInput'));
+        toast(translateError(locale, result.errorCode));
       }
       return result;
     },
@@ -67,11 +66,12 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
         type: 'application/json',
         downloadOnly: true,
         successKey: 'toasts.jsonExported',
+        afterSuccess: () => app.actions.markBackupExported(),
       });
     },
     importJson(payload) {
       const result = app.actions.importJson(payload);
-      toast(result.ok ? t(locale, 'toasts.jsonImported') : result.error);
+      toast(result.ok ? t(locale, 'toasts.jsonImported') : translateError(locale, result.errorCode));
       return result;
     },
     finishOnboarding() {
@@ -98,7 +98,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet, clearInterru
   };
 }
 
-function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
+function createPassthroughActions({ app, closeSheet }) {
   const call = (action) => (...args) => action(...args);
   const callAndClose = (action) => (...args) => {
     const result = action(...args);
@@ -142,37 +142,30 @@ function createPassthroughActions({ app, closeSheet, clearInterruptDraft }) {
     ]),
     startTask(id) {
       app.actions.startTask(id);
-      return { ok: true, error: null };
+      return { ok: true, errorCode: null };
     },
     createInterruptFollowupTask(interruptData, taskData) {
       const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
-      if (result.ok) {
-        clearInterruptDraft();
-        closeSheet();
-      }
+      if (result.ok) closeSheet();
       return result;
     },
     saveInterrupt(data) {
       const result = app.actions.saveInterrupt(data);
-      clearInterruptDraft();
       closeSheet();
       return result;
     },
     saveBreak(data) {
       const result = app.actions.saveBreak(data);
-      clearInterruptDraft();
       closeSheet();
       return result;
     },
     cancelInterrupt() {
       const result = app.actions.cancelInterrupt();
-      clearInterruptDraft();
       closeSheet();
       return result;
     },
     stopInterrupt(resume) {
       const result = app.actions.stopInterrupt(resume);
-      clearInterruptDraft();
       closeSheet();
       return result;
     },
@@ -193,7 +186,7 @@ function bindActions(actions, bind, names) {
 }
 
 function createTextExporter({ locale, toast }) {
-  return async ({ filename, content, type, downloadOnly = false, successKey }) => {
+  return async ({ filename, content, type, downloadOnly = false, successKey, afterSuccess }) => {
     try {
       await shareOrDownloadText(
         filename,
@@ -201,6 +194,7 @@ function createTextExporter({ locale, toast }) {
         type,
         { downloadOnly }
       );
+      afterSuccess?.();
       toast(t(locale, successKey));
     } catch {
       toast(t(locale, 'toasts.exportCanceled'));
@@ -213,10 +207,10 @@ function datedFilename(base, extension) {
 }
 
 export function useViewActions(args) {
-  const { app, showToast, openSheet, closeSheet, clearInterruptDraft } = args;
+  const { app, showToast, openSheet, closeSheet } = args;
   return useMemo(
-    () => createViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft }),
-    [app, showToast, openSheet, closeSheet, clearInterruptDraft]
+    () => createViewActions({ app, showToast, openSheet, closeSheet }),
+    [app, showToast, openSheet, closeSheet]
   );
 }
 

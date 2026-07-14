@@ -15,7 +15,7 @@ describe('personal schema and backup', () => {
   it('keeps personal preferences and drops unknown legacy preference keys', () => {
     const normalized = normalizeState({
       ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, historyView: 'list', autoStart: true },
+      preferences: { ...createEmptyState().preferences, historyView: 'list', lastBackupExportAt: 1234, autoStart: true },
     });
     const fallback = parseBackup({
       schemaVersion: 1,
@@ -27,6 +27,7 @@ describe('personal schema and backup', () => {
 
     expect(normalized.version).toBe(1);
     expect(normalized.preferences.historyView).toBe('list');
+    expect(normalized.preferences.lastBackupExportAt).toBe(1234);
     expect(normalized.preferences.onboardingDone).toBe(false);
     expect('autoStart' in normalized.preferences).toBe(false);
     expect(normalized.preferences.locale).toBe('ja-JP');
@@ -80,6 +81,16 @@ describe('personal schema and backup', () => {
 
     expect(normalized.tasks[0].planning.dueAt).toBeNull();
     expect(saved.state.tasks[0].planning.dueAt).toBeNull();
+  });
+
+  it('uses the supplied hydration time for tasks without a creation timestamp', () => {
+    const now = at(11, 9);
+    const normalized = normalizeState({
+      ...createEmptyState(),
+      tasks: [{ id: 'legacy', name: '旧タスク' }],
+    }, now);
+
+    expect(normalized.tasks[0].createdAt).toBe(now);
   });
 
   it('keeps only the originating task as the resumable activity across a reload', () => {

@@ -10,6 +10,8 @@ common: {
         count: (count) => `${count}`,
         people: (count) => `${count} people`,
         rows: (count) => `${count} rows`,
+        countUnit: '',
+        fromSender: (sender) => `From ${sender}`,
       },
 };
 

@@ -15,16 +15,17 @@ import {
   setWorkScheduleInState,
 } from '../../state';
 
-export function createPreferenceCommands({ mutate, mutateWith, setOverlapRepairUi }) {
+export function createPreferenceCommands({ createId, mutate, mutateWith, now, setOverlapRepairUi }) {
+  const dependencies = { createId };
   const setPreference = (key) => (value) => {
     mutate((state) => setPreferenceInState(state, key, value));
   };
 
   return {
-    saveCategory: mutateWith(saveCategoryInState),
+    saveCategory: (category) => mutate((state) => saveCategoryInState(state, category, now(), dependencies)),
     deleteCategory: mutateWith(deleteCategoryInState),
     moveCategoryToIndex: mutateWith(moveCategoryToIndexInState),
-    saveInterruptCategory: mutateWith(saveInterruptCategoryInState),
+    saveInterruptCategory: (category) => mutate((state) => saveInterruptCategoryInState(state, category, now(), dependencies)),
     deleteInterruptCategory: mutateWith(deleteInterruptCategoryInState),
     moveInterruptCategoryToIndex: mutateWith(moveInterruptCategoryToIndexInState),
     saveChips: mutateWith(saveChipsInState),
@@ -37,8 +38,8 @@ export function createPreferenceCommands({ mutate, mutateWith, setOverlapRepairU
     setHistoryView: setPreference('historyView'),
     setReportProfile: mutateWith(setReportProfileInState),
     setWorkSchedule: mutateWith(setWorkScheduleInState),
-    setTodayWorkdayEnd: mutateWith(setTodayWorkdayEndInState),
-    clearTodayWorkdayEnd: mutateWith(clearTodayWorkdayEndInState),
+    setTodayWorkdayEnd: (end) => mutate((state) => setTodayWorkdayEndInState(state, end, now())),
+    clearTodayWorkdayEnd: () => mutate((state) => clearTodayWorkdayEndInState(state, now())),
     finishOnboarding: () => mutate((state) => setPreferenceInState(state, 'onboardingDone', true)),
     resetAll: () => {
       mutate((state) => ({

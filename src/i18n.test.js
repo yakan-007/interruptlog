@@ -9,8 +9,10 @@ import {
   categoryLabel,
   interruptCategoryLabel,
   t,
+  translateError,
   tx,
 } from './i18n';
+import { ERROR_CODES } from './domain/errors';
 
 function flattenKeys(value, prefix = '') {
   if (value == null || typeof value !== 'object' || Array.isArray(value)) return [prefix];
@@ -67,5 +69,12 @@ describe('i18n', () => {
     expect(interruptCategoryLabel('en-US', { id: 'int-call', name: '電話' })).toBe('Phone');
     expect(categoryLabel('en-US', { id: 'cat-dev', name: '実装' })).toBe('実装');
     expect(interruptCategoryLabel('en-US', { id: 'int-call', name: '顧客対応' })).toBe('顧客対応');
+  });
+
+  it('translates stable domain error codes without coupling state to UI text', () => {
+    expect(translateError('ja-JP', ERROR_CODES.TASK_NAME_REQUIRED)).toBe('タスク名を入力してください');
+    expect(translateError('en-US', ERROR_CODES.END_NOT_AFTER_START)).toBe('End must be after start');
+    expect(translateError('en-US', ERROR_CODES.RUNNING_OVERLAP)).toBe('Stop the current session before editing this time range');
+    expect(translateError('en-US', 'UNKNOWN')).toBe('Check your input');
   });
 });

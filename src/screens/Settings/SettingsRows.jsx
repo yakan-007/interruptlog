@@ -97,10 +97,14 @@ export function NavRow({ title, note, accent = false, danger = false, onClick })
   );
 }
 
-export function ExportRow({ title, note, onClick }) {
+export function ExportRow({ title, note, badge, onClick }) {
   return (
     <button className="il-setrow il-setbutton" onClick={onClick}>
-      <span className="tg"><span className="t accent-inline">{Icons.download(14)} {title}</span><span className="s">{note}</span></span>
+      <span className="tg">
+        <span className="t accent-inline">{Icons.download(14)} {title}</span>
+        <span className="s">{note}</span>
+      </span>
+      {badge && <span className="il-setrow-badge warn">{badge}</span>}
     </button>
   );
 }

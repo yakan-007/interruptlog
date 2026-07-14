@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Icons from '../../icons';
 import { getTaskDuePresets } from '../../lib/formatters';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
-import { categoryLabel, t, translateMessage } from '../../i18n';
+import { categoryLabel, t, translateError } from '../../i18n';
 import SheetShell from './SheetShell';
 
 export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit, followup = false, interruptData, onBackToInterrupt }) {
@@ -45,7 +45,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
         ? actions.createTaskAndStart(payload)
         : actions.createTask(payload);
     if (!result.ok) {
-      setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
+      setError(translateError(locale, result.errorCode));
       return;
     }
     setError('');
@@ -54,7 +54,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
   };
 
   return (
-    <SheetShell title={followup ? t(locale, 'sheets.followupTaskTitle') : editing ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.taskDetails')} onClose={followup ? onBackToInterrupt : onClose} footer={
+    <SheetShell title={followup ? t(locale, 'sheets.followupTaskTitle') : editing ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.taskDetails')} onClose={followup ? onBackToInterrupt : onClose} locale={locale} footer={
       <>
         {editing && <button className="btn danger" onClick={() => actions.deleteTask(editing.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={followup ? onBackToInterrupt : onClose}>{followup ? t(locale, 'sheets.back') : t(locale, 'sheets.cancel')}</button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { interruptCategoryLabel, t, translateMessage, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateError, tx, typeLabel, urgencyLabel } from '../../i18n';
 import { startOfHistoryDay } from '../../lib/history';
 import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
@@ -43,7 +43,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
 
     const draft = {
       type,
-      label: label || (type === 'interrupt' && who ? (locale === 'ja-JP' ? `${who}から` : `From ${who}`) : ''),
+      label: label || (type === 'interrupt' && who ? tx(locale, 'common.fromSender', who) : ''),
       start: start.getTime(),
       end: end.getTime(),
       memo,
@@ -53,8 +53,8 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
 
     if (type === 'task') {
       const previewResult = actions.previewTaskRecord(draft);
-      if (previewResult.error) {
-        setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.checkInput')));
+      if (previewResult.errorCode) {
+        setError(translateError(locale, previewResult.errorCode));
         return;
       }
       if (previewResult.preview?.conflicts?.length) {
@@ -71,13 +71,13 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       }
       const result = actions.saveTaskRecord(draft);
       if (result.ok) onClose();
-      else setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
+      else setError(translateError(locale, result.errorCode));
       return;
     }
 
     const previewResult = actions.previewAddMissedEvent(draft, { createGap: false });
-    if (previewResult.error) {
-      setError(translateMessage(locale, previewResult.error ?? t(locale, 'errors.checkInput')));
+    if (previewResult.errorCode) {
+      setError(translateError(locale, previewResult.errorCode));
       return;
     }
 
@@ -94,11 +94,11 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
     }
 
     const result = actions.addMissedEvent(draft, { createGap: false, saveWhoChip });
-    if (!result.ok) setError(translateMessage(locale, result.error ?? t(locale, 'errors.checkInput')));
+    if (!result.ok) setError(translateError(locale, result.errorCode));
   };
 
   return (
-    <SheetShell title={t(locale, 'sheets.addMissedTitle')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.addMissedTitle')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={handleAdd}>{t(locale, 'sheets.add')}</button>

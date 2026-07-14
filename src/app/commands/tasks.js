@@ -13,27 +13,28 @@ import {
   uncompleteTaskInState,
 } from '../../state';
 
-export function createTaskCommands({ applyResult, getState, mutateWith }) {
+export function createTaskCommands({ applyResult, createId, getState, mutate, mutateWith, now }) {
+  const dependencies = { createId };
   return {
-    startTask: mutateWith(startTaskInState),
-    stopTask: mutateWith(stopTaskInState),
-    completeTask: mutateWith(completeTaskInState),
+    startTask: (id) => mutate((state) => startTaskInState(state, id, now(), dependencies)),
+    stopTask: (complete) => mutate((state) => stopTaskInState(state, complete, now(), dependencies)),
+    completeTask: (id) => mutate((state) => completeTaskInState(state, id, now(), dependencies)),
     restoreTask: mutateWith(restoreTaskInState),
     uncompleteTask: mutateWith(uncompleteTaskInState),
-    deleteTask: mutateWith(deleteTaskInState),
+    deleteTask: (id) => mutate((state) => deleteTaskInState(state, id, now(), dependencies)),
     reorderTask: mutateWith(reorderTaskInState),
     moveTaskToIndex: mutateWith(moveTaskToIndexInState),
     restoreTaskAndStart(id) {
-      return applyResult(restoreTaskAndStartInState(getState(), id));
+      return applyResult(restoreTaskAndStartInState(getState(), id, now(), dependencies));
     },
     saveTask(data) {
-      return applyResult(saveTaskInState(getState(), data));
+      return applyResult(saveTaskInState(getState(), data, now(), dependencies));
     },
     createTask(data) {
-      return applyResult(createTaskInState(getState(), data));
+      return applyResult(createTaskInState(getState(), data, now(), dependencies));
     },
     createTaskAndStart(data) {
-      return applyResult(createTaskAndStartInState(getState(), data));
+      return applyResult(createTaskAndStartInState(getState(), data, now(), dependencies));
     },
   };
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildBackup, createEmptyState } from '../state';
+import { ERROR_CODES } from '../domain/errors';
 import { createAppActions } from './actions';
 
 function task(id = 'task-1') {
@@ -18,24 +19,83 @@ function task(id = 'task-1') {
   };
 }
 
-function createHarness(initial = createEmptyState(), overlapRepairPreview = null) {
+function createHarness(
+  initial = createEmptyState(),
+  overlapRepairPreview = null,
+  clock = { now: () => Date.now() },
+  idGenerator
+) {
   let tracked = initial;
   const mutate = vi.fn((recipe) => { tracked = recipe(tracked); });
   const setTrackedAppState = vi.fn((next) => { tracked = next; });
-  const setLastError = vi.fn();
   const setOverlapRepairUi = vi.fn();
   const actions = createAppActions({
     currentState: initial,
+    clock,
+    idGenerator,
     mutate,
     overlapRepairPreview,
     setTrackedAppState,
-    setLastError,
     setOverlapRepairUi,
   });
-  return { actions, mutate, setLastError, setOverlapRepairUi, setTrackedAppState, state: () => tracked };
+  return { actions, mutate, setOverlapRepairUi, setTrackedAppState, state: () => tracked };
 }
 
 describe('personal app commands', () => {
+  it('uses an injected clock for deterministic application operations', () => {
+    const fixedNow = Date.parse('2026-07-14T09:30:00+09:00');
+    const clock = { now: vi.fn(() => fixedNow) };
+    const commands = createHarness(createEmptyState(), null, clock);
+
+    commands.actions.createTask({ name: '固定時刻のタスク', categoryId: 'cat-dev' });
+    const backup = JSON.parse(commands.actions.exportJson());
+
+    expect(commands.state().tasks[0].createdAt).toBe(fixedNow);
+    expect(backup.exportedAt).toBe(new Date(fixedNow).toISOString());
+    expect(clock.now).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses an injected ID generator for every ID created by one command', () => {
+    const fixedNow = Date.parse('2026-07-14T09:30:00+09:00');
+    const clock = { now: () => fixedNow };
+    const idGenerator = { next: vi.fn((prefix) => `${prefix}-fixed`) };
+    const commands = createHarness(createEmptyState(), null, clock, idGenerator);
+
+    commands.actions.createTaskAndStart({ name: '再現可能なタスク', categoryId: 'cat-dev' });
+
+    expect(commands.state().tasks[0].id).toBe('tn-fixed');
+    expect(commands.state().events[0].id).toBe('ev-fixed');
+    expect(idGenerator.next.mock.calls).toEqual([
+      ['tn', fixedNow],
+      ['ev', fixedNow],
+    ]);
+  });
+
+  it('does not spend a persisted ID while previewing a task record', () => {
+    const fixedNow = Date.parse('2026-07-14T09:30:00+09:00');
+    const idGenerator = { next: vi.fn((prefix) => `${prefix}-saved`) };
+    const commands = createHarness(
+      { ...createEmptyState(), tasks: [task()] },
+      null,
+      { now: () => fixedNow },
+      idGenerator
+    );
+    const record = {
+      type: 'task',
+      taskTarget: { mode: 'existing', taskId: 'task-1' },
+      start: fixedNow - 60_000,
+      end: fixedNow - 30_000,
+    };
+
+    const preview = commands.actions.previewTaskRecord(record);
+    expect(preview.preview.candidate.id).toBe('__record-preview__');
+    expect(idGenerator.next).not.toHaveBeenCalled();
+
+    commands.actions.saveTaskRecord(record);
+    expect(commands.state().events[0].id).toBe('ev-saved');
+    expect(idGenerator.next).toHaveBeenCalledOnce();
+  });
+
   it('creates, starts, stops, completes, and restores a task through the public commands', () => {
     const start = createHarness({ ...createEmptyState(), tasks: [task()] });
     start.actions.startTask('task-1');
@@ -58,7 +118,7 @@ describe('personal app commands', () => {
     const initial = { ...createEmptyState(), tasks: [task()] };
     const commands = createHarness(initial);
 
-    expect(commands.actions.createTask({ name: '追加タスク', categoryId: 'cat-dev' })).toMatchObject({ ok: true, error: null });
+    expect(commands.actions.createTask({ name: '追加タスク', categoryId: 'cat-dev' })).toMatchObject({ ok: true, errorCode: null });
     expect(commands.state().tasks).toHaveLength(2);
     expect(commands.actions.saveTask({ ...task(), name: '名前を更新' })).toMatchObject({ ok: true });
     expect(commands.state().tasks[0].name).toBe('名前を更新');
@@ -76,7 +136,7 @@ describe('personal app commands', () => {
     commands.actions.cancelInterrupt();
     expect(commands.state().running).toMatchObject({ type: 'task', taskId: 'task-1' });
 
-    expect(commands.actions.openOverlapRepair()).toEqual({ ok: false, error: null, preview: null });
+    expect(commands.actions.openOverlapRepair()).toEqual({ ok: false, errorCode: null, preview: null });
     expect(commands.setOverlapRepairUi).toHaveBeenLastCalledWith({ sheetOpen: false, deferred: false });
     commands.actions.deferOverlapRepair();
     expect(commands.setOverlapRepairUi).toHaveBeenLastCalledWith({ sheetOpen: false, deferred: false });
@@ -110,10 +170,11 @@ describe('personal app commands', () => {
     const commands = createHarness(state);
 
     expect(JSON.parse(commands.actions.exportJson())).toMatchObject({ schemaVersion: 1 });
+    commands.actions.markBackupExported(1234);
+    expect(commands.state().preferences.lastBackupExportAt).toBe(1234);
     expect(commands.actions.exportReportCsv('day')).toContain('reportDate,range,timezone');
     expect(commands.actions.exportAnalysisCsv('day')).toContain('sequenceIndex,durationMs,durationBucket');
     expect(commands.actions.importJson(JSON.stringify(buildBackup(state)))).toMatchObject({ ok: true, requiresRepair: false });
-    expect(commands.actions.importJson('{bad json')).toMatchObject({ ok: false, error: 'JSONを読み込めませんでした' });
-    expect(commands.setLastError).toHaveBeenLastCalledWith('JSONを読み込めませんでした');
+    expect(commands.actions.importJson('{bad json')).toMatchObject({ ok: false, errorCode: ERROR_CODES.INVALID_BACKUP });
   });
 });

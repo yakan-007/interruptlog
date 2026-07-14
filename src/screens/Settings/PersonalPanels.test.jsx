@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ERROR_CODES } from '../../domain/errors';
 import {
   CategorySheet,
   ChipsSheet,
@@ -71,7 +72,7 @@ describe('personal settings panels', () => {
 
   it('surfaces an import error and confirms data reset', async () => {
     const user = userEvent.setup();
-    const onImport = vi.fn(() => ({ ok: false, error: 'JSONを読み込めませんでした' }));
+    const onImport = vi.fn(() => ({ ok: false, errorCode: ERROR_CODES.INVALID_BACKUP }));
     const view = render(<ImportSheet onClose={vi.fn()} onImport={onImport} />);
 
     await user.type(screen.getByRole('textbox'), 'invalid-json');

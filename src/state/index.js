@@ -5,17 +5,23 @@ export {
 
 export {
   addMissedEventInState,
-  applyResolutionPreviewInState,
   deleteEventInState,
   previewAddMissedEventInState,
-  previewOverlapRepairInState,
-  previewReplaceTimeRangeInState,
   previewSaveEventInState,
+  saveEventInState,
+} from './events';
+
+export {
+  applyResolutionPreviewInState,
+  previewOverlapRepairInState,
+} from './eventResolution';
+
+export {
+  previewReplaceTimeRangeInState,
   previewTaskRecordInState,
   replaceTimeRangeInState,
-  saveEventInState,
   saveTaskRecordInState,
-} from './events';
+} from './taskRecords';
 
 export {
   beginPauseInState,

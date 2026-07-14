@@ -17,6 +17,7 @@ report: {
         dailyReportPrintTitle: 'Daily report',
         recordedTime: 'Recorded time',
         breakdown: 'Time breakdown',
+        noBreakdown: 'No time breakdown has been recorded for this period yet',
         taskEngagement: 'Work by task',
         taskEngagementCopy: 'Review worked-on tasks by time, work sessions, and work days.',
         noTaskEngagement: 'No task work was recorded in this period',
@@ -91,6 +92,12 @@ report: {
         noSender: 'No main sender yet',
         noCategory: 'No category trend yet',
         focusAndInterrupt: ({ focus, interrupt }) => `Task time ${focus} · Interruptions ${interrupt}`,
+        senderWithCount: ({ label, count }) => `${label} (${count})`,
+        weeklySuggestion: {
+          sender: (sender) => `Consider batching requests from ${sender}.`,
+          hour: (hour) => `Consider batching interruptions around ${hour}:00.`,
+          empty: 'Use this week’s interruption trend to choose one request rule to try next week.',
+        },
         urgencyCopy: {
           low: 'Requests that could wait',
           med: 'Requests handled in the moment',

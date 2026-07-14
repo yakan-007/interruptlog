@@ -1,3 +1,5 @@
-export function newId(prefix = 'ev', now = Date.now()) {
-  return prefix + now.toString(36) + Math.random().toString(36).slice(2, 6);
+import { formatId } from '../domain/ids';
+
+export function newId(prefix = 'ev', now = Date.now(), random = Math.random) {
+  return formatId(prefix, now, random());
 }

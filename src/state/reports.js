@@ -118,9 +118,9 @@ export function buildWeeklyReview(state, now = Date.now(), snapshot = null) {
     : 0;
   const suggestion = stats.interrupt > 0
     ? topSender
-      ? `${topSender.label}からの相談をまとめる時間を作る候補です`
-      : `${peakHour}時台の割り込み作業をまとめる候補です`
-    : '割り込み作業の記録が増えると、来週の改善候補を出せます';
+      ? { kind: 'sender', value: topSender.label }
+      : { kind: 'hour', value: peakHour }
+    : { kind: 'empty', value: null };
 
   return {
     since,

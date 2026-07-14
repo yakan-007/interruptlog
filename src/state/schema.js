@@ -1,4 +1,4 @@
-import { normalizeLocale } from '../i18n';
+import { normalizeLocale } from '../domain/locale';
 import { isWorkSchedule, normalizeWorkSchedule } from '../lib/workday';
 import { asArray, asNumber, asPositiveTimestamp, cleanText, clone, isObject, uniqueTexts } from './utils';
 
@@ -32,6 +32,7 @@ const defaultPreferences = {
   sortDue: false,
   workSchedule: { start: null, end: null },
   historyView: 'timeline',
+  lastBackupExportAt: null,
   onboardingDone: false,
 };
 
@@ -61,7 +62,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
   const base = createEmptyState();
   if (!isObject(raw)) return base;
 
-  const tasks = asArray(raw.tasks).map(normalizeTask).filter(Boolean);
+  const tasks = asArray(raw.tasks).map((task) => normalizeTask(task, now)).filter(Boolean);
   const categories = asArray(raw.categories).map(normalizeCategory).filter(Boolean);
   const interruptCats = normalizePauseCategoryList(asArray(raw.interruptCats).map(normalizeInterruptCategory).filter(Boolean));
   const events = asArray(raw.events).map(normalizeEvent).filter(Boolean);
@@ -92,6 +93,7 @@ function normalizePreferences(raw = {}, options = {}) {
     sortDue: Boolean(raw.sortDue ?? defaultPreferences.sortDue),
     workSchedule: normalizeWorkSchedule(raw.workSchedule),
     historyView: raw.historyView === 'list' ? 'list' : 'timeline',
+    lastBackupExportAt: asPositiveTimestamp(raw.lastBackupExportAt, null),
     onboardingDone: Boolean(raw.onboardingDone ?? options.assumeOnboarded ?? defaultPreferences.onboardingDone),
   };
 }
@@ -112,7 +114,7 @@ function normalizeWorkdaySchedules(raw) {
   );
 }
 
-function normalizeTask(task) {
+function normalizeTask(task, now) {
   if (!isObject(task) || !task.id) return null;
   return {
     id: String(task.id),
@@ -127,7 +129,7 @@ function normalizeTask(task) {
       plannedDurationMinutes: Math.max(0, asNumber(task.planning?.plannedDurationMinutes, 0) ?? 0),
       dueAt: asPositiveTimestamp(task.planning?.dueAt, null),
     },
-    createdAt: asNumber(task.createdAt, Date.now()),
+    createdAt: asNumber(task.createdAt, now),
     completedAt: asNumber(task.completedAt, null),
   };
 }

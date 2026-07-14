@@ -31,7 +31,7 @@ export default function WorkdayEndSheet({ state, actions, onClose }) {
   };
 
   return (
-    <SheetShell title={configured ? t(locale, 'sheets.todayEnd') : t(locale, 'settings.workSchedule')} onClose={onClose} footer={
+    <SheetShell title={configured ? t(locale, 'sheets.todayEnd') : t(locale, 'settings.workSchedule')} onClose={onClose} locale={locale} footer={
       <>
         {hasOverride && <button className="btn tert" onClick={reset}>{t(locale, 'sheets.resetToStandard')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>

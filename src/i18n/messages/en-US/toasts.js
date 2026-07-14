@@ -9,6 +9,7 @@ toasts: {
         exportCanceled: 'Export canceled',
         jsonImported: 'JSON imported',
         csvExported: 'CSV exported',
+        storageSaveFailed: 'Could not save in this browser. Check storage space or private browsing mode.',
       },
 };
 

@@ -1,0 +1,307 @@
+.il-urgency-report {
+  display: grid;
+  gap: 9px;
+}
+
+.il-urgency-report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-urgency-report-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.il-urgency-report-row .main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.il-urgency-report-row .copy {
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.il-urgency-report-row .meter {
+  grid-column: 1;
+  height: 5px;
+  background: var(--bg-sunken);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.il-urgency-report-row .meter > div {
+  height: 100%;
+  min-width: 2px;
+}
+
+.il-urgency-report-row .value {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.il-urgency-report-row .value strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.il-report-weekday {
+  height: 100%;
+}
+
+.il-report-weekday .stack {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  opacity: 0.9;
+}
+
+.il-report-weekday .stack.interrupt { background: var(--interrupt); }
+.il-report-weekday .stack.task { background: var(--task); }
+
+.il-report-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.il-report-row .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+.il-report-row .main {
+  flex: 1;
+}
+
+.il-report-row .main .title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.il-report-row .main .sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 1px;
+}
+
+.il-report-row .spark {
+  width: 90px;
+  height: 6px;
+  background: var(--bg-sunken);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.il-report-row .spark > div {
+  height: 100%;
+  background: var(--interrupt);
+  opacity: 0.8;
+}
+
+.il-report-row .value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  width: 48px;
+  text-align: right;
+}
+
+.il-report-categoryrow {
+  padding: 8px 0;
+}
+
+.il-report-categoryrow .header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.il-report-categoryrow .name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.il-report-categoryrow .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.il-report-categoryrow .value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.il-report-categoryrow .value .muted {
+  color: var(--ink-4);
+}
+
+.il-report-categoryrow .bar {
+  height: 4px;
+  background: var(--bg-sunken);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.il-report-categoryrow .bar > div {
+  height: 100%;
+}
+
+.il-report-taskstats {
+  display: flex;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.il-taskstat {
+  flex: 1;
+  min-width: 0;
+}
+
+.il-taskstat .label {
+  font-size: 10px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.il-taskstat .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.il-taskstat .value.accent { color: var(--accent); }
+
+.il-report-tasklists {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-report-tasklist-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.il-report-tasklist-title .count {
+  color: var(--ink-4);
+  font-weight: 600;
+}
+
+.il-report-taskrow {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-report-taskrow:first-of-type {
+  border-top: none;
+}
+
+.il-report-taskrow .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.il-report-taskrow .main {
+  min-width: 0;
+  flex: 1;
+}
+
+.il-report-taskrow .name {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.il-report-taskrow .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 3px;
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.il-report-taskempty {
+  color: var(--ink-4);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 4px 0 2px;
+}
+
+.il-report-export {
+  padding: 20px 20px 8px;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .il-report-date-nav {
+    grid-template-columns: 44px auto 44px minmax(0, 1fr);
+  }
+
+  .il-report-print-action {
+    grid-column: 1 / -1;
+    min-height: 42px;
+  }
+}
+
+.il-weekly-review .il-review-lines {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}

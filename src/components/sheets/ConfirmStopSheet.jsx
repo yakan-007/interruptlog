@@ -13,7 +13,7 @@ export default function ConfirmStopSheet({ state, actions, onClose }) {
   const locale = state.preferences.locale;
 
   return (
-    <SheetShell title={t(locale, 'sheets.stopSession')} onClose={onClose} footer={
+    <SheetShell title={t(locale, 'sheets.stopSession')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.back')}</button>
         <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => actions.stopTask(false)}>{t(locale, 'sheets.stopOnly')}</button>

@@ -17,6 +17,7 @@ report: {
         dailyReportPrintTitle: '日報',
         recordedTime: '記録時間',
         breakdown: '時間の内訳',
+        noBreakdown: 'この期間に時間の内訳はまだありません',
         taskEngagement: 'タスクごとの作業',
         taskEngagementCopy: '期間中に作業したタスクを、作業時間・作業回数・作業日で見ます。',
         noTaskEngagement: 'この期間に記録されたタスク作業はありません',
@@ -91,6 +92,12 @@ report: {
         noSender: '主な発信者はまだありません',
         noCategory: 'カテゴリ傾向はまだありません',
         focusAndInterrupt: ({ focus, interrupt }) => `タスク作業 ${focus} · 割り込み作業 ${interrupt}`,
+        senderWithCount: ({ label, count }) => `${label}（${count}）`,
+        weeklySuggestion: {
+          sender: (sender) => `${sender}からの相談をまとめる時間を作る候補です`,
+          hour: (hour) => `${hour}時台の割り込み作業をまとめる候補です`,
+          empty: '割り込み作業の記録が増えると、来週の改善候補を出せます',
+        },
         urgencyCopy: {
           low: '後回しにできた割り込み作業',
           med: 'その場で扱った割り込み作業',

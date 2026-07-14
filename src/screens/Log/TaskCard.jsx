@@ -66,7 +66,7 @@ export default function TaskCard({
     return (
       <div className="il-taskcard completed" style={{ '--task-cat': taskAccent }}>
         <div className="cat-rail" style={{ background: category?.color }} />
-        <button className="check" onClick={onToggle} aria-label="restore">{Icons.check(12)}</button>
+        <button className="check" onClick={onToggle} aria-label={t(locale, 'log.restore')}>{Icons.check(12)}</button>
         <div className="task-main">
           <div className="task-head">
             <div className="title">{task.name}</div>
@@ -86,7 +86,7 @@ export default function TaskCard({
             {Icons.play(13)}
           </button>
         )}
-        {onEdit && <button className="il-ghostbtn" onClick={onEdit} aria-label="edit">{Icons.edit(15)}</button>}
+        {onEdit && <button className="il-ghostbtn" onClick={onEdit} aria-label={t(locale, 'log.edit')}>{Icons.edit(15)}</button>}
       </div>
     );
   }
@@ -107,7 +107,7 @@ export default function TaskCard({
       style={cardStyle}
     >
       <div className="cat-rail" style={{ background: category?.color }} />
-      <button className="check" onClick={onComplete} aria-label="complete" />
+      <button className="check" onClick={onComplete} aria-label={t(locale, 'log.complete')} />
       <div className="task-main">
         <div className="task-head">
           <div className="title">{task.name}</div>
@@ -137,7 +137,7 @@ export default function TaskCard({
             {Icons.play(13)}
           </button>
         )}
-        <button className="il-ghostbtn" onClick={onEdit} aria-label="edit">{Icons.edit(15)}</button>
+        <button className="il-ghostbtn" onClick={onEdit} aria-label={t(locale, 'log.edit')}>{Icons.edit(15)}</button>
       </div>
       {!floating && <button
         type="button"

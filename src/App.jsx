@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppLifecycle } from './app/lifecycle';
 import { buildViewState, useViewActions } from './app/controller';
 import { useAppLayout } from './app/useAppLayout';
@@ -7,9 +7,7 @@ import { useToast } from './app/useToast';
 import {
   AddMissedSheet,
   AddTaskSheet,
-  BreakSheet,
   ConfirmStopSheet,
-  InterruptSheet,
   PauseSheet,
   RepairOverlapsSheet,
   ResolveEventSheet,
@@ -25,7 +23,7 @@ import OnboardingScreen from './screens/Onboarding';
 import ReportScreen from './screens/Report';
 import SettingsScreen from './screens/Settings';
 import { useAppState } from './useAppState';
-import { t, translateMessage } from './i18n';
+import { t } from './i18n';
 
 const TABS = [
   { id: 'log', labelKey: 'tabs.log', icon: Icons.tasks },
@@ -40,10 +38,15 @@ export default function App() {
   const containerRef = useRef(null);
   const state = useMemo(() => buildViewState(app), [app]);
   const showOnboarding = app.ready && !state.preferences.onboardingDone;
-  const { activeSheet, activeSheetArg, closeSheet, openSheet, restoreSheet, updateInterruptDraft, clearInterruptDraft } = useSheetController(app, showOnboarding);
+  const { activeSheet, activeSheetArg, closeSheet, openSheet, restoreSheet, updateInterruptDraft } = useSheetController(app, showOnboarding);
   const { showToast, toast } = useToast();
   useAppLayout(containerRef, app.state.preferences);
-  const actions = useViewActions({ app, showToast, openSheet, closeSheet, clearInterruptDraft });
+  const actions = useViewActions({ app, showToast, openSheet, closeSheet });
+
+  useEffect(() => {
+    if (app.persistenceError !== 'toasts.storageSaveFailed') return;
+    showToast(t(state.preferences.locale, app.persistenceError));
+  }, [app.persistenceError, showToast, state.preferences.locale]);
 
   const handleResolutionBack = useCallback(() => {
     if (!activeSheetArg?.returnSheet) {
@@ -58,12 +61,12 @@ export default function App() {
       const result = actions.saveTaskRecord(resolution.record);
       if (!result.ok) return;
       closeSheet();
-      showToast(translateMessage(state.preferences.locale, resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved')));
+      showToast(resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved'));
       return;
     }
     actions.applyResolution(resolution.preview);
     closeSheet();
-    showToast(translateMessage(state.preferences.locale, resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved')));
+    showToast(resolution.successMessage ?? t(state.preferences.locale, 'toasts.eventSaved'));
   }, [actions, closeSheet, showToast, state.preferences.locale]);
 
   const handleRepairApply = useCallback(() => {
@@ -113,8 +116,6 @@ export default function App() {
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
             {activeSheet === 'pause' && <PauseSheet key={`${state.running?.start ?? 'pause'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg ?? state.running?.draft} />}
-            {activeSheet === 'interrupt' && <InterruptSheet key={`${state.running?.start ?? 'interrupt'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg ?? state.running?.draft} />}
-            {activeSheet === 'break' && <BreakSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addTask' && (
@@ -134,7 +135,7 @@ export default function App() {
                 onClose={closeSheet}
                 followup
                 interruptData={activeSheetArg}
-                onBackToInterrupt={() => openSheet('interrupt', activeSheetArg)}
+                onBackToInterrupt={() => openSheet('pause', activeSheetArg)}
                 draft={{ name: activeSheetArg?.label ?? '' }}
               />
             )}

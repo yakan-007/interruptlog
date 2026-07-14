@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import Icons from '../../icons';
-import { categoryLabel, t } from '../../i18n';
+import { categoryLabel, t, translateError } from '../../i18n';
 
 const DEFAULT_DURATION = 0;
 
@@ -98,7 +98,7 @@ export default function QuickAddCard({ state, actions }) {
       ? actions.createTaskAndStart(payload)
       : actions.createTask(payload);
     if (!result.ok) {
-      setDraft((current) => ({ ...current, error: result.error ?? '入力を確認してください' }));
+      setDraft((current) => ({ ...current, error: translateError(state.preferences.locale, result.errorCode) }));
       return;
     }
     resetDraft(selectedCategoryId);

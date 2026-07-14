@@ -39,8 +39,9 @@ export function selectRunningTaskMeta(state) {
     const task = state.tasks.find((item) => item.id === running.taskId);
     return {
       type: 'task',
-      label: task?.name ?? 'タスク',
-      subLabel: 'タスク実行中',
+      label: task?.name ?? null,
+      labelKey: 'common.task',
+      subLabelKey: 'log.taskRunning',
       task,
       variant: '',
     };
@@ -49,8 +50,9 @@ export function selectRunningTaskMeta(state) {
   if (running.type === 'interrupt') {
     return {
       type: 'interrupt',
-      label: running.label || '割り込み作業',
-      subLabel: '割り込み作業中',
+      label: running.label || null,
+      labelKey: 'common.interrupt',
+      subLabelKey: 'log.interruptRunning',
       task: null,
       variant: 'interrupt',
     };
@@ -58,8 +60,9 @@ export function selectRunningTaskMeta(state) {
 
   return {
     type: 'break',
-    label: running.label || '休憩',
-    subLabel: '休憩中',
+    label: running.label || null,
+    labelKey: 'common.break',
+    subLabelKey: 'log.breakRunning',
     task: null,
     variant: 'break',
   };

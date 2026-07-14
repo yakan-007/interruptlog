@@ -1,5 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { shareOrDownloadText } from './controller';
+import { formatDate } from '../i18n';
+import { buildViewState, shareOrDownloadText } from './controller';
+
+describe('view state', () => {
+  it('uses the injected clock for the current-day label', () => {
+    const now = Date.parse('2026-07-14T09:30:00+09:00');
+    const clock = { now: vi.fn(() => now) };
+    const state = { preferences: { locale: 'ja-JP' } };
+    const app = {
+      state,
+      ready: true,
+      derived: { activeTasks: [], completedTasks: [], runningTaskMeta: null },
+      overlapRepair: { pending: null, deferred: false },
+    };
+
+    expect(buildViewState(app, clock).todayLabel).toBe(
+      formatDate(now, 'ja-JP', { month: 'long', weekday: 'short' })
+    );
+    expect(clock.now).toHaveBeenCalledOnce();
+  });
+});
 
 describe('text export behavior', () => {
   let clickedLink;

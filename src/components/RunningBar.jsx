@@ -1,7 +1,7 @@
 import Icons from '../icons';
 import { useTicker } from '../lib/ticker';
 import { elapsedSince, formatElapsedClock } from '../lib/timer';
-import { t, translateMessage } from '../i18n';
+import { t } from '../i18n';
 
 export default function RunningBar({ state, actions, raised = false, compact = false, locale = 'ja-JP' }) {
   const now = useTicker(1000);
@@ -33,8 +33,8 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       openRunningDetails();
     }
   };
-  const label = translateMessage(locale, meta.label);
-  const subLabel = translateMessage(locale, meta.subLabel);
+  const label = meta.label ?? t(locale, meta.labelKey);
+  const subLabel = meta.subLabel ?? t(locale, meta.subLabelKey);
 
   return (
     <div

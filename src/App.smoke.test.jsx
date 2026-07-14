@@ -72,6 +72,19 @@ describe('App smoke flow', () => {
     expect(localStorage.getItem(LEGACY_STATE_KEYS[0])).toBeNull();
   });
 
+  it('notifies the user when browser storage rejects a save', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const startButton = await screen.findByRole('button', { name: 'はじめる' });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+    });
+
+    await user.click(startButton);
+
+    expect(await screen.findByText('このブラウザに保存できません。容量やプライベートモードを確認してください')).toBeTruthy();
+  });
+
   it('starts a categorized pause even when no task card exists', async () => {
     const user = userEvent.setup();
     render(<App />);

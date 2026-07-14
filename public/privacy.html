@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="InterruptLog のプライバシーポリシー" />
+    <meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141311" media="(prefers-color-scheme: dark)" />
+    <title>プライバシーポリシー | InterruptLog</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f4ef;
+        --panel: #ffffff;
+        --ink: #171512;
+        --muted: #6b6862;
+        --hair: rgba(23, 21, 18, 0.1);
+        --accent: #334155;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #141311;
+          --panel: #1d1c19;
+          --ink: #f2efe8;
+          --muted: #a4a198;
+          --hair: rgba(255, 252, 245, 0.12);
+          --accent: #d5d2c9;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+        line-height: 1.8;
+      }
+
+      main {
+        width: min(720px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--hair);
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+      }
+
+      .eyebrow {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      h1 {
+        margin: 6px 0 8px;
+        font-size: clamp(28px, 7vw, 44px);
+        line-height: 1.15;
+      }
+
+      h2 {
+        margin: 30px 0 8px;
+        font-size: 18px;
+      }
+
+      p,
+      ul {
+        margin: 0 0 14px;
+      }
+
+      ul {
+        padding-left: 1.2em;
+      }
+
+      a {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--hair);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">INTERRUPTLOG</div>
+        <h1>プライバシーポリシー</h1>
+        <p class="muted">最終更新日: 2026年7月4日</p>
+      </header>
+
+      <section class="panel">
+        <p>
+          InterruptLog Web 版は、個人の作業時間、割り込み、休憩を記録するローカル完結型のアプリです。
+          入力したデータは利用中のブラウザ内に保存され、開発者のサーバーへ送信されません。
+        </p>
+      </section>
+
+      <h2>保存される情報</h2>
+      <p>アプリは、次の情報をブラウザの localStorage に保存します。</p>
+      <ul>
+        <li>タスク名、メモ、カテゴリ、予定時間、期限</li>
+        <li>作業、割り込み、休憩の開始時刻、終了時刻、メモ</li>
+        <li>よく使う入力候補、表示設定、日報プロフィール</li>
+      </ul>
+
+      <h2>外部送信について</h2>
+      <p>
+        InterruptLog Web 版は、アカウント、クラウド同期、アクセス解析、広告配信を行いません。
+        入力データを外部サーバーへ自動送信する機能はありません。
+      </p>
+
+      <h2>バックアップと復元</h2>
+      <p>
+        JSON バックアップを書き出した場合、保存先や共有先の管理は利用者自身の責任となります。
+        JSON インポートを行うと、このブラウザ内のデータはバックアップ内容で置き換えられます。
+      </p>
+
+      <h2>データの削除</h2>
+      <p>
+        設定画面の「全データを削除」またはブラウザのサイトデータ削除により、保存されたデータを削除できます。
+        ブラウザデータを削除すると、バックアップしていない記録は復元できません。
+      </p>
+
+      <h2>外部リンク</h2>
+      <p>
+        フィードバック用の GitHub など外部サイトを開いた場合、その外部サイトのプライバシーポリシーが適用されます。
+      </p>
+
+      <h2>お問い合わせ</h2>
+      <p>
+        不具合報告や問い合わせは
+        <a href="https://github.com/yakan-007/interruptlog" rel="noreferrer">GitHub リポジトリ</a>
+        から連絡してください。
+      </p>
+    </main>
+  </body>
+</html>

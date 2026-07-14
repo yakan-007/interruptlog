@@ -1,3 +1,5 @@
+import { t } from '../../i18n';
+
 export default function StatCard({
   label,
   color,
@@ -38,7 +40,7 @@ function formatDurationStat(ms) {
 function formatCountStat(count, locale) {
   return {
     value: String(count),
-    unit: locale === 'ja-JP' ? '件' : '',
+    unit: countUnit(locale),
   };
 }
 
@@ -46,10 +48,14 @@ function formatDelta(delta, kind, currentUnit, locale) {
   const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
   const abs = Math.abs(delta);
   if (kind === 'count') {
-    const unit = locale === 'ja-JP' ? '件' : '';
+    const unit = countUnit(locale);
     return `${sign}${abs}${unit}`;
   }
   if (currentUnit === 'h') return `${sign}${(abs / 3600000).toFixed(1)}h`;
   if (abs > 0 && abs < 60000) return `${sign}<1m`;
   return `${sign}${Math.round(abs / 60000)}m`;
+}
+
+function countUnit(locale) {
+  return t(locale, 'common.countUnit');
 }

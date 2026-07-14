@@ -24,6 +24,7 @@ import {
   stopTaskInState,
 } from './index';
 import { at } from '../test/factories';
+import { ERROR_CODES } from '../domain/errors';
 
 describe('personal records and resolution', () => {
   it('closes the running task session when deleting the running task', () => {
@@ -45,11 +46,11 @@ describe('personal records and resolution', () => {
     };
 
     const invalid = addMissedEventInState(state, { type: 'task', label: 'invalid', start: 3000, end: 2500 });
-    expect(invalid.error).toBeTruthy();
+    expect(invalid.errorCode).toBeTruthy();
     expect(invalid.state.events).toHaveLength(1);
 
     const valid = addMissedEventInState(state, { type: 'task', label: '後の作業', start: 5000, end: 6000 }, { createGap: true }, 7000);
-    expect(valid.error).toBe(null);
+    expect(valid.errorCode).toBe(null);
     expect(valid.state.events.map((event) => event.type)).toEqual(['task', 'unknown', 'task']);
     expect(valid.state.events[1].start).toBe(2000);
     expect(valid.state.events[1].end).toBe(5000);
@@ -67,7 +68,7 @@ describe('personal records and resolution', () => {
       end: at(11, 10, 12),
     });
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.state.events[0]).toMatchObject({
       type: 'interrupt',
       label: 'あとから相談を記録',
@@ -82,7 +83,7 @@ describe('personal records and resolution', () => {
     };
 
     const result = previewAddMissedEventInState(state, { type: 'interrupt', label: '電話', start: 2000, end: 3000 }, {}, 9000);
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.preview?.conflicts.map((event) => event.id)).toEqual(['task-1']);
     expect(result.preview?.changes.some((change) => change.sourceEventId === 'task-1' && change.action === 'split')).toBe(true);
 
@@ -108,7 +109,7 @@ describe('personal records and resolution', () => {
     };
 
     const result = previewAddMissedEventInState(state, { type: 'break', label: '外出', start: 1500, end: 3500 }, {}, 9000);
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.preview?.changes.map((change) => change.action)).toEqual(expect.arrayContaining(['trim-end', 'remove', 'trim-start', 'insert']));
 
     const applied = applyResolutionPreviewInState(state, result.preview);
@@ -168,7 +169,7 @@ describe('personal records and resolution', () => {
       taskTarget: { mode: 'existing', taskId: 'task-b' },
     });
 
-    expect(saved.error).toBeNull();
+    expect(saved.errorCode).toBeNull();
     expect(saved.state.tasks.map((task) => task.name)).toEqual(['元のタスク', '実際にした作業']);
     expect(saved.state.events).toEqual([expect.objectContaining({
       id: 'work', taskId: 'task-b', label: '実際にした作業', categoryId: 'cat-doc', interruptOriginId: 'origin-event', workDetail: '構成を検討',
@@ -196,7 +197,7 @@ describe('personal records and resolution', () => {
     };
     const preview = previewTaskRecordInState(state, record);
 
-    expect(preview.error).toBeNull();
+    expect(preview.errorCode).toBeNull();
     expect(preview.preview.conflicts).toEqual([expect.objectContaining({ id: 'call' })]);
     expect(preview.preview.changes).toEqual(expect.arrayContaining([expect.objectContaining({
       sourceEventId: 'call',
@@ -217,7 +218,7 @@ describe('personal records and resolution', () => {
       taskTarget: { mode: 'new', name: '請求書の確認', categoryId: 'cat-adm', complete: true },
     });
 
-    expect(saved.error).toBeNull();
+    expect(saved.errorCode).toBeNull();
     expect(saved.taskId).toBeTruthy();
     expect(saved.state.tasks).toEqual([expect.objectContaining({
       id: saved.taskId, name: '請求書の確認', categoryId: 'cat-adm', isCompleted: true, completedAt: at(11, 14),
@@ -251,10 +252,10 @@ describe('personal records and resolution', () => {
     const preview = previewReplaceTimeRangeInState(state, record);
     const replaced = replaceTimeRangeInState(state, record);
 
-    expect(preview.error).toBeNull();
+    expect(preview.errorCode).toBeNull();
     expect(preview.impact).toMatchObject({ unrecordedMs: 0 });
     expect(preview.impact.items.map((item) => item.type)).toEqual(['task', 'interrupt', 'break', 'task']);
-    expect(replaced.error).toBeNull();
+    expect(replaced.errorCode).toBeNull();
     expect(replaced.state.events).toEqual([expect.objectContaining({
       type: 'task', taskId: 'actual', label: '資料作成', workDetail: '構成をまとめる', start: at(11, 9), end: at(11, 10),
     })]);
@@ -275,7 +276,7 @@ describe('personal records and resolution', () => {
       type: 'task', start: at(11, 9, 20), end: at(11, 9, 40), taskTarget: { mode: 'existing', taskId: 'b' },
     });
 
-    expect(replaced.error).toBeNull();
+    expect(replaced.errorCode).toBeNull();
     expect(replaced.state.events.map((event) => `${event.taskId}:${event.start}-${event.end}`)).toEqual([
       `a:${at(11, 9)}-${at(11, 9, 20)}`,
       `b:${at(11, 9, 20)}-${at(11, 9, 40)}`,
@@ -292,7 +293,7 @@ describe('personal records and resolution', () => {
     });
 
     expect(result.preview).toBeNull();
-    expect(result.error).toContain('同じ日');
+    expect(result.errorCode).toBe(ERROR_CODES.SAME_DAY_REQUIRED);
   });
 
   it('rejects manual add/edit that overlap the current running session', () => {
@@ -305,8 +306,8 @@ describe('personal records and resolution', () => {
     const added = previewAddMissedEventInState(state, { type: 'interrupt', label: '差し込み', start: 5500, end: 6500 }, {}, 6000);
     const edited = previewSaveEventInState(state, { id: 'running-task', type: 'task', taskId: 't1', label: '進行中', start: 4500, end: 5500 }, 6000);
 
-    expect(added.error).toBe('現在進行中の時間帯は、いったん停止してから編集してください');
-    expect(edited.error).toBe('現在進行中の時間帯は、いったん停止してから編集してください');
+    expect(added.errorCode).toBe(ERROR_CODES.RUNNING_OVERLAP);
+    expect(edited.errorCode).toBe(ERROR_CODES.RUNNING_OVERLAP);
   });
 
   it('uses localized default labels for manual events', () => {
@@ -317,7 +318,7 @@ describe('personal records and resolution', () => {
       end: 2000,
     }, {}, 9000);
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.preview?.candidate.label).toBe('割り込み作業');
   });
 
@@ -338,7 +339,7 @@ describe('personal records and resolution', () => {
       end: 2000,
     });
 
-    expect(result.error).toBe(null);
+    expect(result.errorCode).toBe(null);
     expect(result.state.events[0]).toMatchObject({ type: 'task', categoryId: 'cat-doc', memo: '履歴から更新したメモ' });
   });
 

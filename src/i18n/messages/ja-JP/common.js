@@ -10,6 +10,8 @@ common: {
         count: (count) => `${count}件`,
         people: (count) => `${count}人`,
         rows: (count) => `${count}行`,
+        countUnit: '件',
+        fromSender: (sender) => `${sender}から`,
       },
 };
 

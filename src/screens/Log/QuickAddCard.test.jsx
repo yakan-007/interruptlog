@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createEmptyState } from '../../state';
+import { ERROR_CODES } from '../../domain/errors';
 import QuickAddCard from './QuickAddCard';
 
 afterEach(() => cleanup());
@@ -33,7 +34,7 @@ describe('quick task entry', () => {
   it('keeps an error visible, respects pauses, and opens the detailed entry sheet', async () => {
     const user = userEvent.setup();
     const actions = {
-      createTask: vi.fn(() => ({ ok: false, error: '入力を確認してください' })),
+      createTask: vi.fn(() => ({ ok: false, errorCode: ERROR_CODES.CHECK_INPUT })),
       createTaskAndStart: vi.fn(() => ({ ok: true })),
       openSheet: vi.fn(),
     };

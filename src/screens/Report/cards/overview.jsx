@@ -4,7 +4,19 @@ import { buildWeeklyReview } from '../../../state';
 import { t, tx, urgencyLabel } from '../../../i18n';
 import TaskStat from '../TaskStat';
 
-export function BreakdownCard({ currentStats, locale, total }) {
+export function BreakdownCard({ currentStats, locale, recordedTotal, total }) {
+  const resolvedRecordedTotal = recordedTotal ?? total;
+  if (resolvedRecordedTotal <= 0) {
+    return (
+      <div className="il-card">
+        <h3>{t(locale, 'report.breakdown')}</h3>
+        <div className="il-report-emptytrend">
+          {t(locale, 'report.noBreakdown')}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="il-card">
       <h3>{t(locale, 'report.breakdown')}</h3>
@@ -161,7 +173,7 @@ export function WeeklyReviewCard({ state, now, snapshot }) {
         ) : t(state.preferences.locale, 'report.noSender')}</div>
         <div>{review.categoryName ? `${t(state.preferences.locale, 'report.topCategory')}: ${review.categoryName}` : t(state.preferences.locale, 'report.noCategory')}</div>
       </div>
-      <div className="il-report-emptytrend">{state.preferences.locale === 'ja-JP' ? review.suggestion : 'Use this week’s interruption trend to choose one request rule to try next week.'}</div>
+      <div className="il-report-emptytrend">{formatWeeklySuggestion(review.suggestion, state.preferences.locale)}</div>
     </div>
   );
 }
@@ -230,7 +242,12 @@ export function WeekdayTrendCard({ dayStats, maxDay, locale = 'ja-JP' }) {
 
 function formatSenderCount(sender, locale) {
   const count = tx(locale, 'common.count', sender.count);
-  return locale === 'ja-JP' ? `${sender.label}（${count}）` : `${sender.label} (${count})`;
+  return tx(locale, 'report.senderWithCount', { label: sender.label, count });
+}
+
+function formatWeeklySuggestion(suggestion, locale) {
+  if (suggestion.kind === 'empty') return t(locale, 'report.weeklySuggestion.empty');
+  return tx(locale, `report.weeklySuggestion.${suggestion.kind}`, suggestion.value);
 }
 
 export function SendersCard({ senders, maxSenderTime, locale = 'ja-JP' }) {

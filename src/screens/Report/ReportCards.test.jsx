@@ -63,14 +63,17 @@ describe('personal report cards', () => {
   it('omits empty chart frames when there is not enough trend data', () => {
     const { container } = render(
       <>
+        <BreakdownCard currentStats={{ focus: 0, interrupt: 0, break: 0 }} recordedTotal={0} total={1} locale="ja-JP" />
         <HourlyInterruptsCard hasInterruptTrend={false} hourly={Array(12).fill(0)} maxHourly={1} peakHour={0} quietHour={0} locale="ja-JP" />
         <WeekdayTrendCard locale="ja-JP" maxDay={1} dayStats={[{ day: '月', focus: 0, interrupt: 0 }]} />
       </>,
     );
 
+    expect(screen.getByText('この期間に時間の内訳はまだありません')).toBeTruthy();
     expect(screen.getByText('まだ傾向を出せるほど割り込み作業の記録がありません')).toBeTruthy();
     expect(screen.getByText('まだ曜日別の傾向を出せるほど記録がありません')).toBeTruthy();
     expect(container.querySelector('.il-vchart')).toBeNull();
+    expect(container.querySelector('.il-hbar')).toBeNull();
   });
 
   it('renders the overview and detailed analysis cards with personal data', () => {

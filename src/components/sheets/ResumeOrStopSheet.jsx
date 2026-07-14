@@ -9,7 +9,7 @@ export default function ResumeOrStopSheet({ state, actions, onClose }) {
   const resumeName = runTask?.name ?? null;
 
   return (
-    <SheetShell title={state.running?.type === 'interrupt' ? t(locale, 'sheets.endInterrupt') : t(locale, 'sheets.endBreak')} onClose={onClose} footer={
+    <SheetShell title={state.running?.type === 'interrupt' ? t(locale, 'sheets.endInterrupt') : t(locale, 'sheets.endBreak')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn secondary" onClick={() => actions.stopInterrupt(false)}>{t(locale, 'sheets.endOnly')}</button>
         <button className="btn primary" onClick={() => actions.stopInterrupt(true)} disabled={!resumeName}>

@@ -10,6 +10,11 @@ body,
   background: var(--bg-sunken);
 }
 
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  background: #0f0e0c;
+}
+
 .il {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   color: var(--ink);

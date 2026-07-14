@@ -3,7 +3,7 @@ import Icons from '../../icons';
 import { useTicker } from '../../lib/ticker';
 import { createReportSnapshot, selectReportInputs } from '../../state';
 import { t, tx } from '../../i18n';
-import { buildReportMetrics } from './reportMetrics';
+import { buildReportMetrics } from '../../features/report/buildReportMetrics';
 import StatCard from './StatCard';
 import {
   BreakdownCard,
@@ -40,7 +40,8 @@ export default function ReportScreen({ state, actions }) {
     [state, range, reportNow, reportSnapshot]
   );
 
-  const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
+  const recordedTotal = currentStats.focus + currentStats.interrupt + currentStats.break;
+  const total = recordedTotal || 1;
   const localizedCompareLabel = t(state.preferences.locale, `report.compareLabels.${range}`);
   const currentInterruptCount = countInterruptions(currentStats);
   const previousInterruptCount = countInterruptions(previousStats);
@@ -140,7 +141,7 @@ export default function ReportScreen({ state, actions }) {
 
             {range === 'week' && <WeeklyReviewCard state={state} now={now} snapshot={reportSnapshot} />}
 
-            <BreakdownCard currentStats={currentStats} locale={state.preferences.locale} total={total} />
+            <BreakdownCard currentStats={currentStats} locale={state.preferences.locale} recordedTotal={recordedTotal} total={total} />
 
             <TaskEngagementCard engagement={taskEngagement} locale={state.preferences.locale} />
 

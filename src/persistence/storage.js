@@ -19,14 +19,19 @@ function writeLocalJson(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-export async function loadPersistedState() {
+async function loadPersistedState() {
   removeLegacyState();
   return readLocalJson(STATE_KEY);
 }
 
-export async function savePersistedState(state) {
+async function savePersistedState(state) {
   writeLocalJson(STATE_KEY, state);
 }
+
+export const browserStateStorage = Object.freeze({
+  load: loadPersistedState,
+  save: savePersistedState,
+});
 
 function removeLegacyState() {
   if (!canUseLocalStorage()) return;
