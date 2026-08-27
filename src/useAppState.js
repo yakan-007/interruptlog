@@ -20,6 +20,7 @@ export function useAppState({ clock = systemClock, idGenerator = systemIdGenerat
   const [appState, setAppState] = useState(() => createEmptyState());
   const appStateRef = useRef(appState);
   const [hydrated, setHydrated] = useState(false);
+  const [storageRecoveryState, setStorageRecoveryState] = useState(null);
   const [overlapRepairUi, setOverlapRepairUi] = useState({ sheetOpen: false, deferred: false });
 
   const setTrackedAppState = useCallback((nextState) => {
@@ -32,8 +33,13 @@ export function useAppState({ clock = systemClock, idGenerator = systemIdGenerat
 
   useEffect(() => {
     let active = true;
-    storage.load().then((stored) => {
+    storage.load().then((result) => {
       if (!active) return;
+      if (result.status === 'corrupt') {
+        setStorageRecoveryState({ kind: 'corrupt-json', raw: result.raw });
+        return;
+      }
+      const stored = result.state;
       const currentTime = clock.now();
       const normalized = normalizeState(stored, currentTime, { assumeOnboarded: stored != null });
       setTrackedAppState(normalized);
@@ -88,9 +94,32 @@ export function useAppState({ clock = systemClock, idGenerator = systemIdGenerat
     resyncTickersNow();
   }, []);
 
+  const resetStorageRecovery = useCallback(async () => {
+    if (!storageRecoveryState || typeof storage.clear !== 'function') return { ok: false };
+    try {
+      await storage.clear();
+      const freshState = createEmptyState();
+      setTrackedAppState(freshState);
+      setOverlapRepairUi({ sheetOpen: false, deferred: false });
+      setStorageRecoveryState(null);
+      setHydrated(true);
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  }, [setTrackedAppState, storage, storageRecoveryState]);
+
+  const storageRecovery = useMemo(
+    () => storageRecoveryState
+      ? { ...storageRecoveryState, reset: resetStorageRecovery }
+      : null,
+    [resetStorageRecovery, storageRecoveryState]
+  );
+
   return {
     ready: hydrated,
     persistenceError: persistence.error,
+    storageRecovery,
     state: appState,
     derived,
     overlapRepair,

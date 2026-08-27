@@ -194,8 +194,8 @@ export default function ReportScreen({ state, actions }) {
             )}
 
             <div className="il-report-export">
-              <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
-              <button className="btn secondary fill" onClick={() => actions.exportAnalysisCsv(range)}>{Icons.download(14)} {t(state.preferences.locale, 'report.analysisCsvSave')}</button>
+              <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
+              <button className="btn secondary fill" onClick={() => actions.exportAnalysisCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.analysisCsvSave')}</button>
               <div className="il-report-exportcopy">
                 {t(state.preferences.locale, 'report.csvCopy')}
               </div>

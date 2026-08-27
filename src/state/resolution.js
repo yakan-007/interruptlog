@@ -62,7 +62,7 @@ export function buildManualResolutionPreview(events, candidateInput, options = {
     ),
   ];
 
-  const segments = buildResolvedSegments(entries, now);
+  const segments = buildResolvedSegments(entries, now, events.map((event) => event.id));
   let nextEvents = segments.map((segment) => segment.event);
   let changes = buildResolutionChanges(entries, segments, now);
 
@@ -98,7 +98,7 @@ export function buildOverlapRepairPreview(events, now = Date.now()) {
   if (conflicts.length === 0) return null;
 
   const entries = closedEvents.map((event, priority) => createEntry(event, priority, 'existing', event));
-  const segments = buildResolvedSegments(entries, now);
+  const segments = buildResolvedSegments(entries, now, events.map((event) => event.id));
 
   return {
     mode: 'repair',
@@ -129,13 +129,25 @@ function createEntry(event, priority, kind, beforeEvent) {
   };
 }
 
-function createDerivedEventId(baseId, counter) {
-  return `${baseId}~${counter}`;
+function createDerivedEventId(baseId, usedIds, nextCounterByBase) {
+  let counter = nextCounterByBase.get(baseId) ?? 0;
+  let candidateId = `${baseId}~${counter}`;
+  while (usedIds.has(candidateId)) {
+    counter += 1;
+    candidateId = `${baseId}~${counter}`;
+  }
+  nextCounterByBase.set(baseId, counter + 1);
+  usedIds.add(candidateId);
+  return candidateId;
 }
 
-function buildResolvedSegments(entries, now) {
+function buildResolvedSegments(entries, now, reservedIds = []) {
   let segments = [];
-  let derivedIdCounter = 0;
+  const usedIds = new Set([
+    ...reservedIds,
+    ...entries.map((entry) => entry.event.id),
+  ].map(String));
+  const nextCounterByBase = new Map();
 
   for (const entry of entries) {
     const candidate = {
@@ -167,12 +179,15 @@ function buildResolvedSegments(entries, now) {
           sourceIds: [...segment.sourceIds],
           event: {
             ...segment.event,
-            id: createDerivedEventId(segment.sourceIds[0] ?? segment.event.id, derivedIdCounter),
+            id: createDerivedEventId(
+              segment.sourceIds[0] ?? segment.event.id,
+              usedIds,
+              nextCounterByBase
+            ),
             start: candidateEnd,
             end: segmentEnd,
           },
         });
-        derivedIdCounter += 1;
       }
     }
 

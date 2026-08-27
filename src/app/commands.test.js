@@ -177,4 +177,28 @@ describe('personal app commands', () => {
     expect(commands.actions.importJson(JSON.stringify(buildBackup(state)))).toMatchObject({ ok: true, requiresRepair: false });
     expect(commands.actions.importJson('{bad json')).toMatchObject({ ok: false, errorCode: ERROR_CODES.INVALID_BACKUP });
   });
+
+  it('exports both CSV formats using the requested report timestamp', () => {
+    const appNow = Date.parse('2026-07-14T15:00:00+09:00');
+    const reportNow = Date.parse('2026-07-13T23:59:59.999+09:00');
+    const state = {
+      ...createEmptyState(),
+      events: [{
+        id: 'yesterday',
+        type: 'task',
+        label: '前日の作業',
+        start: Date.parse('2026-07-13T10:00:00+09:00'),
+        end: Date.parse('2026-07-13T11:00:00+09:00'),
+      }],
+    };
+    const commands = createHarness(state, null, { now: () => appNow });
+
+    const reportCsv = commands.actions.exportReportCsv('day', reportNow);
+    const analysisCsv = commands.actions.exportAnalysisCsv('day', reportNow);
+
+    expect(reportCsv).toContain('2026-07-13,day');
+    expect(reportCsv).toContain('前日の作業');
+    expect(analysisCsv).toContain('2026-07-13,day');
+    expect(analysisCsv).toContain('前日の作業');
+  });
 });

@@ -98,6 +98,64 @@ describe('personal records and resolution', () => {
     expect(findOverlappingEvents(applied.events)).toHaveLength(0);
   });
 
+  it('allocates unique deterministic IDs across repeated splits and existing suffixes', () => {
+    const state = {
+      ...createEmptyState(),
+      events: [
+        { id: 'task-1', type: 'task', taskId: 't1', label: '長い作業', start: 1000, end: 9000 },
+        { id: 'task-1~0', type: 'task', taskId: 'other', label: '別の作業', start: 10000, end: 11000 },
+      ],
+    };
+    const first = previewAddMissedEventInState(
+      state,
+      { type: 'interrupt', label: '後半の割り込み', start: 6000, end: 7000 },
+      { createId: () => 'interrupt-1' },
+      12000
+    );
+    const afterFirst = applyResolutionPreviewInState(state, first.preview);
+    const second = previewAddMissedEventInState(
+      afterFirst,
+      { type: 'interrupt', label: '前半の割り込み', start: 2000, end: 3000 },
+      { createId: () => 'interrupt-2' },
+      12000
+    );
+    const afterSecond = applyResolutionPreviewInState(afterFirst, second.preview);
+    const repeatedPreview = previewAddMissedEventInState(
+      afterFirst,
+      { type: 'interrupt', label: '前半の割り込み', start: 2000, end: 3000 },
+      { createId: () => 'interrupt-2' },
+      12000
+    );
+    const ids = afterSecond.events.map((event) => event.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(expect.arrayContaining(['task-1~0', 'task-1~1', 'task-1~2']));
+    expect(second.preview.nextEvents.map((event) => event.id)).toEqual(
+      repeatedPreview.preview.nextEvents.map((event) => event.id)
+    );
+    expect(findOverlappingEvents(afterSecond.events)).toHaveLength(0);
+  });
+
+  it('reserves a new candidate ID before allocating split IDs', () => {
+    const state = {
+      ...createEmptyState(),
+      events: [
+        { id: 'task-1', type: 'task', label: '作業', start: 1000, end: 9000 },
+        { id: 'task-1~0', type: 'task', label: '別記録', start: 10000, end: 11000 },
+      ],
+    };
+    const result = previewAddMissedEventInState(
+      state,
+      { type: 'interrupt', label: '割り込み', start: 3000, end: 4000 },
+      { createId: () => 'task-1~1' },
+      12000
+    );
+    const ids = result.preview.nextEvents.map((event) => event.id);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(expect.arrayContaining(['task-1~0', 'task-1~1', 'task-1~2']));
+  });
+
   it('trims and removes multiple events when a manual event spans across them', () => {
     const state = {
       ...createEmptyState(),

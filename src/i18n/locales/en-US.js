@@ -11,11 +11,12 @@ import errors from '../messages/en-US/errors.js';
 import categories from '../messages/en-US/categories.js';
 import interruptCategories from '../messages/en-US/interruptCategories.js';
 import status from '../messages/en-US/status.js';
+import storage from '../messages/en-US/storage.js';
 
 export default {
   code: 'en-US',
   label: 'English',
   hourCycle: 'h12',
   weekStartsOn: 0,
-  text: { tabs, log, onboarding, history, report, settings, sheets, common, toasts, errors, categories, interruptCategories, status },
+  text: { tabs, log, onboarding, history, report, settings, sheets, common, toasts, errors, categories, interruptCategories, status, storage },
 };

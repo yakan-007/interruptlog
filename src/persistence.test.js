@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createSerializedPersistenceController } from './persistence/controller';
+import { browserStateStorage } from './persistence/storage';
+import { STATE_KEY } from './constants';
 
 function createDeferred() {
   let resolve;
@@ -48,5 +50,37 @@ describe('serialized persistence', () => {
 
     expect(writes).toEqual(['a', 'c']);
     expect(writeState).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('browser state storage', () => {
+  it('returns a discriminated result for missing and valid state', async () => {
+    localStorage.clear();
+    await expect(browserStateStorage.load()).resolves.toEqual({ status: 'ok', state: null });
+
+    localStorage.setItem(STATE_KEY, JSON.stringify({ version: 1, events: [] }));
+    await expect(browserStateStorage.load()).resolves.toEqual({
+      status: 'ok',
+      state: { version: 1, events: [] },
+    });
+  });
+
+  it('preserves malformed JSON and returns the exact raw payload', async () => {
+    const raw = '{"events":[broken';
+    localStorage.setItem(STATE_KEY, raw);
+
+    await expect(browserStateStorage.load()).resolves.toEqual({ status: 'corrupt', raw });
+    expect(localStorage.getItem(STATE_KEY)).toBe(raw);
+  });
+
+  it('clears only the current application state key', async () => {
+    localStorage.setItem(STATE_KEY, '{broken');
+    localStorage.setItem('unrelated-key', 'keep-me');
+
+    await browserStateStorage.clear();
+
+    expect(localStorage.getItem(STATE_KEY)).toBeNull();
+    expect(localStorage.getItem('unrelated-key')).toBe('keep-me');
+    localStorage.clear();
   });
 });

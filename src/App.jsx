@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppLifecycle } from './app/lifecycle';
-import { buildViewState, useViewActions } from './app/controller';
+import { buildViewState, shareOrDownloadText, useViewActions } from './app/controller';
 import { useAppLayout } from './app/useAppLayout';
 import { useSheetController } from './app/useSheetController';
 import { useToast } from './app/useToast';
@@ -15,6 +15,7 @@ import {
   WorkdayEndSheet,
 } from './components/sheets';
 import RunningBar from './components/RunningBar';
+import PersistenceWarning from './components/PersistenceWarning';
 import Icons from './icons';
 import EditEventSheet from './screens/History/EditEventSheet';
 import HistoryScreen from './screens/History';
@@ -22,6 +23,7 @@ import LogScreen from './screens/Log';
 import OnboardingScreen from './screens/Onboarding';
 import ReportScreen from './screens/Report';
 import SettingsScreen from './screens/Settings';
+import StorageRecoveryScreen from './screens/StorageRecovery';
 import { useAppState } from './useAppState';
 import { t } from './i18n';
 
@@ -43,10 +45,13 @@ export default function App() {
   useAppLayout(containerRef, app.state.preferences);
   const actions = useViewActions({ app, showToast, openSheet, closeSheet });
 
-  useEffect(() => {
-    if (app.persistenceError !== 'toasts.storageSaveFailed') return;
-    showToast(t(state.preferences.locale, app.persistenceError));
-  }, [app.persistenceError, showToast, state.preferences.locale]);
+  const recoveryLocale = getRecoveryLocale();
+  const downloadRecoveryData = useCallback(() => shareOrDownloadText(
+    `interruptlog-recovery-raw-${localDateKey(Date.now())}.txt`,
+    app.storageRecovery?.raw ?? '',
+    'text/plain;charset=utf-8',
+    { downloadOnly: true }
+  ), [app.storageRecovery?.raw]);
 
   const handleResolutionBack = useCallback(() => {
     if (!activeSheetArg?.returnSheet) {
@@ -88,6 +93,18 @@ export default function App() {
     resyncNow: app.resyncNow,
   });
 
+  if (app.storageRecovery) {
+    return (
+      <div ref={containerRef} className="il il-appshell" data-theme="light">
+        <StorageRecoveryScreen
+          locale={recoveryLocale}
+          onDownload={downloadRecoveryData}
+          onReset={app.storageRecovery.reset}
+        />
+      </div>
+    );
+  }
+
   if (!app.ready) {
     return <div ref={containerRef} className="il il-appshell" data-theme={app.state.preferences.dark ? 'dark' : 'light'} />;
   }
@@ -95,7 +112,14 @@ export default function App() {
   return (
     <div ref={containerRef} className="il il-appshell" data-theme={state.preferences.dark ? 'dark' : 'light'}>
       {showOnboarding ? (
-        <OnboardingScreen actions={actions} locale={state.preferences.locale} />
+        <>
+          <div className="il-appcontent">
+            <OnboardingScreen actions={actions} locale={state.preferences.locale} />
+          </div>
+          {app.persistenceError && (
+            <PersistenceWarning locale={state.preferences.locale} onRetry={app.persistNow} onExport={() => actions.exportJson()} />
+          )}
+        </>
       ) : (
         <>
           <div className="il-appcontent">
@@ -147,6 +171,10 @@ export default function App() {
             {activeSheet === 'repairOverlaps' && <RepairOverlapsSheet preview={activeSheetArg ?? state.overlapRepair.pending} locale={state.preferences.locale} onDefer={handleRepairDefer} onApply={handleRepairApply} />}
           </div>
 
+          {app.persistenceError && (
+            <PersistenceWarning locale={state.preferences.locale} onRetry={app.persistNow} onExport={() => actions.exportJson()} />
+          )}
+
           <nav className="il-tabbar">
             {TABS.map((item) => (
               <TabButton key={item.id} icon={item.icon} label={t(state.preferences.locale, item.labelKey)} active={tab === item.id} onClick={() => setTab(item.id)} />
@@ -156,6 +184,19 @@ export default function App() {
       )}
     </div>
   );
+}
+
+function getRecoveryLocale() {
+  if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en')) return 'en-US';
+  return 'ja-JP';
+}
+
+function localDateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function TabButton({ icon, label, active, onClick }) {

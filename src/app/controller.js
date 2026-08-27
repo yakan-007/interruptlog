@@ -77,19 +77,19 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
     finishOnboarding() {
       app.actions.finishOnboarding();
     },
-    async exportReportCsv(range) {
+    async exportReportCsv(range, asOf) {
       await exportText({
-        filename: datedFilename(`interruptlog-report-${range}`, 'csv'),
-        content: () => app.actions.exportReportCsv(range),
+        filename: datedFilename(`interruptlog-report-${range}`, 'csv', asOf),
+        content: () => app.actions.exportReportCsv(range, asOf),
         type: 'text/csv;charset=utf-8',
         downloadOnly: true,
         successKey: 'toasts.csvExported',
       });
     },
-    async exportAnalysisCsv(range) {
+    async exportAnalysisCsv(range, asOf) {
       await exportText({
-        filename: datedFilename(`interruptlog-analysis-${range}`, 'csv'),
-        content: () => app.actions.exportAnalysisCsv(range),
+        filename: datedFilename(`interruptlog-analysis-${range}`, 'csv', asOf),
+        content: () => app.actions.exportAnalysisCsv(range, asOf),
         type: 'text/csv;charset=utf-8',
         downloadOnly: true,
         successKey: 'toasts.csvExported',
@@ -202,8 +202,19 @@ function createTextExporter({ locale, toast }) {
   };
 }
 
-function datedFilename(base, extension) {
-  return `${base}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+function datedFilename(base, extension, timestamp = null) {
+  const dateKey = timestamp == null
+    ? new Date().toISOString().slice(0, 10)
+    : localDateKey(timestamp);
+  return `${base}-${dateKey}.${extension}`;
+}
+
+function localDateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export function useViewActions(args) {

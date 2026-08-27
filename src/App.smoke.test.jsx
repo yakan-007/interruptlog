@@ -72,17 +72,90 @@ describe('App smoke flow', () => {
     expect(localStorage.getItem(LEGACY_STATE_KEYS[0])).toBeNull();
   });
 
-  it('notifies the user when browser storage rejects a save', async () => {
+  it('keeps a recovery warning visible until browser storage succeeds again', async () => {
     const user = userEvent.setup();
     render(<App />);
     const startButton = await screen.findByRole('button', { name: 'はじめる' });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    const originalSetItem = Storage.prototype.setItem;
+    let shouldFail = true;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function setItem(...args) {
+      if (!shouldFail) return originalSetItem.apply(this, args);
       throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
     });
 
     await user.click(startButton);
 
-    expect(await screen.findByText('このブラウザに保存できません。容量やプライベートモードを確認してください')).toBeTruthy();
+    expect(await screen.findByText('このブラウザに保存できていません')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '再試行' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'JSON退避' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: '履歴' }));
+    expect(screen.getByText('このブラウザに保存できていません')).toBeTruthy();
+
+    shouldFail = false;
+    await user.click(screen.getByRole('button', { name: '再試行' }));
+    await waitFor(() => expect(screen.queryByText('このブラウザに保存できていません')).toBeNull());
+  });
+
+  it('does not overwrite malformed saved data before explicit recovery confirmation', async () => {
+    const user = userEvent.setup();
+    const raw = '{"events":[broken';
+    localStorage.setItem(STATE_KEY, raw);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Saved data could not be read' })).toBeTruthy();
+    expect(localStorage.getItem(STATE_KEY)).toBe(raw);
+    expect(screen.queryByRole('button', { name: 'はじめる' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Download original data' }));
+    const recoveryFile = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(recoveryFile?.name).toMatch(/^interruptlog-recovery-raw-\d{4}-\d{2}-\d{2}\.txt$/);
+    expect(await readFileText(recoveryFile)).toBe(raw);
+    expect(localStorage.getItem(STATE_KEY)).toBe(raw);
+
+    await user.click(screen.getByRole('button', { name: 'Start with fresh data' }));
+    expect(screen.getByText('Reset the saved data?')).toBeTruthy();
+    expect(localStorage.getItem(STATE_KEY)).toBe(raw);
+
+    await user.click(screen.getByRole('button', { name: 'Delete and reset' }));
+    expect(await screen.findByRole('button', { name: 'はじめる' })).toBeTruthy();
+    await waitFor(() => expect(localStorage.getItem(STATE_KEY)).not.toBe(raw));
+  });
+
+  it('exports the displayed past day in both CSV formats and filenames', async () => {
+    const user = userEvent.setup();
+    const yesterday = new Date();
+    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dayStart = yesterday.getTime();
+    const dateKey = localDateKey(dayStart);
+    const state = createEmptyState();
+    state.preferences.onboardingDone = true;
+    state.events = [{
+      id: 'past-event',
+      type: 'task',
+      label: 'CSV対象の前日作業',
+      start: dayStart + (10 * 60 * 60 * 1000),
+      end: dayStart + (11 * 60 * 60 * 1000),
+    }];
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: '振り返り' }));
+    await user.click(await screen.findByRole('button', { name: '前日へ' }));
+
+    await user.click(screen.getByRole('button', { name: 'CSV保存' }));
+    const reportFile = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(reportFile?.name).toBe(`interruptlog-report-day-${dateKey}.csv`);
+    expect(await readFileText(reportFile)).toContain(`${dateKey},day`);
+    expect(await readFileText(reportFile)).toContain('CSV対象の前日作業');
+
+    await user.click(screen.getByRole('button', { name: '分析CSV保存' }));
+    const analysisFile = URL.createObjectURL.mock.calls.at(-1)?.[0];
+    expect(analysisFile?.name).toBe(`interruptlog-analysis-day-${dateKey}.csv`);
+    expect(await readFileText(analysisFile)).toContain(`${dateKey},day`);
+    expect(await readFileText(analysisFile)).toContain('CSV対象の前日作業');
   });
 
   it('starts a categorized pause even when no task card exists', async () => {
@@ -440,4 +513,21 @@ async function onboardFreshApp(user) {
 async function replaceInputValue(user, input, value) {
   await user.clear(input);
   await user.type(input, value);
+}
+
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(reader.result));
+    reader.addEventListener('error', () => reject(reader.error));
+    reader.readAsText(file);
+  });
+}
+
+function localDateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

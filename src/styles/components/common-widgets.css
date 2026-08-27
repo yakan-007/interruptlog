@@ -34,6 +34,53 @@
   gap: 10px;
 }
 
+.il-persistence-warning {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 11px 14px;
+  color: var(--urg-high);
+  background: color-mix(in oklch, var(--urg-high) 9%, var(--bg-elevated));
+  border-top: 1px solid color-mix(in oklch, var(--urg-high) 28%, var(--hair));
+  z-index: 24;
+}
+
+.il-persistence-warning:last-child {
+  padding-bottom: max(11px, env(safe-area-inset-bottom));
+}
+
+.il-persistence-warning-icon {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.il-persistence-warning-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.il-persistence-warning .title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.il-persistence-warning .copy {
+  margin-top: 3px;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.il-persistence-warning .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.il-persistence-warning .btn {
+  border-color: color-mix(in oklch, var(--urg-high) 20%, var(--hair));
+}
+
 .il-warn {
   background: color-mix(in oklch, var(--urg-high) 10%, var(--bg-elevated));
   border: 1px solid color-mix(in oklch, var(--urg-high) 30%, transparent);

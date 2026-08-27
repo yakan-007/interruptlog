@@ -1,0 +1,110 @@
+.il-storage-recovery {
+  overflow-y: auto;
+  padding: max(32px, calc(env(safe-area-inset-top) + 20px)) 20px max(28px, calc(env(safe-area-inset-bottom) + 20px));
+  justify-content: center;
+}
+
+.il-storage-recovery-card {
+  width: min(100%, 360px);
+  margin: auto;
+  text-align: center;
+}
+
+.il-storage-recovery-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--urg-high);
+  background: color-mix(in oklch, var(--urg-high) 11%, var(--bg-elevated));
+  border: 1px solid color-mix(in oklch, var(--urg-high) 24%, var(--hair));
+}
+
+.il-storage-recovery-eyebrow {
+  color: var(--urg-high);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.il-storage-recovery h1 {
+  margin: 7px 0 12px;
+  color: var(--ink);
+  font-size: 25px;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+
+.il-storage-recovery p {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.il-storage-recovery-raw,
+.il-storage-recovery-confirm {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 14px;
+  text-align: left;
+  background: var(--bg-elevated);
+  border: 1px solid var(--hair);
+  box-shadow: var(--sh-card);
+}
+
+.il-storage-recovery-raw .title,
+.il-storage-recovery-confirm .title {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.il-storage-recovery-raw .copy,
+.il-storage-recovery-confirm .copy {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.il-storage-recovery-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.il-storage-recovery-status {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.il-storage-recovery-status.success {
+  color: var(--urg-low);
+  background: color-mix(in oklch, var(--urg-low) 11%, var(--bg-elevated));
+}
+
+.il-storage-recovery-status.error {
+  color: var(--urg-high);
+  background: color-mix(in oklch, var(--urg-high) 11%, var(--bg-elevated));
+}
+
+.il-storage-recovery-confirm {
+  border-color: color-mix(in oklch, var(--urg-high) 30%, var(--hair));
+  background: color-mix(in oklch, var(--urg-high) 6%, var(--bg-elevated));
+}
+
+.il-storage-recovery-confirm .actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}

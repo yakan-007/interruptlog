@@ -17,6 +17,7 @@
 @import './components/sheet-timer.css';
 @import './screens/log.css';
 @import './screens/onboarding.css';
+@import './screens/storage-recovery.css';
 @import './screens/report.css';
 @import './screens/report-activity.css';
 @import './screens/report-overview.css';

@@ -28,11 +28,11 @@ export function createDataCommands({ getState, mutate, now, setOverlapRepairUi, 
         return { ok: false, errorCode: ERROR_CODES.INVALID_BACKUP, requiresRepair: false };
       }
     },
-    exportReportCsv(range) {
-      return buildReportCsv(getState(), range, now());
+    exportReportCsv(range, asOf = now()) {
+      return buildReportCsv(getState(), range, asOf);
     },
-    exportAnalysisCsv(range) {
-      return buildAnalysisCsv(getState(), range, now());
+    exportAnalysisCsv(range, asOf = now()) {
+      return buildAnalysisCsv(getState(), range, asOf);
     },
   };
 }
