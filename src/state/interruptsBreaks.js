@@ -1,6 +1,13 @@
-import { newId } from './ids';
-import { asNumber, cleanText } from './utils';
+import { asNumber } from './utils';
 import { closeTaskSessionInState, createTaskInState, startTaskInState } from './tasks';
+import {
+  appendInterruptEvent,
+  buildBreakEvent,
+  buildInterruptEvent,
+  closeRunningPauseSegmentInState,
+  interruptLabel,
+  normalizeInterruptDraft,
+} from './pauseEvents';
 import { ensureWorkdayScheduleInState } from './workday';
 import { ERROR_CODES } from '../domain/errors';
 
@@ -98,17 +105,21 @@ export function updateInterruptDraftInState(state, draft) {
   };
 }
 
-function resumeOrStopInState(state, resume, now = Date.now(), dependencies = {}) {
+// The task a pause returns to: the nearest task in the resume stack, as long as
+// it still exists and has not been completed while the pause was running.
+export function getResumeTaskId(state) {
   const running = state.running;
-  const resumeStack = getResumeStack(running);
-  const base = { ...state, running: null };
-  const taskContext = findNearestTaskContext(resumeStack);
-  if (!resume || !taskContext) return base;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return null;
+  const taskId = findNearestTaskContext(getResumeStack(running))?.taskId;
+  const task = taskId ? state.tasks.find((item) => item.id === taskId) : null;
+  return task && !task.isCompleted ? task.id : null;
+}
 
-  if (base.tasks.some((task) => task.id === taskContext.taskId)) {
-    return startTaskInState(base, taskContext.taskId, now, { ...dependencies, resumeStack: [] });
-  }
-  return base;
+function resumeOrStopInState(state, resume, now = Date.now(), dependencies = {}) {
+  const taskId = resume ? getResumeTaskId(state) : null;
+  const base = { ...state, running: null };
+  if (!taskId) return base;
+  return startTaskInState(base, taskId, now, { ...dependencies, resumeStack: [] });
 }
 
 export function saveInterruptInState(state, data, now = Date.now(), dependencies = {}) {
@@ -130,7 +141,7 @@ export function createInterruptFollowupTaskInState(state, interruptData, taskDat
   if (created.errorCode || !created.taskId) {
     return { state, taskId: null, errorCode: created.errorCode ?? ERROR_CODES.TASK_CREATE_FAILED };
   }
-  const hadResumeTarget = getResumeStack(state.running).length > 0;
+  const hadResumeTarget = getResumeTaskId(state) != null;
   const resumed = resumeOrStopInState({ ...created.state, running: state.running }, true, now, dependencies);
   return {
     state: hadResumeTarget ? resumed : startTaskInState(resumed, created.taskId, now, dependencies),
@@ -148,36 +159,29 @@ export function saveBreakInState(state, data, now = Date.now(), dependencies = {
   return resumeOrStopInState(next, data.resume, now, dependencies);
 }
 
-export function cancelPauseInState(state, now = Date.now(), dependencies = {}) {
-  return resumeOrStopInState(state, true, now, dependencies);
-}
-
-export function stopPauseInState(state, resume, now = Date.now(), dependencies = {}) {
+// "It wasn't a pause": nothing is recorded for it, and its time goes back to the
+// task it interrupted, so the timeline has no hole. With no task to return to,
+// the pause is simply dropped.
+export function cancelPauseInState(state, _now, dependencies = {}) {
   const running = state.running;
-  const next = running?.type === 'interrupt' || running?.type === 'break'
-    ? {
-        ...state,
-        events: [...state.events, running.type === 'interrupt'
-          ? buildInterruptEvent(running.draft, running.start, now, '未記録の割り込み', dependencies)
-          : buildBreakEvent(running, {}, now, '未記録の休憩', dependencies)],
-      }
-    : state;
-  return resumeOrStopInState(next, resume, now, dependencies);
-}
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
+  const taskId = getResumeTaskId(state);
+  if (!taskId) return { ...state, running: null };
 
-function closeRunningPauseSegmentInState(state, now, data = {}, dependencies = {}) {
-  const running = state.running;
-  if (running?.type === 'interrupt') {
-    const event = buildInterruptEvent({ ...running.draft, ...data }, running.start, now, null, dependencies);
-    return appendInterruptEvent(state, event, data.saveWhoChip ?? running.draft?.saveWhoChip);
+  const sessionIndex = state.events.findLastIndex((event) =>
+    event.type === 'task' && event.taskId === taskId && event.end === running.start
+  );
+  if (sessionIndex < 0) {
+    return startTaskInState({ ...state, running: null }, taskId, running.start, { ...dependencies, resumeStack: [] });
   }
-  if (running?.type === 'break') {
-    return {
-      ...state,
-      events: [...state.events, buildBreakEvent(running, data, now, '休憩', dependencies)],
-    };
-  }
-  return state;
+  const session = state.events[sessionIndex];
+  const events = [...state.events];
+  events[sessionIndex] = { ...session, end: null };
+  return {
+    ...state,
+    events,
+    running: { type: 'task', taskId, start: session.start, label: null, preTaskId: null, resumeStack: [] },
+  };
 }
 
 function createPauseRunning(type, now, resumeStack, context = {}) {
@@ -218,60 +222,6 @@ function findNearestTaskContext(resumeStack) {
   return context ? { type: 'task', taskId: context.taskId } : null;
 }
 
-function normalizeInterruptDraft(data = {}) {
-  return {
-    who: cleanText(data.who),
-    saveWhoChip: Boolean(data.saveWhoChip),
-    label: cleanText(data.label),
-    urgency: ['low', 'med', 'high'].includes(data.urgency) ? data.urgency : 'med',
-    categoryId: cleanText(data.categoryId) || null,
-    memo: cleanText(data.memo),
-  };
-}
-
-function appendInterruptEvent(state, event, saveWhoChip) {
-  return {
-    ...state,
-    events: [...state.events, event],
-    whoChips: saveWhoChip && event.who && !state.whoChips.includes(event.who)
-      ? [...state.whoChips, event.who]
-      : state.whoChips,
-  };
-}
-
-function buildBreakEvent(running, data, now, fallbackLabel = '休憩', { createId = newId } = {}) {
-  const runningLabel = cleanText(running.label);
-  return {
-    id: createId('ev', now),
-    type: 'break',
-    label: cleanText(data.label) || (running.categoryId && runningLabel ? runningLabel : fallbackLabel),
-    categoryId: cleanText(data.categoryId) || running.categoryId || null,
-    memo: cleanText(data.memo),
-    breakType: data.breakType ?? null,
-    breakDurationMinutes: Math.max(0, asNumber(data.breakDurationMinutes ?? running.plannedBreakDurationMinutes, 0) ?? 0),
-    start: running.start ?? now,
-    end: now,
-  };
-}
-
-function buildInterruptEvent(data = {}, start, end, fallbackLabel = null, { createId = newId } = {}) {
-  return {
-    id: createId('ev', end),
-    type: 'interrupt',
-    label: cleanText(data.label) || (data.who ? `${data.who}から` : fallbackLabel || '割り込み作業'),
-    who: cleanText(data.who),
-    urgency: data.urgency || 'med',
-    categoryId: data.categoryId || null,
-    memo: data.memo || '',
-    start,
-    end,
-  };
-}
-
-function interruptLabel(data = {}, categoryName = null) {
-  return cleanText(data.label) || (data.who ? `${data.who}から` : cleanText(categoryName) || '割り込み作業中');
-}
-
 function findPauseCategory(state, categoryId) {
   if (!categoryId) return null;
   return state.interruptCats.find((category) => category.id === categoryId) ?? null;
@@ -298,4 +248,41 @@ function pauseContextFromCategory(category, type) {
     label: category.name,
     draft: { categoryId: category.id },
   };
+}
+
+// How far back the running pause may start: up to the start of the record it
+// cut short (the task or previous pause segment ending exactly where it began),
+// or else up to the end of the latest earlier record.
+export function getPauseStartFloor(state) {
+  const running = state.running;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return null;
+  const adjacent = findAdjacentBeforePause(state);
+  if (adjacent) return adjacent.start;
+  return state.events
+    .filter((event) => event.end != null && event.end <= running.start)
+    .reduce((latest, event) => Math.max(latest, event.end), Number.NEGATIVE_INFINITY);
+}
+
+// "I pressed it late": move the pause start back by `minutes`, taking that
+// time away from the record it interrupted.
+export function shiftPauseStartInState(state, minutes) {
+  const running = state.running;
+  const floor = getPauseStartFloor(state);
+  const deltaMs = Math.max(0, asNumber(minutes, 0) ?? 0) * 60000;
+  if (floor == null || deltaMs === 0) return state;
+  const nextStart = Math.max(running.start - deltaMs, floor);
+  if (nextStart === running.start) return state;
+
+  const adjacent = findAdjacentBeforePause(state);
+  const events = adjacent
+    ? nextStart <= adjacent.start
+      ? state.events.filter((event) => event !== adjacent)
+      : state.events.map((event) => event === adjacent ? { ...event, end: nextStart } : event)
+    : state.events;
+  return { ...state, events, running: { ...running, start: nextStart } };
+}
+
+function findAdjacentBeforePause(state) {
+  const start = state.running?.start;
+  return [...state.events].reverse().find((event) => event.end === start && event.start < start) ?? null;
 }

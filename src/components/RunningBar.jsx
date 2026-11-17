@@ -59,7 +59,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
         </div>
       ) : (
         <div className="rb-actions">
-          <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('resumeOrStop'); }}>{Icons.stop(14)}</button>
+          <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('pause'); }}>{Icons.stop(14)}</button>
         </div>
       )}
     </div>

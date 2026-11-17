@@ -5,4 +5,4 @@ export { default as ConfirmStopSheet } from './ConfirmStopSheet';
 export { default as PauseSheet } from './PauseSheet';
 export { default as RepairOverlapsSheet } from './RepairOverlapsSheet';
 export { default as ResolveEventSheet } from './ResolveEventSheet';
-export { default as ResumeOrStopSheet } from './ResumeOrStopSheet';
+export { default as StopAtSheet } from './StopAtSheet';

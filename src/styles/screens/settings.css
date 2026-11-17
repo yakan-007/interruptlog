@@ -5,7 +5,7 @@
 .il-settings-group {
   background: var(--bg-elevated);
   margin: 0 16px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   box-shadow: var(--sh-card);
   overflow: hidden;
 }
@@ -28,7 +28,7 @@
   min-height: 28px;
   padding: 0 10px;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0;
 }
@@ -50,8 +50,8 @@
 .il-setrow + .il-setrow { border-top: 0.5px solid var(--hair); }
 
 .il-setrow .tg { flex: 1; }
-.il-setrow .t { font-size: 15px; color: var(--ink); }
-.il-setrow .s { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.il-setrow .t { font-size: var(--text-md); color: var(--ink); }
+.il-setrow .s { font-size: var(--text-xs); color: var(--ink-3); margin-top: 2px; }
 
 .il-setrow-badge {
   flex-shrink: 0;
@@ -59,7 +59,7 @@
   padding: 3px 7px;
   background: var(--bg-sunken);
   color: var(--ink-3);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 800;
   letter-spacing: 0;
   white-space: nowrap;
@@ -178,11 +178,11 @@
   width: 120px;
   min-width: 0;
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--bg-sunken);
   color: var(--ink);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-sm);
   padding: 8px 10px;
 }
 
@@ -194,11 +194,11 @@
   width: 132px;
   min-width: 0;
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--bg-sunken);
   color: var(--ink);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-sm);
   padding: 8px 10px;
 }
 
@@ -220,7 +220,7 @@
   display: grid;
   gap: 3px;
   color: var(--ink-4);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -229,11 +229,11 @@
   width: 78px;
   min-width: 0;
   border: 1px solid var(--hair);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--bg-sunken);
   color: var(--ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   padding: 7px 6px;
 }
 
@@ -265,7 +265,7 @@
 .il-toggle {
   width: 52px;
   height: 28px;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   background: color-mix(in oklch, var(--ink-5) 78%, var(--bg-sunken));
   position: relative;
   cursor: pointer;
@@ -325,7 +325,7 @@
 
 .il-colorrow button {
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -364,7 +364,7 @@
   padding: 28px 20px 20px;
   text-align: center;
   color: var(--ink-4);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .il-settings-footnote .title {

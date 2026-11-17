@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { t, tx } from '../../i18n';
 import { fmtDurationShort } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
-import { partitionCompletedTasks, selectWorkdayStatus } from '../../state';
+import { partitionCompletedTasks, selectForgottenTimer, selectWorkdayStatus } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import { ActiveTaskList, CompletedTaskSections } from './TaskLists';
 
@@ -18,6 +18,7 @@ export default function LogScreen({ state, actions }) {
     [state.completedTasks, now]
   );
   const workdayStatus = selectWorkdayStatus(state, now);
+  const forgottenTimer = selectForgottenTimer(state, now);
 
   return (
     <div className="il-screen il-fade">
@@ -33,6 +34,12 @@ export default function LogScreen({ state, actions }) {
       </div>
 
       <div className={'il-body il-body-log' + (state.running ? ' has-runbar has-live-dock' : ' has-dock')}>
+        {forgottenTimer && (
+          <div className="il-forgotten-timer" role="status">
+            <span>{tx(locale, 'log.forgottenTimer', fmtDurationShort(forgottenTimer.elapsedMs, locale))}</span>
+            <button type="button" onClick={() => actions.openSheet('stopAt')}>{t(locale, 'log.forgottenTimerAction')}</button>
+          </div>
+        )}
         {workdayStatus?.overflowMs > 0 && (
           <div className="il-workday-overflow">{tx(locale, 'log.workdayOverflow', fmtDurationShort(workdayStatus.overflowMs, locale))}</div>
         )}

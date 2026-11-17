@@ -8,10 +8,10 @@ import {
   AddMissedSheet,
   AddTaskSheet,
   ConfirmStopSheet,
+  StopAtSheet,
   PauseSheet,
   RepairOverlapsSheet,
   ResolveEventSheet,
-  ResumeOrStopSheet,
   WorkdayEndSheet,
 } from './components/sheets';
 import RunningBar from './components/RunningBar';
@@ -140,8 +140,8 @@ export default function App() {
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
             {activeSheet === 'pause' && <PauseSheet key={`${state.running?.start ?? 'pause'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={activeSheetArg ?? state.running?.draft} />}
-            {activeSheet === 'resumeOrStop' && <ResumeOrStopSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
+            {activeSheet === 'stopAt' && <StopAtSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addTask' && (
               <AddTaskSheet
                 state={state}

@@ -46,7 +46,7 @@ describe('personal report cards', () => {
   it('keeps short duration and delta units aligned in stat cards', () => {
     const { container } = render(
       <StatCard
-        label="割り込み作業時間"
+        label="割り込み時間"
         color="var(--interrupt)"
         value={30_000}
         previousValue={0}
@@ -70,7 +70,7 @@ describe('personal report cards', () => {
     );
 
     expect(screen.getByText('この期間に時間の内訳はまだありません')).toBeTruthy();
-    expect(screen.getByText('まだ傾向を出せるほど割り込み作業の記録がありません')).toBeTruthy();
+    expect(screen.getByText('まだ傾向を出せるほど割り込みの記録がありません')).toBeTruthy();
     expect(screen.getByText('まだ曜日別の傾向を出せるほど記録がありません')).toBeTruthy();
     expect(container.querySelector('.il-vchart')).toBeNull();
     expect(container.querySelector('.il-hbar')).toBeNull();
@@ -132,9 +132,9 @@ describe('personal report cards', () => {
 
     expect(screen.getByText('時間の内訳')).toBeTruthy();
     expect(screen.getByText('基本の作業時間')).toBeTruthy();
-    expect(screen.getByText('時間帯別の割り込み作業')).toBeTruthy();
+    expect(screen.getByText('時間帯別の割り込み')).toBeTruthy();
     expect(screen.getByText('短時間割り込み')).toBeTruthy();
-    expect(screen.getByText('緊急度別の割り込み作業')).toBeTruthy();
+    expect(screen.getByText('緊急度別の割り込み')).toBeTruthy();
     expect(screen.getByText('主な発信者')).toBeTruthy();
     expect(screen.getByText('完了タスク')).toBeTruthy();
   });

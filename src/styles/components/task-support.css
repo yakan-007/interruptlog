@@ -16,7 +16,7 @@
 }
 
 .il-archivehead .label {
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-2);
 }
@@ -26,7 +26,7 @@
   align-items: center;
   gap: 8px;
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .il-archivehead .count {
@@ -72,13 +72,13 @@
   border: none;
   color: var(--ink-3);
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 1.1;
 }
 
-.il-tab.active { color: color-mix(in oklch, var(--accent) 70%, var(--ink) 30%); }
+.il-tab.active { color: var(--ink); }
 
 .il-tabicon {
   width: 24px;

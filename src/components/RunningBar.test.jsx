@@ -23,7 +23,7 @@ describe('shared running timer bar', () => {
 
     const bar = screen.getByRole('button', { name: 'タスクを編集' });
     fireEvent.keyDown(bar, { key: 'Enter' });
-    await user.click(screen.getByRole('button', { name: '中断を記録' }));
+    await user.click(screen.getByRole('button', { name: '割り込みを記録' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
 
     expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'editTask', expect.objectContaining({ id: 'task-1' }));
@@ -36,15 +36,15 @@ describe('shared running timer bar', () => {
     const actions = { openSheet: vi.fn() };
     const { rerender } = render(<RunningBar state={stateForRunning({ type: 'interrupt', start: Date.now() - 2000 })} actions={actions} />);
 
-    await user.click(screen.getByRole('button', { name: '中断を記録' }));
+    await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
     rerender(<RunningBar state={stateForRunning({ type: 'break', start: Date.now() - 180000, plannedBreakDurationMinutes: 1 })} actions={actions} compact raised />);
-    await user.click(screen.getByRole('button', { name: '中断を記録' }));
+    await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
 
     expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'pause');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'resumeOrStop');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'pause');
     expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'pause');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'resumeOrStop');
+    expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'pause');
   });
 });

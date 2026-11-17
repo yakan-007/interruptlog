@@ -1,7 +1,7 @@
 const messages = {
 common: {
         task: 'タスク',
-        interrupt: '割り込み作業',
+        interrupt: '割り込み',
         break: '休憩',
         record: '記録',
         low: '低',

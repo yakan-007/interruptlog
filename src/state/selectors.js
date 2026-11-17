@@ -106,6 +106,25 @@ export function selectWorkdayStatus(state, now = Date.now()) {
   };
 }
 
+const FORGOTTEN_AFTER_WORKDAY_MS = 30 * 60000;
+const FORGOTTEN_LONG_RUN_MS = 4 * 3600000;
+
+// A timer that has probably been left running. Inside a work schedule, long
+// focused stretches are normal, so only running well past that day's work end
+// counts; outside one, running for hours does. `suggestedEnd` is the work end
+// when that is the likely stop time.
+export function selectForgottenTimer(state, now = Date.now()) {
+  const running = state.running;
+  if (!running?.start) return null;
+  const elapsedMs = now - running.start;
+  const bounds = getWorkdayBounds(state, running.start);
+  if (bounds && running.start < bounds.end) {
+    return now >= bounds.end + FORGOTTEN_AFTER_WORKDAY_MS ? { elapsedMs, suggestedEnd: bounds.end } : null;
+  }
+  if (elapsedMs >= FORGOTTEN_LONG_RUN_MS) return { elapsedMs, suggestedEnd: null };
+  return null;
+}
+
 export function selectHistoryDaySummary(items) {
   return {
     count: items.length,

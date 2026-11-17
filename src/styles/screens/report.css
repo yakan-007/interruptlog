@@ -28,7 +28,7 @@
   align-items: center;
   gap: 8px;
   border: 0.5px solid var(--hair);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: var(--bg-elevated);
   box-shadow: var(--sh-soft);
   padding: 0 12px;
@@ -62,7 +62,7 @@
 
 .il-card {
   background: var(--bg-elevated);
-  border-radius: 14px;
+  border-radius: var(--r-md);
   box-shadow: var(--sh-card);
   margin: 8px 16px;
   padding: 14px 16px;
@@ -70,7 +70,7 @@
 
 .il-card h3 {
   margin: 0 0 10px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-3);
   letter-spacing: 0.09em;
@@ -87,13 +87,13 @@
 
 .il-card-copy {
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.5;
 }
 
 .il-report-exportcopy {
   margin-top: 10px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.6;
   color: var(--ink-3);
 }

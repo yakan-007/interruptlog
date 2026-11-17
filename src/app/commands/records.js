@@ -17,7 +17,7 @@ import {
   selectPauseCategoryInState,
   saveTaskRecordInState,
   setBreakTargetInState,
-  stopPauseInState,
+  shiftPauseStartInState,
   updateInterruptDraftInState,
 } from '../../state';
 
@@ -40,9 +40,9 @@ export function createRecordCommands({
     beginBreak: () => mutate((state) => beginPauseInState(state, 'break', now(), {}, dependencies)),
     selectPauseCategory: mutateWith(selectPauseCategoryInState),
     setBreakTarget: mutateWith(setBreakTargetInState),
+    shiftPauseStart: mutateWith(shiftPauseStartInState),
     saveInterrupt: (data) => mutate((state) => saveInterruptInState(state, data, now(), dependencies)),
     cancelInterrupt: () => mutate((state) => cancelPauseInState(state, now(), dependencies)),
-    stopInterrupt: (resume) => mutate((state) => stopPauseInState(state, resume, now(), dependencies)),
     updateInterruptDraft: mutateWith(updateInterruptDraftInState),
     saveBreak: (data) => mutate((state) => saveBreakInState(state, data, now(), dependencies)),
     createInterruptFollowupTask(interruptData, taskData) {

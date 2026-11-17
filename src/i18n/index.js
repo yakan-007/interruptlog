@@ -8,7 +8,6 @@ const ERROR_MESSAGE_PATHS = {
   [ERROR_CODES.INTERRUPT_NOT_ACTIVE]: 'errors.interruptNotActive',
   [ERROR_CODES.INVALID_BACKUP]: 'errors.invalidBackup',
   [ERROR_CODES.INVALID_EVENT_WINDOW]: 'errors.invalidEventWindow',
-  [ERROR_CODES.PAUSE_ACTIVE]: 'errors.pauseActive',
   [ERROR_CODES.RUNNING_OVERLAP]: 'errors.runningOverlap',
   [ERROR_CODES.SAME_DAY_REQUIRED]: 'errors.sameDayRequired',
   [ERROR_CODES.TASK_CREATE_FAILED]: 'errors.taskCreateFailed',

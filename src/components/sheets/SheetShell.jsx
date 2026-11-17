@@ -12,9 +12,11 @@ export default function SheetShell({ title, onClose, children, footer, locale = 
     if (sheet && !sheet.contains(document.activeElement)) {
       const autoFocusTarget = sheet.querySelector('[autofocus]');
       const firstFocusable = sheet.querySelector(FOCUSABLE_SELECTOR);
-      (autoFocusTarget ?? firstFocusable ?? sheet).focus();
+      // The sheet starts off-screen (slide-in animation). A plain focus() would
+      // scroll the clipped app container to reveal it, jerking the whole screen up.
+      (autoFocusTarget ?? firstFocusable ?? sheet).focus({ preventScroll: true });
     }
-    return () => previousFocus?.focus?.();
+    return () => previousFocus?.focus?.({ preventScroll: true });
   }, [previousFocus]);
 
   const handleKeyDown = (event) => {

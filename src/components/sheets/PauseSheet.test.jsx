@@ -28,7 +28,7 @@ describe('pause sheet', () => {
     render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} initialDraft={{ categoryId: 'int-call' }} />);
 
     await user.type(screen.getByPlaceholderText('または自由記入'), '追加の確認');
-    await user.click(screen.getByRole('button', { name: '別の予定外対応' }));
+    await user.click(screen.getByRole('button', { name: '別の割り込み' }));
 
     expect(actions.beginNextPause).toHaveBeenCalledWith('int-call', expect.objectContaining({
       categoryId: 'int-call',

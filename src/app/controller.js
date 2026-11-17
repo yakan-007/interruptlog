@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { formatDate, t, translateError } from '../i18n';
-import { ERROR_CODES } from '../domain/errors';
 import { systemClock } from '../platform/clock';
 
 export function buildViewState(app, clock = systemClock) {
@@ -36,10 +35,6 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       return result;
     },
     createTaskAndStart(data) {
-      if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
-        toast(translateError(locale, ERROR_CODES.PAUSE_ACTIVE));
-        return { ok: false, errorCode: ERROR_CODES.PAUSE_ACTIVE };
-      }
       const result = app.actions.createTaskAndStart(data);
       if (!result.ok && result.errorCode) toast(translateError(locale, result.errorCode));
       return result;
@@ -114,6 +109,7 @@ function createPassthroughActions({ app, closeSheet }) {
       'moveTaskToIndex',
       'selectPauseCategory',
       'setBreakTarget',
+      'shiftPauseStart',
       'saveCategory',
       'deleteCategory',
       'moveCategoryToIndex',
@@ -144,6 +140,11 @@ function createPassthroughActions({ app, closeSheet }) {
       app.actions.startTask(id);
       return { ok: true, errorCode: null };
     },
+    endRunningAt(at) {
+      const result = app.actions.endRunningAt(at);
+      if (result.ok) closeSheet();
+      return result;
+    },
     createInterruptFollowupTask(interruptData, taskData) {
       const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
       if (result.ok) closeSheet();
@@ -161,11 +162,6 @@ function createPassthroughActions({ app, closeSheet }) {
     },
     cancelInterrupt() {
       const result = app.actions.cancelInterrupt();
-      closeSheet();
-      return result;
-    },
-    stopInterrupt(resume) {
-      const result = app.actions.stopInterrupt(resume);
       closeSheet();
       return result;
     },

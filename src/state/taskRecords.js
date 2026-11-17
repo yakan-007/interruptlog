@@ -6,7 +6,8 @@ import {
   validateSameDayWindow,
 } from './eventValidation';
 import { newId } from './ids';
-import { buildManualResolutionPreview, eventsOverlap } from './resolution';
+import { eventsOverlap } from './resolution';
+import { buildResolutionPreviewInState } from './runningResolution';
 import { TYPE_LABELS } from './schema';
 import { createTaskInState } from './tasks';
 import { asNumber, cleanText } from './utils';
@@ -27,7 +28,7 @@ export function previewTaskRecordInState(state, record, now = Date.now(), option
     ?? validateRunningOverlap(state, candidate, now);
   if (errorCode) return { preview: null, errorCode };
 
-  const preview = buildManualResolutionPreview(state.events, candidate, {
+  const preview = buildResolutionPreviewInState(state, candidate, {
     replaceEvent: previous,
     now,
   });
@@ -43,7 +44,7 @@ export function saveTaskRecordInState(state, record, now = Date.now(), options =
 
   const prepared = prepareTaskRecordCandidate(materialized.state, materialized.record, now, options);
   if (prepared.errorCode) return { state, taskId: null, errorCode: prepared.errorCode };
-  const preview = buildManualResolutionPreview(materialized.state.events, prepared.candidate, {
+  const preview = buildResolutionPreviewInState(materialized.state, prepared.candidate, {
     replaceEvent: prepared.previous,
     now,
   });

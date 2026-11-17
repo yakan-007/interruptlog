@@ -248,15 +248,18 @@ describe('personal tasks', () => {
     expect(result.state.running?.taskId).toBe(result.taskId);
   });
 
-  it('blocks create-and-start while an interrupt or break is active', () => {
+  it('ends the running pause and starts the new task on create-and-start', () => {
     const state = {
       ...createEmptyState(),
-      running: { type: 'interrupt', taskId: null, start: 4000, label: '割り込み中', preTaskId: 't1' },
+      running: { type: 'interrupt', taskId: null, start: 4000, label: '割り込み中', preTaskId: null, draft: { label: '電話の件' } },
     };
-    const result = createTaskAndStartInState(state, { name: 'あとで切り替えたい', categoryId: 'cat-dev', plannedDurationMinutes: 10 }, 5000);
+    const result = createTaskAndStartInState(state, { name: 'すぐ切り替える', categoryId: 'cat-dev', plannedDurationMinutes: 10 }, 5000);
 
-    expect(result.errorCode).toBe(ERROR_CODES.PAUSE_ACTIVE);
-    expect(result.state).toBe(state);
-    expect(result.state.tasks).toHaveLength(0);
+    expect(result.errorCode).toBe(null);
+    expect(result.state.events.map((event) => [event.type, event.label, event.start, event.end])).toEqual([
+      ['interrupt', '電話の件', 4000, 5000],
+      ['task', 'すぐ切り替える', 5000, null],
+    ]);
+    expect(result.state.running).toMatchObject({ type: 'task', taskId: result.taskId });
   });
 });

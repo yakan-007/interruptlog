@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { createEmptyState } from '../../state';
 import RepairOverlapsSheet from './RepairOverlapsSheet';
 import ResolveEventSheet from './ResolveEventSheet';
-import ResumeOrStopSheet from './ResumeOrStopSheet';
 import WorkdayEndSheet from './WorkdayEndSheet';
 
 afterEach(() => cleanup());
@@ -58,20 +57,6 @@ describe('personal workflow sheets', () => {
     expect(screen.getByText('上書きで削除')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '記録を追加' }));
     expect(onConfirm).toHaveBeenCalledWith(resolution);
-  });
-
-  it('offers resume only when a paused personal task remains', async () => {
-    const user = userEvent.setup();
-    const actions = { stopInterrupt: vi.fn() };
-    const state = taskState();
-    state.running = { type: 'interrupt', taskId: null, preTaskId: 'task-1', start, label: null };
-    render(<ResumeOrStopSheet state={state} actions={actions} onClose={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: /再開 → 元のタスク/ })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: '終了だけ' }));
-    await user.click(screen.getByRole('button', { name: /再開 → 元のタスク/ }));
-    expect(actions.stopInterrupt).toHaveBeenNthCalledWith(1, false);
-    expect(actions.stopInterrupt).toHaveBeenNthCalledWith(2, true);
   });
 
   it('sets a first work schedule, validates it, and resets a daily override', async () => {

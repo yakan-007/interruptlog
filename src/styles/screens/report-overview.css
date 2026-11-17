@@ -10,21 +10,21 @@
 }
 
 .il-stat {
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .il-stat .unit {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 500;
   color: var(--ink-3);
   margin-left: 2px;
 }
 
 .il-delta {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
@@ -52,7 +52,7 @@
 }
 
 .il-statcard-head .label {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--ink-3);
   letter-spacing: 0.08em;
@@ -63,7 +63,7 @@
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -76,7 +76,7 @@
   grid-template-columns: minmax(92px, 1fr) auto auto;
   align-items: baseline;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--ink-3);
 }
 
@@ -86,7 +86,7 @@
 .il-workday-line.emphatic {
   margin: 0 -4px;
   padding: 8px 4px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: color-mix(in oklch, var(--interrupt) 8%, var(--bg-elevated));
 }
 
@@ -100,24 +100,24 @@
   border-top: 0.5px solid var(--hair);
   padding-top: 10px;
   color: var(--interrupt);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .il-workday-reactive .meta {
   grid-column: 1 / -1;
   color: var(--ink-3);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 500;
 }
 
 .il-report-emptytrend {
   margin-top: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   background: var(--bg-sunken);
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.5;
 }
 

@@ -29,11 +29,13 @@ export {
   beginPauseWithCategoryInState,
   cancelPauseInState,
   createInterruptFollowupTaskInState,
+  getPauseStartFloor,
+  getResumeTaskId,
   saveBreakInState,
   saveInterruptInState,
   selectPauseCategoryInState,
   setBreakTargetInState,
-  stopPauseInState,
+  shiftPauseStartInState,
   updateInterruptDraftInState,
 } from './interruptsBreaks';
 
@@ -93,6 +95,7 @@ export {
   selectReportInputs,
   selectRunningTaskMeta,
   selectTaskPriorSpentMs,
+  selectForgottenTimer,
   selectWorkdayStatus,
 } from './selectors';
 
@@ -101,6 +104,7 @@ export {
   createTaskAndStartInState,
   createTaskInState,
   deleteTaskInState,
+  endRunningAtInState,
   moveTaskToIndexInState,
   reorderTaskInState,
   restoreTaskAndStartInState,

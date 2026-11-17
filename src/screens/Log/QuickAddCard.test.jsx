@@ -23,15 +23,16 @@ describe('quick task entry', () => {
     };
     render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
 
-    await user.click(screen.getByRole('button', { name: 'ドキュメント' }));
+    expect(screen.queryByRole('button', { name: 'ドキュメント' })).toBeNull();
     await user.type(screen.getByRole('textbox', { name: 'タスク名' }), '手順を書く');
+    await user.click(screen.getByRole('button', { name: 'ドキュメント' }));
     await user.click(screen.getByRole('button', { name: 'タスクを追加' }));
 
     expect(actions.createTask).toHaveBeenCalledWith(expect.objectContaining({ name: '手順を書く', categoryId: 'cat-doc' }));
     expect(screen.getByRole('textbox', { name: 'タスク名' }).value).toBe('');
   });
 
-  it('keeps an error visible, respects pauses, and opens the detailed entry sheet', async () => {
+  it('keeps an error visible, allows starting during a pause, and opens the detailed entry sheet', async () => {
     const user = userEvent.setup();
     const actions = {
       createTask: vi.fn(() => ({ ok: false, errorCode: ERROR_CODES.CHECK_INPUT })),
@@ -41,7 +42,7 @@ describe('quick task entry', () => {
     render(<QuickAddCard state={stateForQuickAdd({ running: { type: 'interrupt' } })} actions={actions} />);
 
     await user.type(screen.getByRole('textbox', { name: 'タスク名' }), '失敗する入力');
-    expect(screen.getByRole('button', { name: '追加して開始' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: '追加して開始' }).disabled).toBe(false);
     await user.click(screen.getByRole('button', { name: 'タスクを追加' }));
     expect(screen.getByText('入力を確認してください')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '詳細を開く' }));
@@ -52,6 +53,7 @@ describe('quick task entry', () => {
   it('handles a wheel gesture only when the category row can scroll', () => {
     const actions = { createTask: vi.fn(), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
     const { container } = render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
+    fireEvent.focus(screen.getByRole('textbox', { name: 'タスク名' }));
     const row = container.querySelector('.il-quickdock-cats');
     Object.defineProperties(row, {
       scrollWidth: { configurable: true, value: 400 },
@@ -67,8 +69,19 @@ describe('quick task entry', () => {
     const actions = { createTask: vi.fn(), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
     render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
 
-    await user.click(screen.getByRole('button', { name: '中断を記録' }));
+    await user.click(screen.getByRole('button', { name: '割り込みを記録' }));
 
     expect(actions.openSheet).toHaveBeenCalledWith('newPause');
+  });
+
+  it('adds with Enter and leaves pausing to the running bar while something runs', async () => {
+    const user = userEvent.setup();
+    const actions = { createTask: vi.fn(() => ({ ok: true })), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
+    render(<QuickAddCard state={stateForQuickAdd({ running: { type: 'task' } })} actions={actions} />);
+
+    expect(screen.queryByRole('button', { name: '割り込みを記録' })).toBeNull();
+    await user.type(screen.getByRole('textbox', { name: 'タスク名' }), 'Enterで追加{Enter}');
+
+    expect(actions.createTask).toHaveBeenCalledWith(expect.objectContaining({ name: 'Enterで追加' }));
   });
 });

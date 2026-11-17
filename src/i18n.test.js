@@ -74,7 +74,7 @@ describe('i18n', () => {
   it('translates stable domain error codes without coupling state to UI text', () => {
     expect(translateError('ja-JP', ERROR_CODES.TASK_NAME_REQUIRED)).toBe('タスク名を入力してください');
     expect(translateError('en-US', ERROR_CODES.END_NOT_AFTER_START)).toBe('End must be after start');
-    expect(translateError('en-US', ERROR_CODES.RUNNING_OVERLAP)).toBe('Stop the current session before editing this time range');
+    expect(translateError('en-US', ERROR_CODES.RUNNING_OVERLAP)).toBe("You can't edit a running interruption or break, or time in the future");
     expect(translateError('en-US', 'UNKNOWN')).toBe('Check your input');
   });
 });

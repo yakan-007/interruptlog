@@ -4,74 +4,109 @@
   right: 12px;
   bottom: calc(max(10px, env(safe-area-inset-bottom)) + var(--content-keyboard-inset, 0px));
   z-index: 24;
-  padding: 12px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in oklch, var(--task-cat, var(--accent)) 18%, var(--hair));
-  background: color-mix(in oklch, var(--task-cat, var(--accent)) 4%, var(--bg-elevated));
-  box-shadow: 0 14px 32px rgba(23, 21, 18, 0.08);
+  padding: 10px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--hair);
+  background: var(--bg-elevated);
+  box-shadow: var(--sh-pop);
 }
 
 .il-quickdock-error {
   margin-bottom: 8px;
   padding: 0 2px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.5;
   color: var(--urg-high);
 }
 
 .il-quickdock-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(4, 44px);
+  display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.il-quickdock-input {
+.il-quickdock-field {
+  position: relative;
+  flex: 1;
   min-width: 0;
-  height: 44px;
 }
 
-.il-quickdock-icon {
-  width: 44px;
+.il-quickdock-input {
   height: 44px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in oklch, var(--hair) 84%, transparent);
-  background: color-mix(in oklch, var(--bg-sunken) 86%, var(--bg-elevated) 14%);
-  color: var(--ink-3);
+  padding-right: 44px;
+  background: var(--bg-sunken);
+  border-color: transparent;
+  border-radius: var(--r-md);
+}
+
+.il-quickdock-input:focus {
+  background: var(--bg-elevated);
+}
+
+.il-quickdock-detail {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-4);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
+  transition: background .15s, color .15s;
 }
 
-.il-quickdock-icon:active { transform: scale(0.98); }
+.il-quickdock-detail:hover { color: var(--ink-2); }
 
-.il-quickdock-icon.detail.active {
-  background: color-mix(in oklch, var(--task-cat, var(--accent)) 12%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--task-cat, var(--accent)) 26%, var(--hair));
+.il-quickdock-detail.active {
+  background: color-mix(in oklch, var(--task-cat, var(--accent)) 14%, var(--bg-elevated));
   color: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
 }
 
+.il-quickdock-icon,
+.il-quickdock-pause {
+  flex-shrink: 0;
+  height: 44px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair-strong);
+  background: var(--bg-elevated);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .1s;
+}
+
+.il-quickdock-icon { width: 44px; }
+
+.il-quickdock-icon:active,
+.il-quickdock-pause:active { transform: scale(0.98); }
+
 .il-quickdock-icon.start {
-  background: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
+  background: var(--ink);
   border-color: transparent;
   color: var(--bg-elevated);
-  box-shadow: 0 8px 18px color-mix(in oklch, var(--task-cat, var(--accent)) 14%, transparent);
 }
 
-.il-quickdock-icon.add {
-  color: var(--ink-2);
-}
-
-.il-quickdock-icon.interrupt {
+.il-quickdock-pause {
+  gap: 6px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-color: color-mix(in oklch, var(--interrupt) 30%, var(--hair));
+  background: color-mix(in oklch, var(--interrupt) 8%, var(--bg-elevated));
   color: var(--interrupt);
 }
 
 .il-quickdock-icon:disabled {
   opacity: 0.42;
   cursor: default;
-  box-shadow: none;
   transform: none;
 }
 
@@ -97,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
@@ -130,7 +165,7 @@
 }
 
 .il-todaystrip-head .label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -138,7 +173,7 @@
 }
 
 .il-todaystrip-head .value {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--ink-2);
   font-weight: 600;
 }
@@ -148,7 +183,7 @@
   gap: 14px;
   margin-top: 8px;
   padding: 0 4px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   flex-wrap: wrap;
 }

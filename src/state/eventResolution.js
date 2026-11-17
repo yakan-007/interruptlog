@@ -9,5 +9,6 @@ export function applyResolutionPreviewInState(state, preview) {
   return {
     ...state,
     events: sortEventsByWindow(preview.nextEvents),
+    ...(preview.nextRunning ? { running: preview.nextRunning } : {}),
   };
 }

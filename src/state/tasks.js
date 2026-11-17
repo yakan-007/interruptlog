@@ -2,6 +2,7 @@ import { newId } from './ids';
 import { asNumber, asPositiveTimestamp, cleanText } from './utils';
 import { ensureWorkdayScheduleInState } from './workday';
 import { ERROR_CODES } from '../domain/errors';
+import { closeRunningPauseSegmentInState } from './pauseEvents';
 
 function validateTaskInput(data) {
   if (!cleanText(data.name)) return ERROR_CODES.TASK_NAME_REQUIRED;
@@ -59,9 +60,6 @@ export function createTaskInState(state, data, now = Date.now(), { createId = ne
 }
 
 export function createTaskAndStartInState(state, data, now = Date.now(), dependencies = {}) {
-  if (state.running?.type === 'interrupt' || state.running?.type === 'break') {
-    return { state, taskId: null, errorCode: ERROR_CODES.PAUSE_ACTIVE };
-  }
   const created = createTaskInState(state, data, now, dependencies);
   if (created.errorCode || !created.taskId) return created;
   return {
@@ -115,7 +113,7 @@ export function startTaskInState(state, taskId, now = Date.now(), options = {}) 
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const task = snapshotted.tasks.find((item) => item.id === taskId);
   if (!task) return state;
-  const pauseClosed = closePauseSessionInState(snapshotted, now, createId);
+  const pauseClosed = closePauseInState(snapshotted, now, createId);
   const closed = closeTaskSessionInState(pauseClosed, now, { createId });
   const event = {
     id: createId('ev', now),
@@ -143,26 +141,24 @@ export function startTaskInState(state, taskId, now = Date.now(), options = {}) 
   };
 }
 
+// Ends the running pause and records it with whatever the pause sheet holds so
+// far, exactly like "save and end" would. Used when a task starts during a pause
+// and when a forgotten pause is stopped at a chosen time.
+function closePauseInState(state, now, createId = newId) {
+  const running = state.running;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
+  const category = state.interruptCats?.find((item) => item.id === running.categoryId);
+  const draft = running.draft ?? {};
+  const untitled = running.type === 'interrupt' ? !draft.label && !draft.who : !running.categoryId;
+  const fallbackLabel = running.type === 'interrupt' ? '未記録の割り込み' : '未記録の休憩';
+  const data = untitled ? { label: category?.name || fallbackLabel } : {};
+  return { ...closeRunningPauseSegmentInState(state, now, data, { createId }), running: null };
+}
+
 function findNearestTaskId(resumeStack) {
   return [...resumeStack].reverse().find((context) => context.type === 'task')?.taskId ?? null;
 }
 
-function closePauseSessionInState(state, now = Date.now(), createId = newId) {
-  const running = state.running;
-  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
-  return {
-    ...state,
-    events: [...state.events, {
-      id: createId('ev', now),
-      type: running.type,
-      label: running.type === 'break' ? '未記録の休憩' : '未記録の割り込み',
-      ...(running.type === 'break' ? { breakDurationMinutes: Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0) } : {}),
-      start: running.start,
-      end: now,
-    }],
-    running: null,
-  };
-}
 
 export function closeTaskSessionInState(state, now = Date.now(), { createId = newId } = {}) {
   const running = state.running;
@@ -210,6 +206,17 @@ export function stopTaskInState(state, complete, now = Date.now(), dependencies 
   };
 }
 
+// Stop whatever is running at a past moment (a forgotten timer). `at` must lie
+// after the running start and not in the future.
+export function endRunningAtInState(state, at, now = Date.now(), { createId = newId } = {}) {
+  const running = state.running;
+  if (!running) return { state, errorCode: null };
+  if (!Number.isFinite(at) || at > now) return { state, errorCode: ERROR_CODES.INVALID_EVENT_WINDOW };
+  if (at <= running.start) return { state, errorCode: ERROR_CODES.END_NOT_AFTER_START };
+  if (running.type === 'task') return { state: stopTaskInState(state, false, at, { createId }), errorCode: null };
+  return { state: closePauseInState(state, at, createId), errorCode: null };
+}
+
 export function completeTaskInState(state, taskId, now = Date.now(), dependencies = {}) {
   const shouldStop = state.running?.type === 'task' && state.running.taskId === taskId;
   const base = shouldStop ? closeTaskSessionInState(state, now, dependencies) : state;
@@ -228,9 +235,6 @@ export function restoreTaskInState(state, taskId) {
 }
 
 export function restoreTaskAndStartInState(state, taskId, now = Date.now(), dependencies = {}) {
-  if (state.running?.type === 'interrupt' || state.running?.type === 'break') {
-    return { state, taskId: null, errorCode: ERROR_CODES.PAUSE_ACTIVE };
-  }
   const restored = restoreTaskInState(state, taskId);
   return {
     state: startTaskInState(restored, taskId, now, dependencies),

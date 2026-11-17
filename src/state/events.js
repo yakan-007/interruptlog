@@ -2,7 +2,7 @@ import { ERROR_CODES } from '../domain/errors';
 import { applyResolutionPreviewInState } from './eventResolution';
 import { validateEventWindow, validateRunningOverlap } from './eventValidation';
 import { newId } from './ids';
-import { buildManualResolutionPreview } from './resolution';
+import { buildResolutionPreviewInState } from './runningResolution';
 import { TYPE_LABELS } from './schema';
 import { asNumber, cleanText } from './utils';
 import { ensureWorkdayScheduleInState } from './workday';
@@ -52,7 +52,7 @@ export function previewSaveEventInState(state, updated, now = Date.now()) {
   if (errorCode) return { preview: null, errorCode };
 
   return {
-    preview: buildManualResolutionPreview(state.events, draft, {
+    preview: buildResolutionPreviewInState(state, draft, {
       replaceEvent: previous,
       now,
     }),
@@ -74,7 +74,7 @@ export function previewAddMissedEventInState(state, event, options = {}, now = D
   if (errorCode) return { preview: null, errorCode };
 
   return {
-    preview: buildManualResolutionPreview(state.events, draft, {
+    preview: buildResolutionPreviewInState(state, draft, {
       createGap: Boolean(options.createGap),
       now,
     }),

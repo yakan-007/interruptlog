@@ -4,6 +4,7 @@ import {
   applyResolutionPreviewInState,
   beginNextPauseWithCategoryInState,
   beginPauseInState,
+  completeTaskInState,
   createEmptyState,
   createTaskAndStartInState,
   createTaskInState,
@@ -22,6 +23,7 @@ import {
   setBreakTargetInState,
   startTaskInState,
   stopTaskInState,
+  updateInterruptDraftInState,
 } from './index';
 import { at } from '../test/factories';
 import { ERROR_CODES } from '../domain/errors';
@@ -406,10 +408,41 @@ describe('personal records and resolution', () => {
     const state = beginPauseInState(created.state, 'interrupt', 1000);
     const result = cancelPauseInState(state, 7000);
 
-    expect(result.events).toHaveLength(2);
-    expect(result.events[0]).toMatchObject({ type: 'task', start: 500, end: 1000 });
-    expect(result.events[1]).toMatchObject({ type: 'task', start: 7000, end: null });
-    expect(result.running).toMatchObject({ type: 'task', taskId: created.taskId, start: 7000 });
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({ type: 'task', start: 500, end: null });
+    expect(result.running).toMatchObject({ type: 'task', taskId: created.taskId, start: 500 });
+  });
+
+  it('gives a cancelled pause back to the task even after chained pauses', () => {
+    const created = createTaskAndStartInState(createEmptyState(), { name: '再開する作業', categoryId: 'cat-dev' }, 500);
+    let state = beginPauseInState(created.state, 'interrupt', 1000);
+    state = beginNextPauseWithCategoryInState(state, null, { label: '最初の件' }, 3000);
+    const result = cancelPauseInState(state, 7000);
+
+    expect(result.events.map((event) => [event.type, event.start, event.end])).toEqual([
+      ['task', 500, 1000],
+      ['interrupt', 1000, 3000],
+      ['task', 3000, null],
+    ]);
+    expect(result.running).toMatchObject({ type: 'task', taskId: created.taskId, start: 3000 });
+  });
+
+  it('drops a cancelled pause that has no task to return to', () => {
+    const state = beginPauseInState(createEmptyState(), 'interrupt', 1000);
+    const result = cancelPauseInState(state, 7000);
+
+    expect(result.events).toHaveLength(0);
+    expect(result.running).toBe(null);
+  });
+
+  it('does not resume a task that was completed during the pause', () => {
+    const created = createTaskAndStartInState(createEmptyState(), { name: '途中で終わった', categoryId: 'cat-dev' }, 500);
+    let state = beginPauseInState(created.state, 'interrupt', 1000);
+    state = completeTaskInState(state, created.taskId, 2000);
+    state = saveInterruptInState(state, { label: '確認', resume: true }, 3000);
+
+    expect(state.running).toBe(null);
+    expect(state.events.filter((event) => event.type === 'task')).toHaveLength(1);
   });
 
   it('supports the primary timer smoke flow', () => {
@@ -553,5 +586,14 @@ describe('personal records and resolution', () => {
       end: null,
     });
     expect(state.running).toMatchObject({ type: 'task', taskId: second.taskId });
+  });
+
+  it('keeps what was typed for the pause when a task card starts', () => {
+    const first = createTaskInState(createEmptyState(), { name: '最初', categoryId: 'cat-dev' }, 1000);
+    let state = beginPauseInState(first.state, 'interrupt', 3000);
+    state = updateInterruptDraftInState(state, { who: '田中', label: '見積もり確認', urgency: 'high' });
+    state = startTaskInState(state, first.taskId, 4500);
+
+    expect(state.events[0]).toMatchObject({ type: 'interrupt', label: '見積もり確認', who: '田中', urgency: 'high', start: 3000, end: 4500 });
   });
 });

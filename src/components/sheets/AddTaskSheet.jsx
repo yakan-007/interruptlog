@@ -3,6 +3,7 @@ import Icons from '../../icons';
 import { getTaskDuePresets } from '../../lib/formatters';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
 import { categoryLabel, t, translateError } from '../../i18n';
+import { getResumeTaskId } from '../../state';
 import SheetShell from './SheetShell';
 
 export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit, followup = false, interruptData, onBackToInterrupt }) {
@@ -14,9 +15,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
   const [dueAt, setDueAt] = useState(editing?.planning?.dueAt ?? draft?.dueAt ?? null);
   const [memo, setMemo] = useState(editing?.memo ?? draft?.memo ?? '');
   const [error, setError] = useState('');
-  const selectedCategory = state.categories.find((category) => category.id === categoryId) ?? null;
-  const taskAccent = selectedCategory?.color ?? 'var(--accent)';
-  const isPaused = state.running?.type === 'interrupt' || state.running?.type === 'break';
+  const followupResumes = followup && getResumeTaskId(state) != null;
 
   useEffect(() => {
     if (editing || followup || !onDraftChange) return;
@@ -59,13 +58,13 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
         {editing && <button className="btn danger" onClick={() => actions.deleteTask(editing.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={followup ? onBackToInterrupt : onClose}>{followup ? t(locale, 'sheets.back') : t(locale, 'sheets.cancel')}</button>
         {followup ? (
-          <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('create')}>{t(locale, 'sheets.createAndResume')}</button>
+          <button className="btn primary" onClick={() => submit('create')}>{followupResumes ? t(locale, 'sheets.createAndResume') : t(locale, 'sheets.createAndStart')}</button>
         ) : editing ? (
-          <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('save')}>{t(locale, 'sheets.save')}</button>
+          <button className="btn primary" onClick={() => submit('save')}>{t(locale, 'sheets.save')}</button>
         ) : (
           <>
             <button className="btn secondary" onClick={() => submit('create')}>{t(locale, 'sheets.add')}</button>
-            <button className="btn task-primary" style={{ '--task-cat': taskAccent }} onClick={() => submit('start')} disabled={isPaused}>{Icons.play(12)} {t(locale, 'sheets.addAndStart')}</button>
+            <button className="btn primary" onClick={() => submit('start')}>{Icons.play(12)} {t(locale, 'sheets.addAndStart')}</button>
           </>
         )}
       </>
@@ -74,7 +73,7 @@ export default function AddTaskSheet({ state, actions, onClose, editing, draft, 
         <label>{t(locale, 'sheets.taskName')}</label>
         <input className="il-input" placeholder={t(locale, 'sheets.taskPlaceholder')} value={name} onChange={(event) => update(setName)(event.target.value)} aria-label={t(locale, 'sheets.taskName')} autoFocus />
       </div>
-      {followup && <div className="il-sheet-copy il-followup-copy">{t(locale, 'sheets.followupTaskCopy')}</div>}
+      {followup && <div className="il-sheet-copy il-followup-copy">{followupResumes ? t(locale, 'sheets.followupTaskCopy') : t(locale, 'sheets.followupTaskCopyStart')}</div>}
       <div className="il-field">
         <label>{t(locale, 'sheets.category')}</label>
         <div className="il-chiprow">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTicker } from '../../lib/ticker';
 import { elapsedSince } from '../../lib/timer';
 import { interruptCategoryLabel, t, tx } from '../../i18n';
+import { getPauseStartFloor, getResumeTaskId } from '../../state';
 import { ActivitySwitch, PauseCategoryPicker } from './PauseControls';
 import { BreakFields, InterruptFields } from './PauseFields';
 import { getBreakTimerMeta, getBreakTone, resolveInitialCategoryId, resolveInitialKind } from './pausePresentation';
@@ -28,8 +29,11 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   const mode = selectedCategory?.kind === 'break' ? 'break' : 'interrupt';
   const visibleCategories = state.interruptCats.filter((category) => category.kind === activeKind);
   const selectedLabel = interruptCategoryLabel(locale, selectedCategory);
-  const runTask = state.tasks.find((task) => task.id === state.running?.preTaskId);
+  const resumeTaskId = getResumeTaskId(state);
+  const runTask = resumeTaskId ? state.tasks.find((task) => task.id === resumeTaskId) : null;
   const elapsed = elapsedSince(state.running?.start ?? now, now);
+  const startFloor = getPauseStartFloor(state);
+  const canStartEarlier = startFloor != null && state.running?.start != null && startFloor < state.running.start;
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
   const planned = mode === 'break'
     ? state.running?.type === 'break'
@@ -108,9 +112,15 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   return (
     <SheetShell title={t(locale, 'sheets.pauseTitle')} onClose={onClose} locale={locale} footer={
       <>
-        <button className="btn tert" onClick={() => actions.cancelInterrupt()}>{t(locale, 'sheets.cancel')}</button>
-        <button className="btn secondary" onClick={() => save(false)}>{t(locale, 'sheets.saveAndEnd')}</button>
-        <button className="btn primary" onClick={() => save(true)}>{t(locale, 'sheets.saveAndResume')}</button>
+        <button className="btn tert" onClick={() => actions.cancelInterrupt()}>{t(locale, 'sheets.discardPause')}</button>
+        {runTask ? (
+          <>
+            <button className="btn secondary" onClick={() => save(false)}>{t(locale, 'sheets.saveAndEnd')}</button>
+            <button className="btn primary" onClick={() => save(true)}>{t(locale, 'sheets.saveAndResume')}</button>
+          </>
+        ) : (
+          <button className="btn primary" onClick={() => save(false)}>{t(locale, 'sheets.save')}</button>
+        )}
       </>
     }>
       {runTask && (
@@ -131,7 +141,16 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
         eyebrow={mode === 'break' ? t(locale, 'sheets.breakActive') : t(locale, 'sheets.pauseActive')}
         hint={mode === 'break' ? timerMeta : selectedLabel}
         locale={locale}
-      />
+      >
+        <div className="il-sheet-timer-shift" role="group" aria-label={t(locale, 'sheets.startEarlier')}>
+          <span>{t(locale, 'sheets.startEarlier')}</span>
+          {[1, 3, 5].map((minutes) => (
+            <button key={minutes} type="button" disabled={!canStartEarlier} onClick={() => actions.shiftPauseStart(minutes)}>
+              {tx(locale, 'sheets.minutesEarlier', minutes)}
+            </button>
+          ))}
+        </div>
+      </TimerPanel>
 
       <ActivitySwitch mode={mode} locale={locale} onStartNextPause={startNextPause} />
 

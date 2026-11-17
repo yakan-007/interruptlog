@@ -3,6 +3,7 @@ import {
   createTaskAndStartInState,
   createTaskInState,
   deleteTaskInState,
+  endRunningAtInState,
   moveTaskToIndexInState,
   reorderTaskInState,
   restoreTaskAndStartInState,
@@ -24,6 +25,9 @@ export function createTaskCommands({ applyResult, createId, getState, mutate, mu
     deleteTask: (id) => mutate((state) => deleteTaskInState(state, id, now(), dependencies)),
     reorderTask: mutateWith(reorderTaskInState),
     moveTaskToIndex: mutateWith(moveTaskToIndexInState),
+    endRunningAt(at) {
+      return applyResult(endRunningAtInState(getState(), at, now(), dependencies));
+    },
     restoreTaskAndStart(id) {
       return applyResult(restoreTaskAndStartInState(getState(), id, now(), dependencies));
     },

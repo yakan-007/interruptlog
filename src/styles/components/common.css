@@ -5,7 +5,7 @@
 .il-iconbtn {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: var(--r-md);
   border: 1px solid var(--hair);
   background: color-mix(in oklch, var(--bg-elevated) 88%, var(--bg) 12%);
   color: var(--ink-3);
@@ -30,13 +30,13 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--bg-sunken);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 500;
   color: var(--ink-2);
   white-space: nowrap;
 }
 
-.il-chip.sm { padding: 1px 6px; font-size: 10px; }
+.il-chip.sm { padding: 1px 6px; font-size: var(--text-2xs); }
 .il-chip.accent { background: color-mix(in oklch, var(--accent) 12%, transparent); color: var(--accent); }
 .il-chip.danger { background: color-mix(in oklch, var(--urg-high) 15%, transparent); color: var(--urg-high); }
 .il-chip.warn { color: oklch(0.45 0.10 80); background: color-mix(in oklch, var(--urg-med) 16%, transparent); }
@@ -46,10 +46,10 @@
 
 .btn {
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   border: 1px solid transparent;
   box-sizing: border-box;
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
@@ -74,17 +74,5 @@
 .btn.tert { background: transparent; color: var(--ink-3); }
 .btn.danger { background: transparent; color: var(--urg-high); }
 .btn.danger.fill { background: var(--urg-high); color: #fff; }
-.btn.task-primary {
-  background: color-mix(in oklch, var(--task-cat, var(--accent)) 14%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--task-cat, var(--accent)) 24%, var(--hair));
-  color: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
-  box-shadow: inset 0 1px 0 color-mix(in oklch, white 40%, transparent);
-}
-.btn.task-strong {
-  background: color-mix(in oklch, var(--task-cat, var(--accent)) 74%, var(--ink) 26%);
-  border-color: transparent;
-  color: var(--bg-elevated);
-  box-shadow: 0 6px 16px color-mix(in oklch, var(--task-cat, var(--accent)) 16%, transparent);
-}
 .btn.fill { width: 100%; }
-.btn.sm { height: 32px; font-size: 13px; padding: 0 12px; border-radius: 8px; }
+.btn.sm { height: 32px; font-size: var(--text-sm); padding: 0 12px; border-radius: var(--r-sm); }

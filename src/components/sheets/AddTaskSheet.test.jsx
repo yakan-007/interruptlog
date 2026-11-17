@@ -59,18 +59,28 @@ describe('task detail sheet', () => {
   it('creates a follow-up task and returns to the paused interruption', async () => {
     const user = userEvent.setup();
     const state = createEmptyState();
-    state.running = { type: 'interrupt' };
+    state.tasks = [{ id: 'task-1', name: '元のタスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: {} }];
+    state.running = { type: 'interrupt', preTaskId: 'task-1' };
     const actions = actionsWith({ ok: true });
     const onClose = vi.fn();
     const onBackToInterrupt = vi.fn();
     const interruptData = { label: '問い合わせ', who: '田中' };
     render(<AddTaskSheet state={state} actions={actions} onClose={onClose} followup interruptData={interruptData} onBackToInterrupt={onBackToInterrupt} draft={{ name: '確認する', categoryId: 'cat-dev', plannedDurationMinutes: 0, dueAt: null, memo: '' }} />);
 
-    expect(screen.getByText('この割り込み作業から発生したタスクとして記録します。作成後は中断したタスクに戻ります。')).toBeTruthy();
+    expect(screen.getByText('この割り込みから生まれたタスクとして記録します。作成後は戻り先のタスクを再開します。')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '作成して戻る' }));
     expect(actions.createInterruptFollowupTask).toHaveBeenCalledWith(interruptData, expect.objectContaining({ name: '確認する' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: '戻る' }));
     expect(onBackToInterrupt).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the follow-up task starts when there is no task to return to', () => {
+    const state = createEmptyState();
+    state.running = { type: 'interrupt' };
+    render(<AddTaskSheet state={state} actions={actionsWith({ ok: true })} onClose={vi.fn()} followup interruptData={{}} onBackToInterrupt={vi.fn()} />);
+
+    expect(screen.getByText('この割り込みから生まれたタスクとして記録し、そのまま開始します。')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '作成して開始' })).toBeTruthy();
   });
 });
