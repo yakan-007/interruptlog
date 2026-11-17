@@ -18,7 +18,6 @@ const REPORT_CSV_HEADER = [
   'sourceTaskId',
   'interruptOriginId',
   'who',
-  'urgency',
   'memo',
   'durationMinutes',
 ];
@@ -181,7 +180,6 @@ function buildReportCsvRow(event, { context, range, reportDate, timezone }) {
     event.sourceTaskId ?? task?.sourceTaskId ?? '',
     event.interruptOriginId ?? task?.interruptOriginId ?? '',
     event.who ?? '',
-    event.urgency ?? '',
     event.memo ?? task?.memo ?? '',
     (event.durationMs / 60000).toFixed(1),
   ];

@@ -3,7 +3,6 @@ import { SUPPORTED_LOCALES, t } from '../../i18n';
 import { isWorkSchedule } from '../../lib/workday';
 import SettingRow from './SettingRow';
 import { ToggleSetting } from './SettingsRows';
-import { ACCENTS } from './constants';
 
 export default function PreferenceSections({ state, actions, locale }) {
   return (
@@ -33,20 +32,6 @@ function AppearanceSection({ state, actions, locale }) {
           </select>
         </SettingRow>
         <ToggleSetting title={t(locale, 'settings.darkMode')} note={t(locale, 'settings.darkModeNote')} value={state.preferences.dark} onToggle={() => actions.setDark(!state.preferences.dark)} ariaLabel={t(locale, 'settings.darkMode')} />
-        <SettingRow title={t(locale, 'settings.accent')}>
-          <div className="il-settings-accents">
-            {ACCENTS.map((color) => (
-              <button
-                key={color}
-                aria-label={t(locale, 'settings.accent')}
-                onClick={() => actions.setAccent(color)}
-                className="il-settings-accent"
-                data-selected={state.preferences.accent === color}
-                style={{ background: color }}
-              />
-            ))}
-          </div>
-        </SettingRow>
       </div>
     </>
   );

@@ -108,8 +108,6 @@ function createPassthroughActions({ app, closeSheet }) {
       'reorderTask',
       'moveTaskToIndex',
       'selectPauseCategory',
-      'setBreakTarget',
-      'shiftPauseStart',
       'saveCategory',
       'deleteCategory',
       'moveCategoryToIndex',
@@ -119,7 +117,6 @@ function createPassthroughActions({ app, closeSheet }) {
       'saveChips',
       'moveChipToIndex',
       'setDark',
-      'setAccent',
       'setLocale',
       'setTopAdd',
       'setSortDue',
@@ -142,11 +139,6 @@ function createPassthroughActions({ app, closeSheet }) {
     },
     endRunningAt(at) {
       const result = app.actions.endRunningAt(at);
-      if (result.ok) closeSheet();
-      return result;
-    },
-    createInterruptFollowupTask(interruptData, taskData) {
-      const result = app.actions.createInterruptFollowupTask(interruptData, taskData);
       if (result.ok) closeSheet();
       return result;
     },

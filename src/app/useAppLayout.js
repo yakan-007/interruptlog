@@ -7,15 +7,12 @@ export function useAppLayout(containerRef, preferences) {
     if (!containerRef.current) return;
     const theme = preferences.dark ? 'dark' : 'light';
     containerRef.current.setAttribute('data-theme', theme);
-    containerRef.current.style.setProperty('--accent-base', preferences.accent);
     document.documentElement.setAttribute('data-theme', theme);
-    document.documentElement.style.setProperty('--accent-base', preferences.accent);
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
-      document.documentElement.style.removeProperty('--accent-base');
     };
-  }, [containerRef, preferences.accent, preferences.dark]);
+  }, [containerRef, preferences.dark]);
 
   useEffect(() => {
     const activeElementWantsKeyboard = () => {

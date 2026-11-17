@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { interruptCategoryLabel, t, translateError, tx, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateError, tx, typeLabel } from '../../i18n';
 import { startOfHistoryDay } from '../../lib/history';
 import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
@@ -16,7 +16,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   });
   const [who, setWho] = useState(initialDraft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(Boolean(initialDraft?.saveWhoChip));
-  const [urgency, setUrgency] = useState(initialDraft?.urgency ?? 'med');
   const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? interruptCategories[0]?.id ?? state.interruptCats[0]?.id ?? '');
   const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
@@ -48,7 +47,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       end: end.getTime(),
       memo,
       ...(type === 'task' ? { categoryId: taskTarget.categoryId, taskTarget } : {}),
-      ...(type === 'interrupt' ? { who, urgency, categoryId: interruptCategoryId } : {}),
+      ...(type === 'interrupt' ? { who, categoryId: interruptCategoryId } : {}),
     };
 
     if (type === 'task') {
@@ -63,7 +62,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           preview: previewResult.preview,
           record: draft,
           returnSheet: 'addMissed',
-          returnArg: { type, label, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+          returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
           confirmLabel: t(locale, 'sheets.add'),
           successMessage: t(locale, 'toasts.eventAdded'),
         });
@@ -86,7 +85,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskTarget, who, saveWhoChip, urgency, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+        returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
         confirmLabel: t(locale, 'sheets.add'),
         successMessage: t(locale, 'toasts.eventAdded'),
       });
@@ -162,15 +161,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
                   {interruptCategoryLabel(locale, category)}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div className="il-field">
-            <label>{t(locale, 'sheets.urgency')}</label>
-            <div className="il-urg">
-              <button className={urgency === 'low' ? 'sel low' : ''} onClick={() => setUrgency('low')}>{urgencyLabel(locale, 'low')}</button>
-              <button className={urgency === 'med' ? 'sel med' : ''} onClick={() => setUrgency('med')}>{urgencyLabel(locale, 'med')}</button>
-              <button className={urgency === 'high' ? 'sel high' : ''} onClick={() => setUrgency('high')}>{urgencyLabel(locale, 'high')}</button>
             </div>
           </div>
         </>

@@ -7,7 +7,7 @@ afterEach(() => cleanup());
 
 function createActions() {
   return Object.fromEntries([
-    'setLocale', 'setDark', 'setAccent', 'setTopAdd', 'setSortDue', 'setWorkSchedule',
+    'setLocale', 'setDark', 'setTopAdd', 'setSortDue', 'setWorkSchedule',
     'setReportProfile',
     'moveCategoryToIndex', 'moveInterruptCategoryToIndex', 'saveCategory', 'deleteCategory',
     'saveInterruptCategory', 'deleteInterruptCategory', 'saveChips', 'exportJson', 'importJson',
@@ -28,7 +28,6 @@ describe('personal settings screen', () => {
     expect(screen.getByRole('heading', { name: '設定' })).toBeTruthy();
     fireEvent.change(screen.getByRole('combobox', { name: '言語' }), { target: { value: 'en-US' } });
     fireEvent.click(screen.getByRole('button', { name: 'ダークモード' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'アクセントカラー' })[1]);
     fireEvent.click(screen.getByRole('button', { name: '基本の作業時間' }));
     fireEvent.change(screen.getByLabelText('開始時刻'), { target: { value: '09:00' } });
     fireEvent.change(screen.getByLabelText('終了時刻'), { target: { value: '17:00' } });

@@ -132,7 +132,6 @@ describe('personal app commands', () => {
 
     commands.actions.beginInterrupt();
     expect(commands.state().running).toMatchObject({ type: 'interrupt', preTaskId: 'task-1' });
-    commands.actions.setBreakTarget(15);
     commands.actions.cancelInterrupt();
     expect(commands.state().running).toMatchObject({ type: 'task', taskId: 'task-1' });
 

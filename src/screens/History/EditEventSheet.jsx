@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
-import { interruptCategoryLabel, t, translateError, typeLabel, urgencyLabel } from '../../i18n';
+import { interruptCategoryLabel, t, translateError, typeLabel } from '../../i18n';
 import TaskTargetFields from './TaskTargetFields';
 import { taskTargetForEvent } from './taskRecordHelpers';
 
@@ -12,7 +12,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
-  const [urgency, setUrgency] = useState(event.urgency ?? 'med');
   const [taskTarget, setTaskTarget] = useState(() => event.taskTarget ?? taskTargetForEvent(event, state));
   const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? interruptCategories[0]?.id ?? '' : interruptCategories[0]?.id ?? '');
   const [error, setError] = useState('');
@@ -31,7 +30,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     label,
     memo,
     who,
-    urgency,
     categoryId: type === 'interrupt' ? interruptCategoryId : taskTarget.categoryId ?? event.categoryId ?? null,
     taskTarget,
     start: fromDateTimeLocalValue(startAt),
@@ -128,15 +126,6 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
                 <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
                   {interruptCategoryLabel(locale, category)}
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="il-field">
-            <label>{t(locale, 'sheets.urgency')}</label>
-            <div className="il-urg">
-              {['low', 'med', 'high'].map((value) => (
-                <button key={value} type="button" className={urgency === value ? `sel ${value}` : ''} onClick={() => setUrgency(value)}>{urgencyLabel(locale, value)}</button>
               ))}
             </div>
           </div>

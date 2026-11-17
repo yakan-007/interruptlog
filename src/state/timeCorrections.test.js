@@ -2,15 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
-  beginNextPauseWithCategoryInState,
   beginPauseInState,
   createEmptyState,
   createTaskAndStartInState,
   endRunningAtInState,
-  getPauseStartFloor,
   previewAddMissedEventInState,
   selectForgottenTimer,
-  shiftPauseStartInState,
   stopTaskInState,
 } from './index';
 
@@ -77,56 +74,6 @@ describe('adding a missed record inside the running task', () => {
   });
 });
 
-describe('starting a pause earlier', () => {
-  it('moves the pause start back and shortens the interrupted task', () => {
-    const { state } = runningTask();
-    const paused = beginPauseInState(state, 'interrupt', t10 + 30 * MIN);
-    const shifted = shiftPauseStartInState(paused, 5);
-
-    expect(shifted.running.start).toBe(t10 + 25 * MIN);
-    expect(windows(shifted)).toEqual([['task', t10, t10 + 25 * MIN]]);
-  });
-
-  it('stops at the start of the interrupted task and drops it when fully covered', () => {
-    const { state } = runningTask();
-    const paused = beginPauseInState(state, 'interrupt', t10 + 2 * MIN);
-    expect(getPauseStartFloor(paused)).toBe(t10);
-    const shifted = shiftPauseStartInState(paused, 5);
-
-    expect(shifted.running.start).toBe(t10);
-    expect(shifted.events).toHaveLength(0);
-  });
-
-  it('keeps a long-running schedule-day task unflagged until after the work end', () => {
-    const { state } = runningTask(t10);
-    const withSchedule = { ...state, preferences: { ...state.preferences, workSchedule: { start: '09:00', end: '18:00' } } };
-    expect(selectForgottenTimer(withSchedule, t10 + 6 * HOUR)).toBe(null);
-  });
-
-  it('takes the time from the previous pause segment when pauses are chained', () => {
-    const { state } = runningTask();
-    let paused = beginPauseInState(state, 'interrupt', t10 + 30 * MIN);
-    paused = beginNextPauseWithCategoryInState(paused, null, { label: '最初' }, t10 + 40 * MIN);
-    const shifted = shiftPauseStartInState(paused, 3);
-
-    expect(windows(shifted)).toEqual([
-      ['task', t10, t10 + 30 * MIN],
-      ['interrupt', t10 + 30 * MIN, t10 + 37 * MIN],
-    ]);
-    expect(shifted.running.start).toBe(t10 + 37 * MIN);
-  });
-
-  it('does not overlap earlier records when nothing was running', () => {
-    const { state } = runningTask();
-    const idle = stopTaskInState(state, false, t10 + 30 * MIN);
-    const paused = beginPauseInState(idle, 'interrupt', t10 + 32 * MIN);
-    const shifted = shiftPauseStartInState(paused, 5);
-
-    expect(shifted.running.start).toBe(t10 + 30 * MIN);
-    expect(windows(shifted)).toEqual([['task', t10, t10 + 30 * MIN]]);
-  });
-});
-
 describe('forgotten timers', () => {
   it('flags a timer still running well after the work end and suggests the work end', () => {
     const { state } = runningTask(t10);
@@ -135,6 +82,12 @@ describe('forgotten timers', () => {
 
     expect(selectForgottenTimer(withSchedule, workEnd + 10 * MIN)).toBe(null);
     expect(selectForgottenTimer(withSchedule, workEnd + 40 * MIN)).toMatchObject({ suggestedEnd: workEnd });
+  });
+
+  it('keeps a long-running schedule-day task unflagged until after the work end', () => {
+    const { state } = runningTask(t10);
+    const withSchedule = { ...state, preferences: { ...state.preferences, workSchedule: { start: '09:00', end: '18:00' } } };
+    expect(selectForgottenTimer(withSchedule, t10 + 6 * HOUR)).toBe(null);
   });
 
   it('flags a timer that has run for hours without a work schedule', () => {

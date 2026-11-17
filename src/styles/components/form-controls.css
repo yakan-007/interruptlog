@@ -183,28 +183,6 @@
 .il-seg.full > button { flex: 1; }
 .il-segicon-label { margin-left: 4px; }
 
-.il-urg {
-  display: flex;
-  gap: 6px;
-}
 
-.il-urg button {
-  flex: 1;
-  height: 40px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--hair);
-  background: var(--bg-elevated);
-  color: var(--ink-3);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
 
-.il-urg button.sel.low { border-color: var(--urg-low); color: var(--urg-low); background: color-mix(in oklch, var(--urg-low) 10%, var(--bg-elevated)); }
-.il-urg button.sel.med { border-color: var(--urg-med); color: oklch(0.45 0.10 80); background: color-mix(in oklch, var(--urg-med) 10%, var(--bg-elevated)); }
-.il-urg button.sel.high { border-color: var(--urg-high); color: var(--urg-high); background: color-mix(in oklch, var(--urg-high) 10%, var(--bg-elevated)); }
 

@@ -14,11 +14,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
     ? state.categories.find((item) => item.id === meta.task?.categoryId)
     : null;
   const taskAccent = category?.color ?? 'var(--accent)';
-  const breakTargetMinutes = running.type === 'break' ? Math.max(0, running.plannedBreakDurationMinutes ?? 0) : 0;
-  const breakTargetMs = breakTargetMinutes * 60000;
   const elapsedMs = elapsedSince(running.start, now);
-  const breakOverMs = breakTargetMs > 0 ? elapsedMs - breakTargetMs : 0;
-  const breakTone = breakTargetMs <= 0 ? '' : breakOverMs >= 120000 ? ' late' : breakOverMs >= 0 ? ' warn' : ' target';
   const style = running.type === 'task'
     ? { '--runbar-accent': taskAccent, '--task-cat': taskAccent }
     : undefined;
@@ -38,7 +34,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
 
   return (
     <div
-      className={'il-runbar ' + (meta.variant || 'task') + (raised ? ' raised' : '') + (compact ? ' compact' : '') + (running.type === 'break' ? breakTone : '') + ' reopenable'}
+      className={'il-runbar ' + (meta.variant || 'task') + (raised ? ' raised' : '') + (compact ? ' compact' : '') + ' reopenable'}
       style={style}
       onClick={openRunningDetails}
       onKeyDown={handleKeyDown}

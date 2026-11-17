@@ -335,23 +335,8 @@
   box-shadow: inset 0 0 0 2px var(--bg);
 }
 
-.il-settings-accents {
-  display: flex;
-  gap: 6px;
-}
 
-.il-settings-accent {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 0;
-  border: 1px solid var(--hair);
-}
 
-.il-settings-accent[data-selected="true"] {
-  border: 2px solid var(--ink);
-}
 
 .il-settings-catdot {
   width: 10px;

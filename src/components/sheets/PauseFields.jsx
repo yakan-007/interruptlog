@@ -1,5 +1,5 @@
 import Icons from '../../icons';
-import { t, urgencyLabel } from '../../i18n';
+import { t } from '../../i18n';
 
 export function InterruptFields({
   state,
@@ -11,11 +11,8 @@ export function InterruptFields({
   customWho,
   label,
   setLabel,
-  urgency,
-  setUrgency,
   memo,
   setMemo,
-  createFollowup,
 }) {
   const scrollChipRow = (event) => {
     const row = event.currentTarget;
@@ -65,19 +62,6 @@ export function InterruptFields({
         />
       </div>
 
-      <button className="il-followup-action" onClick={createFollowup}>
-        {Icons.plus(14)} {t(locale, 'sheets.followupTask')}
-      </button>
-
-      <div className="il-field">
-        <label>{t(locale, 'sheets.urgency')}</label>
-        <div className="il-urg">
-          <button className={urgency === 'low' ? 'sel low' : ''} onClick={() => setUrgency('low')}>{urgencyLabel(locale, 'low')}</button>
-          <button className={urgency === 'med' ? 'sel med' : ''} onClick={() => setUrgency('med')}>{urgencyLabel(locale, 'med')}</button>
-          <button className={urgency === 'high' ? 'sel high' : ''} onClick={() => setUrgency('high')}>{urgencyLabel(locale, 'high')}</button>
-        </div>
-      </div>
-
       <div className="il-field">
         <label>{t(locale, 'sheets.memo')}</label>
         <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
@@ -86,40 +70,11 @@ export function InterruptFields({
   );
 }
 
-export function BreakFields({ actions, locale, planned, memo, setMemo }) {
-  const presets = [5, 10, 15, 30, 45];
+export function BreakFields({ locale, memo, setMemo }) {
   return (
-    <>
-      <div className="il-field">
-        <label>{t(locale, 'sheets.breakTarget')}</label>
-        <div className="il-sheet-copy">
-          {t(locale, 'sheets.breakTargetCopy')}
-        </div>
-        <div className="il-breakpreset-row">
-          {presets.map((minutes) => (
-            <button
-              key={minutes}
-              className={'il-breakpreset' + (planned === minutes ? ' active' : '')}
-              onClick={() => actions.setBreakTarget(minutes)}
-            >
-              {minutes}{t(locale, 'sheets.minutes')}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="il-field">
-        <label>{t(locale, 'sheets.adjustMinutes')}</label>
-        <div className="il-breakplan-row">
-          <input className="il-input short" type="number" value={planned} onChange={(event) => actions.setBreakTarget(Number(event.target.value) || 0)} />
-          <span className="suffix">{t(locale, 'sheets.minutes')}</span>
-        </div>
-      </div>
-
-      <div className="il-field">
-        <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
-      </div>
-    </>
+    <div className="il-field">
+      <label>{t(locale, 'sheets.memo')}</label>
+      <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
+    </div>
   );
 }

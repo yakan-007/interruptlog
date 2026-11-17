@@ -38,7 +38,7 @@ describe('shared running timer bar', () => {
 
     await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
-    rerender(<RunningBar state={stateForRunning({ type: 'break', start: Date.now() - 180000, plannedBreakDurationMinutes: 1 })} actions={actions} compact raised />);
+    rerender(<RunningBar state={stateForRunning({ type: 'break', start: Date.now() - 180000 })} actions={actions} compact raised />);
     await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
     await user.click(screen.getByRole('button', { name: '停止' }));
 

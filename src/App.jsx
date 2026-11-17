@@ -152,17 +152,6 @@ export default function App() {
                 onAfterSubmit={activeSheetArg?.onAfterSubmit}
               />
             )}
-            {activeSheet === 'interruptFollowup' && (
-              <AddTaskSheet
-                state={state}
-                actions={actions}
-                onClose={closeSheet}
-                followup
-                interruptData={activeSheetArg}
-                onBackToInterrupt={() => openSheet('pause', activeSheetArg)}
-                draft={{ name: activeSheetArg?.label ?? '' }}
-              />
-            )}
             {activeSheet === 'editTask' && <AddTaskSheet state={state} actions={actions} onClose={closeSheet} editing={activeSheetArg} />}
             {activeSheet === 'workdayEnd' && <WorkdayEndSheet state={state} actions={actions} onClose={closeSheet} />}
             {activeSheet === 'addMissed' && <AddMissedSheet state={state} actions={actions} onClose={closeSheet} initialDraft={activeSheetArg} />}

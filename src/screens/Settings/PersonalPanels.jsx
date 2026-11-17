@@ -46,7 +46,6 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
 export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
   const [kind, setKind] = useState(category?.kind ?? 'interrupt');
-  const [defaultDurationMinutes, setDefaultDurationMinutes] = useState(category?.defaultDurationMinutes ?? 0);
   const [error, setError] = useState('');
 
   const save = () => {
@@ -59,7 +58,6 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       name,
       icon: null,
       kind,
-      defaultDurationMinutes: kind === 'break' ? defaultDurationMinutes : 0,
     });
   };
 
@@ -82,15 +80,6 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
           <button className={kind === 'break' ? 'active' : ''} onClick={() => setKind('break')}>{t(locale, 'sheets.pauseKindBreak')}</button>
         </div>
       </div>
-      {kind === 'break' && (
-        <div className="il-field">
-          <label>{t(locale, 'sheets.breakTarget')}</label>
-          <div className="il-breakplan-row">
-            <input className="il-input short" type="number" value={defaultDurationMinutes} onChange={(event) => setDefaultDurationMinutes(Number(event.target.value) || 0)} />
-            <span className="suffix">{t(locale, 'sheets.minutes')}</span>
-          </div>
-        </div>
-      )}
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );

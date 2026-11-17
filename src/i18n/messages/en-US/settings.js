@@ -7,7 +7,6 @@ settings: {
         languageNote: 'Used for display and time formats',
         darkMode: 'Dark mode',
         darkModeNote: 'Saved on this device',
-        accent: 'Accent color',
         behavior: 'Behavior',
         topAdd: 'Add to top',
         sortDue: 'Sort by due date',

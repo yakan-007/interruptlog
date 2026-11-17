@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTicker } from '../../lib/ticker';
 import { elapsedSince } from '../../lib/timer';
 import { interruptCategoryLabel, t, tx } from '../../i18n';
-import { getPauseStartFloor, getResumeTaskId } from '../../state';
-import { ActivitySwitch, PauseCategoryPicker } from './PauseControls';
+import { getResumeTaskId } from '../../state';
+import { PauseCategoryPicker, PauseSwitchButton } from './PauseControls';
 import { BreakFields, InterruptFields } from './PauseFields';
-import { getBreakTimerMeta, getBreakTone, resolveInitialCategoryId, resolveInitialKind } from './pausePresentation';
+import { resolveInitialCategoryId } from './pausePresentation';
 import SheetShell from './SheetShell';
 import TimerPanel from './TimerPanel';
 
@@ -13,13 +13,10 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   const now = useTicker(1000);
   const locale = state.preferences.locale;
   const initialCategoryId = resolveInitialCategoryId(state, initialDraft);
-  const initialKind = resolveInitialKind(state, initialCategoryId);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
-  const [activeKind, setActiveKind] = useState(initialKind);
   const [who, setWho] = useState(initialDraft?.who ?? state.running?.draft?.who ?? '');
   const [saveWhoChip, setSaveWhoChip] = useState(initialDraft?.saveWhoChip ?? state.running?.draft?.saveWhoChip ?? false);
   const [label, setLabel] = useState(initialDraft?.label ?? state.running?.draft?.label ?? '');
-  const [urgency, setUrgency] = useState(initialDraft?.urgency ?? state.running?.draft?.urgency ?? 'med');
   const [memo, setMemo] = useState(initialDraft?.memo ?? state.running?.draft?.memo ?? '');
   const [breakMemo, setBreakMemo] = useState('');
 
@@ -27,43 +24,25 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
     ?? state.interruptCats[0]
     ?? null;
   const mode = selectedCategory?.kind === 'break' ? 'break' : 'interrupt';
-  const visibleCategories = state.interruptCats.filter((category) => category.kind === activeKind);
   const selectedLabel = interruptCategoryLabel(locale, selectedCategory);
   const resumeTaskId = getResumeTaskId(state);
   const runTask = resumeTaskId ? state.tasks.find((task) => task.id === resumeTaskId) : null;
   const elapsed = elapsedSince(state.running?.start ?? now, now);
-  const startFloor = getPauseStartFloor(state);
-  const canStartEarlier = startFloor != null && state.running?.start != null && startFloor < state.running.start;
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
-  const planned = mode === 'break'
-    ? state.running?.type === 'break'
-      ? Math.max(0, state.running.plannedBreakDurationMinutes ?? 0)
-      : Math.max(0, selectedCategory?.defaultDurationMinutes ?? 0)
-    : 0;
-  const breakTone = getBreakTone(elapsed, planned);
-  const timerMeta = getBreakTimerMeta(elapsed, planned, locale);
 
   useEffect(() => {
     if (mode !== 'interrupt') return;
-    onDraftChange?.({ who, saveWhoChip, label, urgency, categoryId, memo });
-  }, [categoryId, label, memo, mode, onDraftChange, saveWhoChip, urgency, who]);
+    onDraftChange?.({ who, saveWhoChip, label, categoryId, memo });
+  }, [categoryId, label, memo, mode, onDraftChange, saveWhoChip, who]);
 
   const selectCategory = (category) => {
     setCategoryId(category.id);
     actions.selectPauseCategory(category.id);
   };
 
-  const switchKind = (nextKind) => {
-    setActiveKind(nextKind);
-    if (selectedCategory?.kind === nextKind) return;
-    const nextCategory = state.interruptCats.find((category) => category.kind === nextKind);
-    if (nextCategory) selectCategory(nextCategory);
-  };
-
   const save = (resume) => {
     if (mode === 'break') {
       actions.saveBreak({
-        breakDurationMinutes: planned,
         categoryId: selectedCategory?.id ?? null,
         label: selectedLabel || t(locale, 'common.break'),
         memo: breakMemo,
@@ -76,20 +55,14 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
       who,
       saveWhoChip,
       label: label || (who ? tx(locale, 'common.fromSender', who) : selectedLabel || t(locale, 'common.interrupt')),
-      urgency,
       categoryId,
       memo,
       resume,
     });
   };
 
-  const createFollowup = () => {
-    actions.openSheet('interruptFollowup', { who, saveWhoChip, label: label || selectedLabel, urgency, categoryId, memo });
-  };
-
   const currentPauseData = () => mode === 'break'
     ? {
-        breakDurationMinutes: planned,
         categoryId: selectedCategory?.id ?? null,
         label: selectedLabel || t(locale, 'common.break'),
         memo: breakMemo,
@@ -98,8 +71,7 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
         who,
         saveWhoChip,
         label: label || selectedLabel,
-        urgency,
-        categoryId,
+          categoryId,
         memo,
       };
 
@@ -134,33 +106,20 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
       )}
 
       <TimerPanel
-        className={mode === 'break'
-          ? 'il-sheet-timer break' + (planned > 0 ? ' has-target' : '') + (breakTone === 'warn' ? ' warn' : '') + (breakTone === 'late' ? ' late' : '')
-          : 'il-sheet-timer interrupt'}
+        className={'il-sheet-timer ' + mode}
         elapsed={elapsed}
         eyebrow={mode === 'break' ? t(locale, 'sheets.breakActive') : t(locale, 'sheets.pauseActive')}
-        hint={mode === 'break' ? timerMeta : selectedLabel}
+        hint={selectedLabel}
         locale={locale}
-      >
-        <div className="il-sheet-timer-shift" role="group" aria-label={t(locale, 'sheets.startEarlier')}>
-          <span>{t(locale, 'sheets.startEarlier')}</span>
-          {[1, 3, 5].map((minutes) => (
-            <button key={minutes} type="button" disabled={!canStartEarlier} onClick={() => actions.shiftPauseStart(minutes)}>
-              {tx(locale, 'sheets.minutesEarlier', minutes)}
-            </button>
-          ))}
-        </div>
-      </TimerPanel>
+      />
 
-      <ActivitySwitch mode={mode} locale={locale} onStartNextPause={startNextPause} />
+      <PauseSwitchButton mode={mode} locale={locale} onSwitch={startNextPause} />
 
       <PauseCategoryPicker
-        activeKind={activeKind}
-        categories={visibleCategories}
+        categories={state.interruptCats}
         categoryId={categoryId}
         locale={locale}
         onSelect={selectCategory}
-        onSwitchKind={switchKind}
       />
 
       {mode === 'interrupt' ? (
@@ -174,17 +133,12 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
           customWho={customWho}
           label={label}
           setLabel={setLabel}
-          urgency={urgency}
-          setUrgency={setUrgency}
           memo={memo}
           setMemo={setMemo}
-          createFollowup={createFollowup}
         />
       ) : (
         <BreakFields
-          actions={actions}
           locale={locale}
-          planned={planned}
           memo={breakMemo}
           setMemo={setBreakMemo}
         />

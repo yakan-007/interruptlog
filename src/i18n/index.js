@@ -41,12 +41,6 @@ export function typeLabel(locale, type) {
   return t(locale, 'common.record');
 }
 
-export function urgencyLabel(locale, urgency) {
-  if (urgency === 'low') return t(locale, 'common.low');
-  if (urgency === 'high') return t(locale, 'common.high');
-  return t(locale, 'common.medium');
-}
-
 export function translateError(locale, errorCode, fallbackPath = 'errors.checkInput') {
   return t(locale, ERROR_MESSAGE_PATHS[errorCode] ?? fallbackPath);
 }

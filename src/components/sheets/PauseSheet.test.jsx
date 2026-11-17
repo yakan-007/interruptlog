@@ -19,25 +19,7 @@ function baseActions() {
 }
 
 describe('pause sheet', () => {
-  it('can save the current interruption and start another unplanned response', async () => {
-    const user = userEvent.setup();
-    const state = createEmptyState();
-    state.running = { type: 'interrupt', start: Date.now() - 30_000, draft: { categoryId: 'int-call' }, resumeStack: [] };
-    const actions = baseActions();
-
-    render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} initialDraft={{ categoryId: 'int-call' }} />);
-
-    await user.type(screen.getByPlaceholderText('または自由記入'), '追加の確認');
-    await user.click(screen.getByRole('button', { name: '別の割り込み' }));
-
-    expect(actions.beginNextPause).toHaveBeenCalledWith('int-call', expect.objectContaining({
-      categoryId: 'int-call',
-      label: '追加の確認',
-      urgency: 'med',
-    }));
-  });
-
-  it('can save the current interruption and switch into a break', async () => {
+  it('switches from an interruption to a break from now', async () => {
     const user = userEvent.setup();
     const state = createEmptyState();
     state.running = { type: 'interrupt', start: Date.now() - 30_000, draft: { categoryId: 'int-chat' }, resumeStack: [] };
@@ -45,11 +27,26 @@ describe('pause sheet', () => {
 
     render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} initialDraft={{ categoryId: 'int-chat' }} />);
 
-    await user.click(screen.getByRole('button', { name: '休憩を始める' }));
+    await user.type(screen.getByPlaceholderText('または自由記入'), '追加の確認');
+    await user.click(screen.getByRole('button', { name: '今から休憩に入る' }));
 
     expect(actions.beginNextPause).toHaveBeenCalledWith('break-rest', expect.objectContaining({
       categoryId: 'int-chat',
-      label: 'チャット',
+      label: '追加の確認',
     }));
+  });
+
+  it('switches from a break to an interruption from now', async () => {
+    const user = userEvent.setup();
+    const state = createEmptyState();
+    state.running = { type: 'break', start: Date.now() - 30_000, categoryId: 'break-lunch', resumeStack: [] };
+    const actions = baseActions();
+
+    render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: '今から休憩に入る' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: '割り込みが入った' }));
+
+    expect(actions.beginNextPause).toHaveBeenCalledWith('int-call', expect.objectContaining({ categoryId: 'break-lunch' }));
   });
 });

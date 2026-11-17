@@ -1,5 +1,5 @@
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
-import { categoryLabel, interruptCategoryLabel, t, typeLabel, urgencyLabel } from '../../i18n';
+import { categoryLabel, interruptCategoryLabel, t, typeLabel } from '../../i18n';
 
 export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, locale = 'ja-JP', onEdit, onGapClick }) {
   const { axis, gaps, items, nowY } = timeline;
@@ -74,9 +74,6 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                   {event.startsBeforeDay && <span className="il-chip sm accent">{t(locale, 'history.previousDay')}</span>}
                   {event.endsAfterDay && <span className="il-chip sm accent">{t(locale, 'history.nextDay')}</span>}
                   {event.longEvent && <span className="il-chip sm warn">{t(locale, 'history.longEvent')}</span>}
-                  {event.type === 'interrupt' && event.urgency && (
-                    <span className={'il-chip sm urg-' + event.urgency}>{urgencyLabel(locale, event.urgency) ?? event.urgency}</span>
-                  )}
                 </div>
               </button>
             );

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  beginPauseInState,
   calcStats,
-  createInterruptFollowupTaskInState,
   createEmptyState,
   createTaskAndStartInState,
   createTaskInState,
@@ -39,38 +37,6 @@ describe('personal tasks', () => {
 
     expect(atTen).toMatchObject({ commitmentCount: 1, estimateRemainingMs: 90 * 60000, remainingMs: 120 * 60000, overflowMs: 0 });
     expect(atLate).toMatchObject({ estimateRemainingMs: 90 * 60000, remainingMs: 30 * 60000, overflowMs: 60 * 60000 });
-  });
-
-  it('creates an interrupt-origin follow-up task and resumes the interrupted task', () => {
-    const started = createTaskAndStartInState(createEmptyState(), {
-      name: '元の作業', categoryId: 'cat-dev', plannedDurationMinutes: 30,
-    }, at(11, 9));
-    const paused = beginPauseInState(started.state, 'interrupt', at(11, 9, 10));
-    const created = createInterruptFollowupTaskInState(paused, {
-      label: '確認依頼', who: '田中', urgency: 'med', categoryId: 'int-chat', memo: '調査が必要',
-    }, {
-      name: '確認依頼を調査', categoryId: 'cat-dev', plannedDurationMinutes: 20, dueAt: at(11, 17), memo: '',
-    }, at(11, 9, 20));
-    const followup = created.state.tasks.find((task) => task.id === created.taskId);
-    const interrupt = created.state.events.find((event) => event.type === 'interrupt');
-
-    expect(created.errorCode).toBeNull();
-    expect(followup?.interruptOriginId).toBe(interrupt?.id);
-    expect(interrupt).toMatchObject({ label: '確認依頼', who: '田中', start: at(11, 9, 10), end: at(11, 9, 20) });
-    expect(created.state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: at(11, 9, 20) });
-  });
-
-  it('starts a follow-up task when an unplanned interruption had no prior task', () => {
-    const paused = beginPauseInState(createEmptyState(), 'interrupt', at(11, 9, 10));
-    const created = createInterruptFollowupTaskInState(paused, {
-      label: '朝一の電話', who: '田中', urgency: 'high', categoryId: 'int-call', memo: '',
-    }, {
-      name: '電話の対応を続ける', categoryId: 'cat-sup', plannedDurationMinutes: 0, dueAt: null, memo: '',
-    }, at(11, 9, 20));
-
-    expect(created.state.events.filter((event) => event.type === 'interrupt')).toHaveLength(1);
-    expect(created.state.running).toMatchObject({ type: 'task', taskId: created.taskId, start: at(11, 9, 20) });
-    expect(created.state.events.at(-1)).toMatchObject({ type: 'task', taskId: created.taskId, end: null });
   });
 
   it('clamps report stats to the selected range', () => {

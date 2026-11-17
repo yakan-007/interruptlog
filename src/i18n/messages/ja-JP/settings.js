@@ -7,7 +7,6 @@ settings: {
         languageNote: '表示と時間表記に使います',
         darkMode: 'ダークモード',
         darkModeNote: '端末内に保存されます',
-        accent: 'アクセントカラー',
         behavior: '動作',
         topAdd: 'リスト上部に追加',
         sortDue: '期限順ソート',

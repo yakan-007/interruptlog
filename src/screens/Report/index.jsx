@@ -15,7 +15,6 @@ import {
   SendersCard,
   TaskEngagementCard,
   TaskStatusCard,
-  UrgencyBreakdownCard,
   WeekdayTrendCard,
   WeeklyReviewCard,
   WorkdayCard,
@@ -52,9 +51,6 @@ export default function ReportScreen({ state, actions }) {
     maxDay,
     senders,
     maxSenderTime,
-    urgencyStats,
-    maxUrgencyTime,
-    topUrgency,
     categoryList,
     totalCategoryTime,
     uniqueTaskIds,
@@ -168,15 +164,6 @@ export default function ReportScreen({ state, actions }) {
                 />
 
                 <MicroInterruptionsCard stats={microInterruptions} locale={state.preferences.locale} />
-
-                {currentStats.interrupt > 0 && (
-                  <UrgencyBreakdownCard
-                    locale={state.preferences.locale}
-                    maxUrgencyTime={maxUrgencyTime}
-                    topUrgency={topUrgency}
-                    urgencyStats={urgencyStats}
-                  />
-                )}
 
                 <WeekdayTrendCard dayStats={dayStats} locale={state.preferences.locale} maxDay={maxDay} />
                 <SendersCard locale={state.preferences.locale} maxSenderTime={maxSenderTime} senders={senders} />

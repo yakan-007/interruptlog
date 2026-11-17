@@ -31,7 +31,6 @@ export function createPreferenceCommands({ createId, mutate, mutateWith, now, se
     saveChips: mutateWith(saveChipsInState),
     moveChipToIndex: mutateWith(moveChipToIndexInState),
     setDark: setPreference('dark'),
-    setAccent: setPreference('accent'),
     setLocale: setPreference('locale'),
     setTopAdd: setPreference('topAdd'),
     setSortDue: setPreference('sortDue'),

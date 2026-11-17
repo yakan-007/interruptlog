@@ -20,7 +20,6 @@ import {
   saveTaskRecordInState,
   replaceTimeRangeInState,
   saveInterruptInState,
-  setBreakTargetInState,
   startTaskInState,
   stopTaskInState,
   updateInterruptDraftInState,
@@ -551,17 +550,6 @@ describe('personal records and resolution', () => {
       categoryId: 'int-chat',
       start: 3000,
       preTaskId: started.taskId,
-    });
-  });
-
-  it('updates the running break target in state', () => {
-    const runningBreak = beginPauseInState(createEmptyState(), 'break', 4000);
-    const updated = setBreakTargetInState(runningBreak, 15);
-
-    expect(updated.running).toMatchObject({
-      type: 'break',
-      plannedBreakDurationMinutes: 15,
-      start: 4000,
     });
   });
 

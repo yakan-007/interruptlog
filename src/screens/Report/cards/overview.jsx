@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { fmtDurationShort } from '../../../lib/formatters';
 import { buildWeeklyReview } from '../../../state';
-import { t, tx, urgencyLabel } from '../../../i18n';
+import { t, tx } from '../../../i18n';
 import TaskStat from '../TaskStat';
 
 export function BreakdownCard({ currentStats, locale, recordedTotal, total }) {
@@ -174,39 +174,6 @@ export function WeeklyReviewCard({ state, now, snapshot }) {
         <div>{review.categoryName ? `${t(state.preferences.locale, 'report.topCategory')}: ${review.categoryName}` : t(state.preferences.locale, 'report.noCategory')}</div>
       </div>
       <div className="il-report-emptytrend">{formatWeeklySuggestion(review.suggestion, state.preferences.locale)}</div>
-    </div>
-  );
-}
-
-export function UrgencyBreakdownCard({ urgencyStats, maxUrgencyTime, topUrgency, locale = 'ja-JP' }) {
-  return (
-    <div className="il-card">
-      <h3>{t(locale, 'report.urgencyBreakdown')}</h3>
-      <div className="il-urgency-report">
-        {urgencyStats.map((item) => (
-          <div key={item.key} className="il-urgency-report-row">
-            <div className="main">
-              <span className={'il-chip sm urg-' + item.key}>{urgencyLabel(locale, item.key)}</span>
-              <span className="copy">{t(locale, `report.urgencyCopy.${item.key}`)}</span>
-            </div>
-            <div className="meter">
-              <div style={{ width: `${(item.time / maxUrgencyTime) * 100}%`, background: item.color }} />
-            </div>
-            <div className="value">
-              <span>{tx(locale, 'common.count', item.count)}</span>
-              <strong className="il-mono">{fmtDurationShort(item.time, locale)}</strong>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="il-report-emptytrend">
-        {topUrgency.time > 0
-          ? tx(locale, 'report.topUrgencyInsight', {
-              label: urgencyLabel(locale, topUrgency.key),
-              insight: t(locale, `report.urgencyInsight.${topUrgency.key}`),
-            })
-          : t(locale, 'report.urgencyInsight.empty')}
-      </div>
     </div>
   );
 }

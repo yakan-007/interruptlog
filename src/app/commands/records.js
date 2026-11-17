@@ -5,7 +5,6 @@ import {
   beginPauseInState,
   beginPauseWithCategoryInState,
   cancelPauseInState,
-  createInterruptFollowupTaskInState,
   deleteEventInState,
   previewAddMissedEventInState,
   previewOverlapRepairInState,
@@ -16,8 +15,6 @@ import {
   saveInterruptInState,
   selectPauseCategoryInState,
   saveTaskRecordInState,
-  setBreakTargetInState,
-  shiftPauseStartInState,
   updateInterruptDraftInState,
 } from '../../state';
 
@@ -39,15 +36,10 @@ export function createRecordCommands({
     beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt', now(), {}, dependencies)),
     beginBreak: () => mutate((state) => beginPauseInState(state, 'break', now(), {}, dependencies)),
     selectPauseCategory: mutateWith(selectPauseCategoryInState),
-    setBreakTarget: mutateWith(setBreakTargetInState),
-    shiftPauseStart: mutateWith(shiftPauseStartInState),
     saveInterrupt: (data) => mutate((state) => saveInterruptInState(state, data, now(), dependencies)),
     cancelInterrupt: () => mutate((state) => cancelPauseInState(state, now(), dependencies)),
     updateInterruptDraft: mutateWith(updateInterruptDraftInState),
     saveBreak: (data) => mutate((state) => saveBreakInState(state, data, now(), dependencies)),
-    createInterruptFollowupTask(interruptData, taskData) {
-      return applyResult(createInterruptFollowupTaskInState(getState(), interruptData, taskData, now(), dependencies));
-    },
     previewSaveEvent(updated) {
       return previewSaveEventInState(getState(), updated, now());
     },

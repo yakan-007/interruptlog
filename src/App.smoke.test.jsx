@@ -165,7 +165,7 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getAllByRole('button', { name: '割り込みを記録' })[0]);
 
-    expect(await screen.findByText('種類')).toBeTruthy();
+    expect(await screen.findByText('カテゴリ')).toBeTruthy();
   });
 
   it('records an interruption and resumes the running task without render errors', async () => {
@@ -174,12 +174,12 @@ describe('App smoke flow', () => {
 
     await openPauseSheet(user);
 
-    expect(await screen.findByText('種類')).toBeTruthy();
+    expect(await screen.findByText('カテゴリ')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '保存して再開' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('種類')).toBeNull();
+      expect(screen.queryByText('カテゴリ')).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
     });
   });
@@ -192,12 +192,12 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await openPauseSheet(user, pauseKind);
-    expect(await screen.findByText('種類')).toBeTruthy();
+    expect(await screen.findByText('カテゴリ')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '保存して終了' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('種類')).toBeNull();
+      expect(screen.queryByText('カテゴリ')).toBeNull();
       expect(screen.queryAllByRole('button', { name: '停止' }).length).toBe(0);
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.running).toBeNull();
@@ -224,45 +224,18 @@ describe('App smoke flow', () => {
     });
   });
 
-  it('turns an interruption into a follow-up task and returns to the paused task', async () => {
+  it('discards a typed interruption on undo', async () => {
     const user = userEvent.setup();
     await startTaskFromFreshApp(user);
 
     await openPauseSheet(user);
     await user.type(screen.getByPlaceholderText('または自由記入'), '仕様確認');
-    await user.click(screen.getByRole('button', { name: 'この件をタスクにする' }));
-
-    expect(await screen.findByText('この件をタスクにする')).toBeTruthy();
-    const taskName = screen.getAllByRole('textbox', { name: 'タスク名' }).at(-1);
-    await user.clear(taskName);
-    await user.type(taskName, '仕様を調査する');
-    await user.click(screen.getByRole('button', { name: '作成して戻る' }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('この件をタスクにする')).toBeNull();
-      expect(screen.getByText('仕様を調査する')).toBeTruthy();
-      expect(screen.getAllByText('割り込みから発生').length).toBeGreaterThan(0);
-      expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
-    });
-  });
-
-  it('returns from follow-up task entry without saving the interruption', async () => {
-    const user = userEvent.setup();
-    await startTaskFromFreshApp(user);
-
-    await openPauseSheet(user);
-    await user.type(screen.getByPlaceholderText('または自由記入'), '仕様確認');
-    await user.click(screen.getByRole('button', { name: 'この件をタスクにする' }));
-    expect(await screen.findByText('この件をタスクにする')).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: '戻る' }));
-    expect(await screen.findByText('種類')).toBeTruthy();
     expect(screen.getByDisplayValue('仕様確認')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取り消し' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('種類')).toBeNull();
+      expect(screen.queryByText('カテゴリ')).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.events.some((event) => event.type === 'interrupt')).toBe(false);
@@ -277,7 +250,7 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await openPauseSheet(user, pauseKind);
-    expect(await screen.findByText('種類')).toBeTruthy();
+    expect(await screen.findByText('カテゴリ')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '閉じる' }));
 
@@ -497,10 +470,9 @@ async function startTaskFromFreshApp(user) {
 
 async function openPauseSheet(user, kind = 'interrupt') {
   await user.click(screen.getAllByRole('button', { name: '割り込みを記録' })[0]);
-  expect(await screen.findByText('種類')).toBeTruthy();
+  expect(await screen.findByText('カテゴリ')).toBeTruthy();
   if (kind === 'break') {
     await user.click(screen.getByRole('button', { name: '休憩' }));
-    await user.click(screen.getByRole('button', { name: '休憩目安 10分' }));
   }
 }
 

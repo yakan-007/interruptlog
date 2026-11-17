@@ -8,7 +8,6 @@ import {
   buildDayStats,
   buildHourlyInterrupts,
   buildSenders,
-  buildUrgencyStats,
   buildWorkdayReport,
 } from './interruptionMetrics';
 import {
@@ -29,9 +28,6 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
   const maxDay = Math.max(...dayStats.map((day) => day.focus + day.interrupt), 1);
   const senders = buildSenders(currentStats.events);
   const maxSenderTime = Math.max(...senders.map((sender) => sender.time), 1);
-  const urgencyStats = buildUrgencyStats(currentStats.events);
-  const maxUrgencyTime = Math.max(...urgencyStats.map((item) => item.time), 1);
-  const topUrgency = urgencyStats.reduce((top, item) => item.time > top.time ? item : top, urgencyStats[0]);
   const categoryList = buildCategoryList(currentStats.events);
   const totalCategoryTime = categoryList.reduce((sum, category) => sum + category.time, 0) || 1;
   const taskGroups = groupTaskEvents(currentStats.events);
@@ -54,9 +50,6 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
     maxDay,
     senders,
     maxSenderTime,
-    urgencyStats,
-    maxUrgencyTime,
-    topUrgency,
     categoryList,
     totalCategoryTime,
     peakHour,

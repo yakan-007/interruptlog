@@ -12,7 +12,6 @@ import {
   SendersCard,
   TaskEngagementCard,
   TaskStatusCard,
-  UrgencyBreakdownCard,
   WeekdayTrendCard,
   WorkdayCard,
 } from './PersonalReportCards';
@@ -110,11 +109,6 @@ describe('personal report cards', () => {
             { label: '5m+', count: 0, time: 0 },
           ],
         }} />
-        <UrgencyBreakdownCard locale="ja-JP" maxUrgencyTime={hour} topUrgency={{ key: 'high', time: hour }} urgencyStats={[
-          { key: 'low', time: 10 * 60 * 1000, count: 1, color: 'blue' },
-          { key: 'med', time: 20 * 60 * 1000, count: 1, color: 'orange' },
-          { key: 'high', time: hour, count: 2, color: 'red' },
-        ]} />
         <WeekdayTrendCard locale="ja-JP" maxDay={hour} dayStats={[{ day: '月', focus: hour, interrupt: 30 * 60 * 1000 }]} />
         <SendersCard locale="ja-JP" maxSenderTime={hour} senders={[{ who: '田中', count: 2, time: hour }]} />
         <CategoryTimeCard locale="ja-JP" categories={[{ id: 'cat-dev', name: '開発', color: 'teal' }]} categoryList={[{ id: 'cat-dev', time: hour }]} totalCategoryTime={hour} />
@@ -134,7 +128,6 @@ describe('personal report cards', () => {
     expect(screen.getByText('基本の作業時間')).toBeTruthy();
     expect(screen.getByText('時間帯別の割り込み')).toBeTruthy();
     expect(screen.getByText('短時間割り込み')).toBeTruthy();
-    expect(screen.getByText('緊急度別の割り込み')).toBeTruthy();
     expect(screen.getByText('主な発信者')).toBeTruthy();
     expect(screen.getByText('完了タスク')).toBeTruthy();
   });

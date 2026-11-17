@@ -69,7 +69,6 @@ report: {
         noMicroInterruptions: 'No interruptions under one minute',
         microShare: ({ percent }) => `${percent}% of interruption records were under one minute`,
         interruptionChainRate: ({ percent, count }) => `${count} records were followed by another interruption (${percent}%)`,
-        urgencyBreakdown: 'Interruptions by urgency',
         weekdayTrend: 'Weekday trend',
         senders: 'Main senders',
         categoryTime: 'Time by category',
@@ -98,18 +97,6 @@ report: {
           hour: (hour) => `Consider batching interruptions around ${hour}:00.`,
           empty: 'Use this week’s interruption trend to choose one request rule to try next week.',
         },
-        urgencyCopy: {
-          low: 'Requests that could wait',
-          med: 'Requests handled in the moment',
-          high: 'Requests that needed immediate attention',
-        },
-        urgencyInsight: {
-          low: 'This may be a good candidate for batched question time.',
-          med: 'Look for missing context or unclear handoff rules.',
-          high: 'Review triage, ownership, or notification design.',
-          empty: 'Urgency patterns will appear once more interruptions are logged.',
-        },
-        topUrgencyInsight: ({ label, insight }) => `${label} interruptions took the most time. ${insight}`,
         completedAt: (date) => `Done ${date}`,
       },
 };

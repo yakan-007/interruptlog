@@ -1,5 +1,4 @@
-import { asNumber } from './utils';
-import { closeTaskSessionInState, createTaskInState, startTaskInState } from './tasks';
+import { closeTaskSessionInState, startTaskInState } from './tasks';
 import {
   appendInterruptEvent,
   buildBreakEvent,
@@ -9,7 +8,6 @@ import {
   normalizeInterruptDraft,
 } from './pauseEvents';
 import { ensureWorkdayScheduleInState } from './workday';
-import { ERROR_CODES } from '../domain/errors';
 
 export function beginPauseInState(state, type, now = Date.now(), context = {}, dependencies = {}) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
@@ -57,7 +55,6 @@ export function selectPauseCategoryInState(state, categoryId) {
         categoryId: category.id,
         label: interruptLabel(draft, category.name),
         draft,
-        plannedBreakDurationMinutes: null,
       },
     };
   }
@@ -70,20 +67,6 @@ export function selectPauseCategoryInState(state, categoryId) {
       categoryId: category.id,
       label: category.name || '休憩中',
       draft: null,
-      plannedBreakDurationMinutes: running.type === 'break' && running.categoryId === category.id
-        ? Math.max(0, asNumber(running.plannedBreakDurationMinutes, category.defaultDurationMinutes) ?? 0)
-        : Math.max(0, asNumber(category.defaultDurationMinutes, 0) ?? 0),
-    },
-  };
-}
-
-export function setBreakTargetInState(state, minutes) {
-  if (state.running?.type !== 'break') return state;
-  return {
-    ...state,
-    running: {
-      ...state.running,
-      plannedBreakDurationMinutes: Math.max(0, asNumber(minutes, 0) ?? 0),
     },
   };
 }
@@ -127,27 +110,6 @@ export function saveInterruptInState(state, data, now = Date.now(), dependencies
   const event = buildInterruptEvent({ ...state.running.draft, ...data }, state.running.start ?? now, now, null, dependencies);
   const next = appendInterruptEvent(state, event, data.saveWhoChip ?? state.running.draft?.saveWhoChip);
   return resumeOrStopInState(next, data.resume, now, dependencies);
-}
-
-export function createInterruptFollowupTaskInState(state, interruptData, taskData, now = Date.now(), dependencies = {}) {
-  if (state.running?.type !== 'interrupt') return { state, taskId: null, errorCode: ERROR_CODES.INTERRUPT_NOT_ACTIVE };
-
-  const event = buildInterruptEvent({ ...state.running.draft, ...interruptData }, state.running.start ?? now, now, null, dependencies);
-  const withInterrupt = appendInterruptEvent(state, event, interruptData.saveWhoChip ?? state.running.draft?.saveWhoChip);
-  const created = createTaskInState(withInterrupt, {
-    ...taskData,
-    interruptOriginId: event.id,
-  }, now, dependencies);
-  if (created.errorCode || !created.taskId) {
-    return { state, taskId: null, errorCode: created.errorCode ?? ERROR_CODES.TASK_CREATE_FAILED };
-  }
-  const hadResumeTarget = getResumeTaskId(state) != null;
-  const resumed = resumeOrStopInState({ ...created.state, running: state.running }, true, now, dependencies);
-  return {
-    state: hadResumeTarget ? resumed : startTaskInState(resumed, created.taskId, now, dependencies),
-    taskId: created.taskId,
-    errorCode: null,
-  };
 }
 
 export function saveBreakInState(state, data, now = Date.now(), dependencies = {}) {
@@ -195,9 +157,6 @@ function createPauseRunning(type, now, resumeStack, context = {}) {
     resumeStack,
     categoryId: type === 'interrupt' ? draft.categoryId : context.categoryId ?? null,
     draft,
-    plannedBreakDurationMinutes: type === 'break'
-      ? Math.max(0, asNumber(context.plannedBreakDurationMinutes, 0) ?? 0)
-      : null,
   };
 }
 
@@ -241,48 +200,10 @@ function pauseContextFromCategory(category, type) {
     return {
       categoryId: category.id,
       label: category.name,
-      plannedBreakDurationMinutes: category.defaultDurationMinutes,
     };
   }
   return {
     label: category.name,
     draft: { categoryId: category.id },
   };
-}
-
-// How far back the running pause may start: up to the start of the record it
-// cut short (the task or previous pause segment ending exactly where it began),
-// or else up to the end of the latest earlier record.
-export function getPauseStartFloor(state) {
-  const running = state.running;
-  if (running?.type !== 'interrupt' && running?.type !== 'break') return null;
-  const adjacent = findAdjacentBeforePause(state);
-  if (adjacent) return adjacent.start;
-  return state.events
-    .filter((event) => event.end != null && event.end <= running.start)
-    .reduce((latest, event) => Math.max(latest, event.end), Number.NEGATIVE_INFINITY);
-}
-
-// "I pressed it late": move the pause start back by `minutes`, taking that
-// time away from the record it interrupted.
-export function shiftPauseStartInState(state, minutes) {
-  const running = state.running;
-  const floor = getPauseStartFloor(state);
-  const deltaMs = Math.max(0, asNumber(minutes, 0) ?? 0) * 60000;
-  if (floor == null || deltaMs === 0) return state;
-  const nextStart = Math.max(running.start - deltaMs, floor);
-  if (nextStart === running.start) return state;
-
-  const adjacent = findAdjacentBeforePause(state);
-  const events = adjacent
-    ? nextStart <= adjacent.start
-      ? state.events.filter((event) => event !== adjacent)
-      : state.events.map((event) => event === adjacent ? { ...event, end: nextStart } : event)
-    : state.events;
-  return { ...state, events, running: { ...running, start: nextStart } };
-}
-
-function findAdjacentBeforePause(state) {
-  const start = state.running?.start;
-  return [...state.events].reverse().find((event) => event.end === start && event.start < start) ?? null;
 }

@@ -69,7 +69,6 @@ report: {
         noMicroInterruptions: '1分未満の割り込みはありません',
         microShare: ({ percent }) => `割り込み件数のうち ${percent}% が1分未満です`,
         interruptionChainRate: ({ percent, count }) => `直後に別の割り込みが続いた記録は ${count}件（${percent}%）です`,
-        urgencyBreakdown: '緊急度別の割り込み',
         weekdayTrend: '曜日別の傾向',
         senders: '主な発信者',
         categoryTime: 'カテゴリ別時間配分',
@@ -98,18 +97,6 @@ report: {
           hour: (hour) => `${hour}時台の割り込みをまとめる候補です`,
           empty: '割り込みの記録が増えると、来週の改善候補を出せます',
         },
-        urgencyCopy: {
-          low: '後回しにできた割り込み',
-          med: 'その場で扱った割り込み',
-          high: 'すぐに対応した割り込み',
-        },
-        urgencyInsight: {
-          low: 'まとめて聞く時間を作る候補です。',
-          med: '共有不足や確認フローを見直す候補です。',
-          high: '一次対応や通知設計を見直す候補です。',
-          empty: '緊急度の傾向は、割り込みの記録が増えると見えてきます。',
-        },
-        topUrgencyInsight: ({ label, insight }) => `${label}の割り込みが一番長めです。${insight}`,
         completedAt: (date) => `${date} 完了`,
       },
 };

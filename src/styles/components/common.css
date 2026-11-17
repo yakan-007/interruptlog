@@ -40,9 +40,6 @@
 .il-chip.accent { background: color-mix(in oklch, var(--accent) 12%, transparent); color: var(--accent); }
 .il-chip.danger { background: color-mix(in oklch, var(--urg-high) 15%, transparent); color: var(--urg-high); }
 .il-chip.warn { color: oklch(0.45 0.10 80); background: color-mix(in oklch, var(--urg-med) 16%, transparent); }
-.il-chip.urg-low { background: color-mix(in oklch, var(--urg-low) 13%, transparent); color: var(--urg-low); }
-.il-chip.urg-med { background: color-mix(in oklch, var(--urg-med) 16%, transparent); color: oklch(0.45 0.10 80); }
-.il-chip.urg-high { background: color-mix(in oklch, var(--urg-high) 15%, transparent); color: var(--urg-high); }
 
 .btn {
   height: 44px;

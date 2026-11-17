@@ -1,6 +1,6 @@
 import { fmtDurationShort } from '../../lib/formatters';
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
-import { categoryLabel, interruptCategoryLabel, t, typeLabel, urgencyLabel } from '../../i18n';
+import { categoryLabel, interruptCategoryLabel, t, typeLabel } from '../../i18n';
 
 export default function HistoryList({ items, state, now, selectedDate, locale = 'ja-JP', onEdit }) {
   return (
@@ -42,9 +42,6 @@ function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
           {event.startsBeforeDay && <span className="il-chip sm accent">{t(locale, 'history.previousDay')}</span>}
           {event.endsAfterDay && <span className="il-chip sm accent">{t(locale, 'history.nextDay')}</span>}
           {event.longEvent && <span className="il-chip sm warn">{t(locale, 'history.longEvent')}</span>}
-          {event.type === 'interrupt' && event.urgency && (
-            <span className={'il-chip sm urg-' + event.urgency}>{urgencyLabel(locale, event.urgency)}</span>
-          )}
         </div>
         {event.memo && <div className="il-history-memo">{event.memo}</div>}
       </div>

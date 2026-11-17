@@ -53,19 +53,6 @@
 .il-runbar.reopenable:active {
   transform: translateY(1px) scale(0.995);
 }
-.il-runbar.break.target {
-  border-color: color-mix(in oklch, var(--break) 38%, var(--hair-strong));
-}
-.il-runbar.break.warn {
-  --runbar-state: oklch(0.72 0.12 76);
-  background: color-mix(in oklch, var(--runbar-state) 15%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--runbar-state) 44%, var(--hair-strong));
-}
-.il-runbar.break.late {
-  --runbar-state: oklch(0.61 0.17 32);
-  background: color-mix(in oklch, var(--runbar-state) 14%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--runbar-state) 44%, var(--hair-strong));
-}
 
 .il-runbar .dot {
   width: 8px;
@@ -335,9 +322,7 @@
   background: color-mix(in oklch, var(--ink) 88%, var(--interrupt) 12%);
   color: #fffdf8;
 }
-.il-runbar.break .rb-btn.stop,
-.il-runbar.break.warn .rb-btn.stop,
-.il-runbar.break.late .rb-btn.stop {
+.il-runbar.break .rb-btn.stop {
   background: color-mix(in oklch, var(--ink) 88%, var(--break) 12%);
   color: #fffdf8;
 }

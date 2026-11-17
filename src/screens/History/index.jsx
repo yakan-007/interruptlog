@@ -171,7 +171,6 @@ function toEditableEvent(event, now) {
     workDetail: event.workDetail ?? null,
     memo: event.memo ?? '',
     who: event.who ?? '',
-    urgency: event.urgency ?? 'med',
     categoryId: event.categoryId ?? '',
     start: event.start,
     end: event.end ?? now,

@@ -28,14 +28,10 @@ export {
   beginNextPauseWithCategoryInState,
   beginPauseWithCategoryInState,
   cancelPauseInState,
-  createInterruptFollowupTaskInState,
-  getPauseStartFloor,
   getResumeTaskId,
   saveBreakInState,
   saveInterruptInState,
   selectPauseCategoryInState,
-  setBreakTargetInState,
-  shiftPauseStartInState,
   updateInterruptDraftInState,
 } from './interruptsBreaks';
 

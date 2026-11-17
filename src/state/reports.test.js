@@ -135,14 +135,14 @@ describe('personal reports', () => {
     const csv = buildReportCsv(state, 'day', at(11, 18));
     const [header, row] = csv.split('\n').map((line) => line.split(','));
 
-    expect(header).toEqual(['reportDate', 'range', 'timezone', 'affiliation', 'memberName', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'urgency', 'memo', 'durationMinutes']);
+    expect(header).toEqual(['reportDate', 'range', 'timezone', 'affiliation', 'memberName', 'start', 'end', 'type', 'label', 'category', 'categoryId', 'taskId', 'sourceTaskId', 'interruptOriginId', 'who', 'memo', 'durationMinutes']);
     expect(row[0]).toBe('2026-05-11');
     expect(row[1]).toBe('day');
     expect(row[2]).toBeTruthy();
     expect(row.slice(3, 5)).toEqual(['開発部', '山田 太郎']);
     expect(row[7]).toBe('interrupt');
     expect(row[8]).toBe('仕様確認');
-    expect(row.slice(14)).toEqual(['田中', 'med', '画面の確認', '30.0']);
+    expect(row.slice(14)).toEqual(['田中', '画面の確認', '30.0']);
   });
 
   it('exports analysis CSV with derived sequence and short-event fields', () => {
@@ -222,6 +222,6 @@ describe('personal reports', () => {
 
     expect(row[8]).toBe(`"'=IMPORTXML(""https://example.com"")"`);
     expect(row[14]).toBe("'+田中");
-    expect(row[16]).toBe("'@確認");
+    expect(row[15]).toBe("'@確認");
   });
 });

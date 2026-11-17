@@ -35,7 +35,7 @@ function setVisualViewport({ height, offsetTop = 0 }) {
 
 function LayoutProbe() {
   const ref = useRef(null);
-  useAppLayout(ref, { accent: 'oklch(0.5 0.08 180)', dark: true });
+  useAppLayout(ref, { dark: true });
 
   return (
     <div ref={ref} data-testid="app-shell">

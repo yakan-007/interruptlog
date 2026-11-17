@@ -1,12 +1,6 @@
 import { normalizeLocale } from '../../i18n';
 import { calculateRangeStats, getWorkdayBounds } from '../../state';
 
-const URGENCY_META = {
-  low: { color: 'var(--urg-low)' },
-  med: { color: 'var(--urg-med)' },
-  high: { color: 'var(--urg-high)' },
-};
-
 export function buildWorkdayReport(state, events, bounds, now) {
   if (bounds.until - bounds.since > 86400000) return null;
   const workday = getWorkdayBounds(state, bounds.since);
@@ -74,18 +68,6 @@ export function buildSenders(events) {
     senderMap[event.who].time += event.durationMs;
   }
   return Object.values(senderMap).sort((left, right) => right.time - left.time).slice(0, 5);
-}
-
-export function buildUrgencyStats(events) {
-  return ['low', 'med', 'high'].map((key) => {
-    const urgencyEvents = events.filter((item) => item.type === 'interrupt' && (item.urgency || 'med') === key);
-    return {
-      key,
-      ...URGENCY_META[key],
-      count: urgencyEvents.length,
-      time: urgencyEvents.reduce((sum, event) => sum + event.durationMs, 0),
-    };
-  });
 }
 
 export function buildCategoryList(events) {

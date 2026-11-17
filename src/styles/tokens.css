@@ -9,7 +9,6 @@
   --ink-5: #d5d2c9;
   --hair: rgba(23, 21, 18, 0.08);
   --hair-strong: rgba(23, 21, 18, 0.14);
-  /* The chosen accent is set as --accent-base; --accent is what components use. */
   --accent-base: oklch(0.35 0.03 250);
   --accent: var(--accent-base);
   --accent-2: oklch(0.52 0.04 250);
@@ -49,7 +48,7 @@
   --ink-5: #3d3a35;
   --hair: rgba(255, 252, 245, 0.08);
   --hair-strong: rgba(255, 252, 245, 0.14);
-  /* The accent choices are all dark, so lift them to stay readable on dark surfaces. */
+  /* Lift the dark accent so it stays readable on dark surfaces. */
   --accent: color-mix(in oklch, var(--accent-base) 45%, #f2efe8);
   --accent-soft: oklch(0.25 0.02 250);
 }
