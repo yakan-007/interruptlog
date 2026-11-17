@@ -12,7 +12,9 @@ export default function WorkdayEndSheet({ state, actions, onClose }) {
   const [start, setStart] = useState(standard.start ?? '');
   const [end, setEnd] = useState(today?.end ?? standard.end ?? '');
   const [error, setError] = useState('');
-  const hasOverride = configured && state.workdaySchedules?.[workdayKey()]?.end !== standard.end;
+  // Only a day whose end was actually changed can go back to the standard one.
+  const todayEnd = state.workdaySchedules?.[workdayKey()]?.end ?? null;
+  const hasOverride = configured && todayEnd != null && todayEnd !== standard.end;
 
   const save = () => {
     const next = { start, end };

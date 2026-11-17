@@ -1,4 +1,3 @@
-import Icons from '../../icons';
 import { t, tx } from '../../i18n';
 import {
   ExportRow,
@@ -23,11 +22,6 @@ export default function PersonalDataSections({ state, actions, locale, onOpenPan
         <NavRow title={t(locale, 'settings.subjectChips')} note={tx(locale, 'common.count', state.subjectChips.length)} onClick={() => onOpenPanel({ type: 'chips', kind: 'subject' })} />
       </div>
 
-      <div className="il-section-h"><span>{t(locale, 'settings.reports')}</span></div>
-      <div className="il-settings-group">
-        <NavRow title={t(locale, 'settings.reportProfile')} note={reportProfileNote} onClick={() => onOpenPanel({ type: 'reportProfile' })} />
-      </div>
-
       <div className="il-section-h"><span>{t(locale, 'settings.data')}</span></div>
       {state.overlapRepair.warning && (
         <div className="il-settings-group">
@@ -35,9 +29,10 @@ export default function PersonalDataSections({ state, actions, locale, onOpenPan
         </div>
       )}
       <div className="il-settings-group">
-        <SettingsNote icon={Icons.alert(14)} title={t(locale, 'settings.storageTitle')} lines={tx(locale, 'settings.storageLines')} />
-        <ExportRow title={t(locale, 'settings.exportBackup')} note={backupStatus.note} badge={backupStatus.due ? t(locale, 'settings.backupDueBadge') : null} onClick={() => actions.exportJson()} />
-        <NavRow title={t(locale, 'settings.importBackup')} note={t(locale, 'settings.importBackupNote')} accent onClick={() => onOpenPanel({ type: 'import' })} />
+        <NavRow title={t(locale, 'settings.reportProfile')} note={reportProfileNote} onClick={() => onOpenPanel({ type: 'reportProfile' })} />
+        <SettingsNote title={t(locale, 'settings.storageTitle')} lines={tx(locale, 'settings.storageLines')} />
+        <ExportRow title={t(locale, 'settings.exportBackup')} note={backupStatus.note} due={backupStatus.due} onClick={() => actions.exportJson()} />
+        <NavRow title={t(locale, 'settings.importBackup')} note={t(locale, 'settings.importBackupNote')} onClick={() => onOpenPanel({ type: 'import' })} />
         <NavRow title={t(locale, 'settings.resetAll')} note={t(locale, 'settings.resetAllNote')} danger onClick={() => onOpenPanel({ type: 'reset' })} />
       </div>
 

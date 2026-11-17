@@ -107,77 +107,16 @@
 .il-sheet-infobox .strong { font-weight: 500; }
 .il-sheet-infobox .quiet { font-size: var(--text-xs); color: var(--ink-4); }
 
-.il-breakplan-row,
 .il-sheet-planrow {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.il-breakpreset-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.il-breakpreset {
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--hair);
-  background: var(--bg-elevated);
-  color: var(--ink-2);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s, box-shadow .15s, transform .1s;
-}
-
-.il-breakpreset:active { transform: scale(0.98); }
-
-.il-breakpreset.active {
-  background: color-mix(in oklch, var(--break) 16%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--break) 34%, var(--hair));
-  color: color-mix(in oklch, var(--break) 72%, var(--ink) 28%);
-  box-shadow: inset 0 1px 0 color-mix(in oklch, white 34%, transparent);
-}
-
-.il-breakplan-row .suffix,
 .il-sheet-planrow .suffix {
   font-size: var(--text-sm);
   color: var(--ink-3);
-}
-
-.il-breakplan-row .spacer,
-.il-sheet-planrow .spacer {
-  flex: 1;
-}
-
-.il-pause-category-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
-}
-
-.il-pause-category {
-  min-height: 38px;
-  padding: 0 14px;
-  border: 1px solid var(--hair);
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  color: var(--ink-2);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s, transform .1s;
-}
-
-.il-pause-category:active {
-  transform: scale(0.98);
 }
 
 .il-pause-category-divider {
@@ -186,19 +125,6 @@
   margin: 6px 2px;
   background: var(--hair-strong);
 }
-
-.il-pause-category.break.sel {
-  background: color-mix(in oklch, var(--break) 16%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--break) 40%, var(--hair));
-  color: color-mix(in oklch, var(--break) 62%, var(--ink) 38%);
-}
-
-.il-pause-category:not(.break).sel {
-  background: color-mix(in oklch, var(--interrupt) 10%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--interrupt) 34%, var(--hair));
-  color: color-mix(in oklch, var(--interrupt) 74%, var(--ink) 26%);
-}
-
 
 .il-segmented {
   display: grid;
@@ -228,11 +154,16 @@
   box-shadow: var(--sh-card);
 }
 
-.il-sheet-presetrow {
+.il-sheet-dueinput {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.il-sheet-dueinput .il-input {
+  flex: 1;
+  min-width: 0;
 }
 
 .il-task-target-field {

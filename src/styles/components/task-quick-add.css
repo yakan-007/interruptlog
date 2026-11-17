@@ -98,24 +98,46 @@
   color: var(--bg-elevated);
 }
 
-.il-quickdock-pause {
-  padding: 0 12px;
+/* 割り込み and 休憩 are one pair: same neutral button, same size; only the
+   icon carries the interrupt / break color. */
+.il-quickdock-pause,
+.il-quickdock-break {
+  gap: 4px;
+  padding: 0 10px 0 8px;
   font-family: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
-  border-color: color-mix(in oklch, var(--interrupt) 30%, var(--hair));
-  background: color-mix(in oklch, var(--interrupt) 8%, var(--bg-elevated));
-  color: var(--interrupt);
+  white-space: nowrap;
 }
 
-.il-quickdock-break {
-  padding: 0 12px;
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  border-color: color-mix(in oklch, var(--break) 34%, var(--hair));
-  background: color-mix(in oklch, var(--break) 10%, var(--bg-elevated));
-  color: color-mix(in oklch, var(--break) 60%, var(--ink) 40%);
+.il-quickdock-pause .icon,
+.il-quickdock-break .icon {
+  display: inline-flex;
+}
+
+/* On the narrowest phones the labels would squeeze the task input until its
+   placeholder is cut, so the pair shrinks to icons (the names stay as
+   aria-labels). */
+@media (max-width: 359px) {
+  .il-quickdock-pause,
+  .il-quickdock-break {
+    width: 44px;
+    padding: 0;
+  }
+
+  .il-quickdock-pause .icon + span,
+  .il-quickdock-break .icon + span {
+    display: none;
+  }
+}
+
+.il-quickdock-pause .icon { color: var(--interrupt); }
+.il-quickdock-break .icon { color: color-mix(in oklch, var(--break) 70%, var(--ink) 30%); }
+
+.il-quickdock-pause:hover,
+.il-quickdock-break:hover {
+  background: var(--bg-sunken);
+  color: var(--ink);
 }
 
 .il-quickdock-icon:disabled {

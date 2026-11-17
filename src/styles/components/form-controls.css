@@ -65,8 +65,14 @@
 
 .il-inline-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+}
+
+/* A date-and-time field needs about 220px; two side by side do not fit a
+   phone, so start and end stack. */
+.il-inline-fields:has(input[type="datetime-local"]) {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .il-chiprow {
@@ -105,10 +111,21 @@
   }
 }
 
-.il-chiprow .c {
+/* One chip for every pick-one-of-these in a sheet: white pill, and the
+   chosen one is filled with ink. Role and category colors only appear as a
+   dot inside the chip, never as the selection itself. */
+.il-chipgrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.il-chiprow .c,
+.il-chipgrid .c {
   flex-shrink: 0;
   height: 32px;
-  padding: 0 12px;
+  padding: 0 10px;
   border-radius: 999px;
   background: var(--bg-elevated);
   border: 1px solid var(--hair);
@@ -123,23 +140,22 @@
   transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
 }
 
-.il-chiprow .c.sel {
+.il-chiprow .c.sel,
+.il-chipgrid .c.sel {
   background: var(--ink);
   color: var(--bg-elevated);
   border-color: var(--ink);
 }
 
-.il-chiprow .c.task-cat.sel {
-  background: color-mix(in oklch, var(--chip-cat, var(--accent)) 14%, var(--bg-elevated));
-  color: color-mix(in oklch, var(--chip-cat, var(--accent)) 74%, var(--ink) 26%);
-  border-color: color-mix(in oklch, var(--chip-cat, var(--accent)) 28%, var(--hair));
-  box-shadow: inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+.il-chiprow .c:active,
+.il-chipgrid .c:active {
+  transform: scale(0.98);
 }
 
-.il-chiprow .c .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
+:is(.il-chiprow, .il-chipgrid) .c .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
@@ -186,3 +202,9 @@
 
 
 
+
+.il-input.il-fileinput {
+  height: auto;
+  padding: 8px;
+  font-size: var(--text-sm);
+}

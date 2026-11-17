@@ -45,6 +45,9 @@ export function CategoryRow({ category, locale, onClick, rowProps, dragHandlePro
 export function InterruptCategoryRow({ category, locale, onClick, rowProps, dragHandleProps, dragging = false, dropPosition = null, reorderMode = false }) {
   const content = (
     <>
+      {/* Interruption categories have no colors of their own; the dot keeps
+          their names aligned with the task categories above. */}
+      <span className="il-settings-catdot interrupt" />
       <span className="tg">
         <span className="t">{interruptCategoryLabel(locale, category)}</span>
       </span>
@@ -86,32 +89,32 @@ export function AddRowButton({ label, onClick }) {
   );
 }
 
-export function NavRow({ title, note, accent = false, danger = false, onClick }) {
-  const titleClass = danger ? 'danger-inline' : accent ? 'accent-inline' : undefined;
+export function NavRow({ title, note, danger = false, onClick }) {
   return (
     <button className="il-setrow il-setbutton" onClick={onClick}>
-      <span className="tg"><span className={titleClass ? `t ${titleClass}` : 't'}>{title}</span><span className="s">{note}</span></span>
+      <span className="tg"><span className={danger ? 't danger-inline' : 't'}>{title}</span><span className="s">{note}</span></span>
       {Icons.chevR(14)}
     </button>
   );
 }
 
-export function ExportRow({ title, note, badge, onClick }) {
+// Writing a backup is an action, not a page: no chevron. When a backup is
+// overdue the note itself turns red instead of a separate badge.
+export function ExportRow({ title, note, due = false, onClick }) {
   return (
     <button className="il-setrow il-setbutton" onClick={onClick}>
       <span className="tg">
-        <span className="t accent-inline">{Icons.download(14)} {title}</span>
-        <span className="s">{note}</span>
+        <span className="t">{title}</span>
+        <span className={'s' + (due ? ' warn' : '')}>{note}</span>
       </span>
-      {badge && <span className="il-setrow-badge warn">{badge}</span>}
+      {Icons.download(16)}
     </button>
   );
 }
 
-export function SettingsNote({ icon, title, lines }) {
+export function SettingsNote({ title, lines }) {
   return (
     <div className="il-setrow il-settings-note">
-      <span className="il-settings-noteicon" aria-hidden="true">{icon}</span>
       <span className="tg">
         <div className="t">{title}</div>
         {lines.map((line) => <div key={line} className="s">{line}</div>)}

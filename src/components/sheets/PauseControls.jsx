@@ -17,12 +17,12 @@ export function PauseCategoryPicker({ mode, categories, categoryId, locale, onSe
   return (
     <div className="il-field">
       <label>{t(locale, 'sheets.pauseCategory')}</label>
-      <div className="il-pause-category-grid">
+      <div className="il-chipgrid">
         {categories.map((category) => (
           <button
             key={category.id}
             type="button"
-            className={'il-pause-category' + (mode === 'interrupt' && categoryId === category.id ? ' sel' : '')}
+            className={'c' + (mode === 'interrupt' && categoryId === category.id ? ' sel' : '')}
             aria-pressed={mode === 'interrupt' && categoryId === category.id}
             onClick={() => onSelect(category)}
           >
@@ -32,7 +32,7 @@ export function PauseCategoryPicker({ mode, categories, categoryId, locale, onSe
         <span className="il-pause-category-divider" aria-hidden="true" />
         <button
           type="button"
-          className={'il-pause-category break' + (mode === 'break' ? ' sel' : '')}
+          className={'c' + (mode === 'break' ? ' sel' : '')}
           aria-pressed={mode === 'break'}
           onClick={onSelectBreak}
         >

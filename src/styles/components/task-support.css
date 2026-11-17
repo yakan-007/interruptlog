@@ -60,6 +60,21 @@
   transform: translateY(100%);
 }
 
+/* While a sheet is open the tab bar sits under the same scrim and cannot be
+   used: switching screens behind a modal left some sheets open over the wrong
+   screen and silently closed others. */
+.il-appshell:has(.il-sheet) .il-tabbar {
+  pointer-events: none;
+}
+
+.il-appshell:has(.il-sheet) .il-tabbar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 21, 18, 0.35);
+  animation: il-scrim-in .2s ease;
+}
+
 .il-tab {
   flex: 1;
   display: flex;

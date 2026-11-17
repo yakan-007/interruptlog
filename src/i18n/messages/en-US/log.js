@@ -11,7 +11,7 @@ log: {
         completedToday: 'Completed today',
         completedArchive: 'Completed archive',
         archiveCopy: 'Older completed tasks are hidden from the main list. Restarting one keeps tracking on the same task.',
-        addPlaceholder: 'Add a task...',
+        addPlaceholder: 'Add a task',
         taskName: 'Task name',
         openDetails: 'Open details',
         addTask: 'Add task',

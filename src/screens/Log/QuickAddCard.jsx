@@ -182,7 +182,8 @@ export default function QuickAddCard({ state, actions }) {
                 onClick={() => actions.openSheet('newPause')}
                 aria-label={t(state.preferences.locale, 'log.startPause')}
               >
-                {t(state.preferences.locale, 'log.pauseShort')}
+                <span className="icon" aria-hidden="true">{Icons.bolt(15)}</span>
+                <span>{t(state.preferences.locale, 'log.pauseShort')}</span>
               </button>
             )}
             {(!state.running || state.running.type === 'task') && (
@@ -192,7 +193,8 @@ export default function QuickAddCard({ state, actions }) {
                 onClick={() => actions.openSheet('newPause', { kind: 'break' })}
                 aria-label={t(state.preferences.locale, 'log.startBreak')}
               >
-                {t(state.preferences.locale, 'log.breakShort')}
+                <span className="icon" aria-hidden="true">{Icons.coffee(15)}</span>
+                <span>{t(state.preferences.locale, 'log.breakShort')}</span>
               </button>
             )}
           </>

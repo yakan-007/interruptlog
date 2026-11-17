@@ -2,8 +2,8 @@ const Icons = {
   play: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5L13 8l-9 5.5V2.5z" /></svg>,
   pause: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="2.5" width="3" height="11" rx="1" /><rect x="9.5" y="2.5" width="3" height="11" rx="1" /></svg>,
   stop: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="2" /></svg>,
-  bolt: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" /></svg>,
-  coffee: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 5.5h8v4a3 3 0 01-3 3H5.5a3 3 0 01-3-3v-4z" /><path d="M10.5 7h2a1.5 1.5 0 010 3h-2" /><path d="M4 3v-.5M6.5 3v-.5M9 3v-.5" /></svg>,
+  bolt: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.25 1.75L3.75 8.75h4l-1 5.5 5.5-7h-4l1-5.5z" /></svg>,
+  coffee: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.5h8V10a2.5 2.5 0 01-2.5 2.5H5A2.5 2.5 0 012.5 10V6.5z" /><path d="M10.5 7.5h1.25a1.75 1.75 0 010 3.5H10.5" /><path d="M5 2.25v2M8 2.25v2" /></svg>,
   plus: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>,
   check: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 5" /></svg>,
   close: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>,
@@ -29,7 +29,6 @@ const Icons = {
   download: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v9M4.5 7.5L8 11l3.5-3.5M3 13.5h10" /></svg>,
   print: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 5V2.5h7V5" /><path d="M4.5 11H3a1 1 0 01-1-1V6.5a1.5 1.5 0 011.5-1.5h9A1.5 1.5 0 0114 6.5V10a1 1 0 01-1 1h-1.5" /><path d="M4.5 9.5h7v4h-7z" /><path d="M11.5 7.25h.01" /></svg>,
   alert: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 1.5L15 13H1L8 1.5z" /><path d="M8 6v3.5M8 11.5v.5" /></svg>,
-  spark: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l1.5 4.5L14 7l-4.5 1.5L8 13l-1.5-4.5L2 7l4.5-1.5L8 1z" /></svg>,
   circle: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="6" /></svg>,
   q: (s = 16) => <svg width={s} height={s} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="6" /><path d="M6 6.5a2 2 0 014 0c0 1-.5 1.5-1.5 2-.5.3-.5.8-.5 1.5M8 12.2v.1" /></svg>,
 };

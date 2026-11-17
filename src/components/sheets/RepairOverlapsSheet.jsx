@@ -1,4 +1,3 @@
-import Icons from '../../icons';
 import { t, tx } from '../../i18n';
 import ResolutionChangeList from './ResolutionChangeList';
 import SheetShell from './SheetShell';
@@ -12,7 +11,7 @@ export default function RepairOverlapsSheet({ preview, locale = 'ja-JP', onDefer
       footer={(
         <>
           <button className="btn tert" onClick={onDefer}>{t(locale, 'sheets.repairLater')}</button>
-          <button className="btn primary" onClick={onApply}>{Icons.spark(14)} {t(locale, 'sheets.repairApply')}</button>
+          <button className="btn primary" onClick={onApply}>{t(locale, 'sheets.repairApply')}</button>
         </>
       )}
     >

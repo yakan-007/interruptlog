@@ -5,6 +5,7 @@ import { createEmptyState } from '../../state';
 import RepairOverlapsSheet from './RepairOverlapsSheet';
 import ResolveEventSheet from './ResolveEventSheet';
 import WorkdayEndSheet from './WorkdayEndSheet';
+import { workdayKey } from '../../lib/workday';
 
 afterEach(() => cleanup());
 
@@ -76,9 +77,9 @@ describe('personal workflow sheets', () => {
     cleanup();
     const configured = taskState();
     configured.preferences.workSchedule = { start: '09:00', end: '17:00' };
-    configured.workdaySchedules = { '2026-06-24': { start: '09:00', end: '18:00' } };
+    configured.workdaySchedules = { [workdayKey()]: { start: '09:00', end: '18:00' } };
     render(<WorkdayEndSheet state={configured} actions={actions} onClose={close} />);
-    await user.click(screen.getByRole('button', { name: '標準に戻す' }));
+    await user.click(screen.getByRole('button', { name: '基本の時刻に戻す' }));
     expect(actions.clearTodayWorkdayEnd).toHaveBeenCalledTimes(1);
   });
 });

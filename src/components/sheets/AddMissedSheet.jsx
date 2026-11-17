@@ -120,15 +120,19 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         </>
       )}
 
-      {type !== 'task' && (
-        <div className="il-field">
-          <label>{type === 'interrupt' ? t(locale, 'sheets.subject') : t(locale, 'sheets.label')}</label>
-          <input className="il-input" placeholder={t(locale, 'sheets.labelPlaceholder')} value={label} onChange={(event) => setLabel(event.target.value)} />
-        </div>
-      )}
-
       {type === 'interrupt' && (
         <>
+          <div className="il-field">
+            <label>{t(locale, 'sheets.pauseCategory')}</label>
+            <div className="il-chipgrid">
+              {interruptCategories.map((category) => (
+                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} aria-pressed={interruptCategoryId === category.id} onClick={() => setInterruptCategoryId(category.id)}>
+                  {interruptCategoryLabel(locale, category)}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="il-field">
             <label>{t(locale, 'sheets.sender')}</label>
             <div className="il-chiprow">
@@ -139,7 +143,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
                 onChange={(event) => setWho(event.target.value)}
               />
               {state.whoChips.map((item) => (
-                <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
+                <button key={item} type="button" className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
               ))}
             </div>
             {customWho && (
@@ -149,18 +153,14 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
               </label>
             )}
           </div>
-
-          <div className="il-field">
-            <label>{t(locale, 'sheets.interruptCategory')}</label>
-            <div className="il-chiprow">
-              {interruptCategories.map((category) => (
-                <button key={category.id} className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
-                  {interruptCategoryLabel(locale, category)}
-                </button>
-              ))}
-            </div>
-          </div>
         </>
+      )}
+
+      {type !== 'task' && (
+        <div className="il-field">
+          <label>{type === 'interrupt' ? t(locale, 'sheets.subject') : t(locale, 'sheets.label')}</label>
+          <input className="il-input" placeholder={t(locale, type === 'interrupt' ? 'sheets.subjectPlaceholder' : 'sheets.labelPlaceholder')} value={label} onChange={(event) => setLabel(event.target.value)} />
+        </div>
       )}
 
       <div className="il-inline-fields">
@@ -175,7 +175,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
       </div>
       <div className="il-field">
         <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} aria-label={t(locale, 'sheets.memo')} />
+        <textarea className="il-textarea" placeholder={t(locale, type === 'interrupt' ? 'sheets.memoPlaceholder' : type === 'break' ? 'sheets.breakMemoPlaceholder' : 'sheets.taskMemoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} aria-label={t(locale, 'sheets.memo')} />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

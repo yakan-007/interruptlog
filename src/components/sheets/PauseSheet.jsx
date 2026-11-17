@@ -6,6 +6,7 @@ import { getResumeTaskId } from '../../state';
 import { PauseCategoryPicker, PauseSwitchButton } from './PauseControls';
 import { BreakFields, InterruptFields } from './PauseFields';
 import { resolveInitialCategoryId } from './pausePresentation';
+import ConfirmFooter from './ConfirmFooter';
 import SheetShell from './SheetShell';
 import TimerPanel from './TimerPanel';
 
@@ -90,15 +91,15 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
 
   return (
     <SheetShell title={t(locale, 'sheets.pauseTitle')} onClose={onClose} locale={locale} footer={confirmingDiscard ? (
-      <>
-        <div className="il-sheet-confirm">
-          {runTask
-            ? tx(locale, 'sheets.discardToTask', { time: startClock, task: runTask.name })
-            : tx(locale, 'sheets.discardNoTask', startClock)}
-        </div>
-        <button className="btn tert" onClick={() => setConfirmingDiscard(false)}>{t(locale, 'sheets.back')}</button>
-        <button className="btn danger" onClick={() => actions.cancelInterrupt()}>{t(locale, 'sheets.discardAction')}</button>
-      </>
+      <ConfirmFooter
+        message={runTask
+          ? tx(locale, 'sheets.discardToTask', { time: startClock, task: runTask.name })
+          : tx(locale, 'sheets.discardNoTask', startClock)}
+        backLabel={t(locale, 'sheets.back')}
+        confirmLabel={t(locale, 'sheets.discardAction')}
+        onBack={() => setConfirmingDiscard(false)}
+        onConfirm={() => actions.cancelInterrupt()}
+      />
     ) : (
       <>
         <button className="btn tert" onClick={() => setConfirmingDiscard(true)}>{t(locale, 'sheets.discardPause')}</button>
@@ -127,7 +128,6 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
         elapsed={elapsed}
         eyebrow={t(locale, mode === 'break' ? 'sheets.breakActive' : 'sheets.pauseActive')}
         hint={startClock ? tx(locale, 'sheets.since', startClock) : null}
-        locale={locale}
       />
 
       <PauseSwitchButton mode={mode} locale={locale} onSwitch={startNextPause} />

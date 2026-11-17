@@ -39,6 +39,9 @@ describe('personal settings panels', () => {
     await user.type(screen.getByRole('textbox'), '相談');
     await user.click(screen.getByRole('button', { name: '保存' }));
     await user.click(screen.getByRole('button', { name: '削除' }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText(/「カテゴリなし」になります/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '削除する' }));
 
     expect(onSave).toHaveBeenCalledWith({ id: 'int-custom', name: '相談', icon: null, kind: 'interrupt' });
     expect(onDelete).toHaveBeenCalledWith('int-custom');
@@ -50,8 +53,6 @@ describe('personal settings panels', () => {
     render(<ChipsSheet kind="who" chips={['田中']} onClose={vi.fn()} onSave={onSave} />);
 
     await user.type(screen.getByRole('textbox'), '佐藤, 鈴木');
-    await user.click(screen.getByRole('button', { name: /候補を追加/ }));
-    expect(screen.getByText('佐藤')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '田中を削除' }));
     await user.click(screen.getByRole('button', { name: '保存' }));
 
@@ -76,7 +77,7 @@ describe('personal settings panels', () => {
     const view = render(<ImportSheet onClose={vi.fn()} onImport={onImport} />);
 
     await user.type(screen.getByRole('textbox'), 'invalid-json');
-    await user.click(screen.getByRole('button', { name: '読み込む' }));
+    await user.click(screen.getByRole('button', { name: '置き換える' }));
     expect(screen.getByText('JSONを読み込めませんでした')).toBeTruthy();
 
     view.unmount();

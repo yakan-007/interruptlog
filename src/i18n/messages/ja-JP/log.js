@@ -11,7 +11,7 @@ log: {
         completedToday: '今日完了',
         completedArchive: '完了アーカイブ',
         archiveCopy: '過去に完了したタスクです。メイン一覧からは外れますが、再開すると同じタスクとして時間を続けて記録できます。',
-        addPlaceholder: 'タスクを追加...',
+        addPlaceholder: 'タスクを追加',
         taskName: 'タスク名',
         openDetails: '詳細を開く',
         addTask: 'タスクを追加',

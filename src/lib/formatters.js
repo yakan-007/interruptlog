@@ -1,15 +1,10 @@
 import {
   formatDateHeader as formatLocalizedDateHeader,
-  formatDuration as formatLocalizedDuration,
   formatDurationShort as formatLocalizedDurationShort,
   formatDueAt,
   formatRelative,
   getDuePresets,
 } from '../i18n';
-
-export function fmtDuration(ms, opts = {}) {
-  return formatLocalizedDuration(ms, opts.locale ?? 'ja-JP', opts);
-}
 
 export function fmtDurationShort(ms, locale = 'ja-JP') {
   return formatLocalizedDurationShort(ms, locale);

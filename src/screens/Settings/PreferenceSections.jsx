@@ -19,7 +19,7 @@ function AppearanceSection({ state, actions, locale }) {
     <>
       <div className="il-section-h"><span>{t(locale, 'settings.appearance')}</span></div>
       <div className="il-settings-group">
-        <SettingRow title={t(locale, 'settings.language')} note={t(locale, 'settings.languageNote')}>
+        <SettingRow title={t(locale, 'settings.language')}>
           <select
             className="il-settings-select"
             value={state.preferences.locale}
@@ -31,7 +31,7 @@ function AppearanceSection({ state, actions, locale }) {
             ))}
           </select>
         </SettingRow>
-        <ToggleSetting title={t(locale, 'settings.darkMode')} note={t(locale, 'settings.darkModeNote')} value={state.preferences.dark} onToggle={() => actions.setDark(!state.preferences.dark)} ariaLabel={t(locale, 'settings.darkMode')} />
+        <ToggleSetting title={t(locale, 'settings.darkMode')} value={state.preferences.dark} onToggle={() => actions.setDark(!state.preferences.dark)} ariaLabel={t(locale, 'settings.darkMode')} />
       </div>
     </>
   );
@@ -42,8 +42,8 @@ function BehaviorSection({ state, actions, locale }) {
     <>
       <div className="il-section-h"><span>{t(locale, 'settings.behavior')}</span></div>
       <div className="il-settings-group">
-        <ToggleSetting title={t(locale, 'settings.topAdd')} value={state.preferences.topAdd} onToggle={() => actions.setTopAdd(!state.preferences.topAdd)} ariaLabel={t(locale, 'settings.topAdd')} />
-        <ToggleSetting title={t(locale, 'settings.sortDue')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
+        <ToggleSetting title={t(locale, 'settings.topAdd')} note={t(locale, 'settings.topAddNote')} value={state.preferences.topAdd} onToggle={() => actions.setTopAdd(!state.preferences.topAdd)} ariaLabel={t(locale, 'settings.topAdd')} />
+        <ToggleSetting title={t(locale, 'settings.sortDue')} note={t(locale, 'settings.sortDueNote')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
       </div>
     </>
   );

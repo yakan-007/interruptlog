@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ConfirmFooter from '../../components/sheets/ConfirmFooter';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
@@ -79,11 +80,13 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
 
   return (
     <SheetShell title={t(locale, 'sheets.editRecord')} onClose={onClose} locale={locale} footer={confirmingDelete ? (
-      <>
-        <div className="il-sheet-confirm">{t(locale, 'sheets.deleteRecordConfirm')}</div>
-        <button className="btn tert" onClick={() => setConfirmingDelete(false)}>{t(locale, 'sheets.back')}</button>
-        <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); actions.showToast(t(locale, 'toasts.eventDeleted')); }}>{Icons.trash(14)} {t(locale, 'sheets.deleteAction')}</button>
-      </>
+      <ConfirmFooter
+        message={t(locale, 'sheets.deleteRecordConfirm')}
+        backLabel={t(locale, 'sheets.back')}
+        confirmLabel={t(locale, 'sheets.deleteAction')}
+        onBack={() => setConfirmingDelete(false)}
+        onConfirm={() => { actions.deleteEvent(event.id); onClose(); actions.showToast(t(locale, 'toasts.eventDeleted')); }}
+      />
     ) : (
       <>
         <button className="btn danger" onClick={() => setConfirmingDelete(true)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
@@ -112,15 +115,18 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
             locale={locale}
           />
         </>
-      ) : (
-        <div className="il-field">
-          <label>{type === 'interrupt' ? t(locale, 'sheets.subject') : t(locale, 'sheets.label')}</label>
-          <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
-        </div>
-      )}
-
-      {type === 'interrupt' && (
+      ) : type === 'interrupt' ? (
         <>
+          <div className="il-field">
+            <label>{t(locale, 'sheets.pauseCategory')}</label>
+            <div className="il-chipgrid">
+              {interruptCategories.map((category) => (
+                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} aria-pressed={interruptCategoryId === category.id} onClick={() => setInterruptCategoryId(category.id)}>
+                  {interruptCategoryLabel(locale, category)}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="il-field">
             <label>{t(locale, 'sheets.sender')}</label>
             <div className="il-chiprow">
@@ -143,16 +149,15 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
           </div>
 
           <div className="il-field">
-            <label>{t(locale, 'sheets.interruptCategory')}</label>
-            <div className="il-chiprow">
-              {interruptCategories.map((category) => (
-                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} onClick={() => setInterruptCategoryId(category.id)}>
-                  {interruptCategoryLabel(locale, category)}
-                </button>
-              ))}
-            </div>
+            <label>{t(locale, 'sheets.subject')}</label>
+            <input className="il-input" placeholder={t(locale, 'sheets.subjectPlaceholder')} value={label} onChange={(current) => setLabel(current.target.value)} />
           </div>
         </>
+      ) : (
+        <div className="il-field">
+          <label>{t(locale, 'sheets.label')}</label>
+          <input className="il-input" value={label} onChange={(current) => setLabel(current.target.value)} />
+        </div>
       )}
 
       <div className="il-inline-fields">
@@ -168,10 +173,16 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
 
       <div className="il-field">
         <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" value={memo} onChange={(current) => setMemo(current.target.value)} />
+        <textarea className="il-textarea" placeholder={t(locale, memoPlaceholderKey(type))} value={memo} onChange={(current) => setMemo(current.target.value)} />
       </div>
 
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );
+}
+
+function memoPlaceholderKey(type) {
+  if (type === 'interrupt') return 'sheets.memoPlaceholder';
+  if (type === 'break') return 'sheets.breakMemoPlaceholder';
+  return 'sheets.taskMemoPlaceholder';
 }

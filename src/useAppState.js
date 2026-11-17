@@ -43,8 +43,10 @@ export function useAppState({ clock = systemClock, idGenerator = systemIdGenerat
       const currentTime = clock.now();
       const normalized = normalizeState(stored, currentTime, { assumeOnboarded: stored != null });
       setTrackedAppState(normalized);
+      // Overlaps found at launch are flagged in History, Review and Settings
+      // instead of opening a sheet before the user has done anything.
       const preview = previewOverlapRepairInState(normalized, currentTime);
-      setOverlapRepairUi({ sheetOpen: Boolean(preview), deferred: false });
+      setOverlapRepairUi({ sheetOpen: false, deferred: Boolean(preview) });
       setHydrated(true);
     });
     return () => { active = false; };

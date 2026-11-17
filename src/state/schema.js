@@ -9,8 +9,8 @@ const defaultCategories = [
   { id: 'cat-dev', name: '開発', color: 'oklch(0.58 0.12 240)' },
   { id: 'cat-doc', name: 'ドキュメント', color: 'oklch(0.60 0.10 160)' },
   { id: 'cat-mtg', name: '会議', color: 'oklch(0.55 0.12 300)' },
-  { id: 'cat-sup', name: 'サポート', color: 'oklch(0.60 0.13 35)' },
-  { id: 'cat-adm', name: '雑務', color: 'oklch(0.62 0.04 80)' },
+  { id: 'cat-sup', name: 'サポート', color: 'oklch(0.58 0.12 345)' },
+  { id: 'cat-adm', name: '雑務', color: 'oklch(0.55 0.03 250)' },
 ];
 
 const defaultInterruptCats = [
@@ -135,12 +135,20 @@ function normalizeTask(task, now) {
   };
 }
 
+// Two former palette colors sat on the interruption orange and the break
+// ochre, so a task chip could read as an interruption or a break.
+const RETIRED_CATEGORY_COLORS = {
+  'oklch(0.60 0.13 35)': 'oklch(0.58 0.12 345)',
+  'oklch(0.62 0.04 80)': 'oklch(0.55 0.03 250)',
+};
+
 export function normalizeCategory(category) {
   if (!isObject(category) || !category.id) return null;
+  const color = String(category.color || 'oklch(0.58 0.08 220)');
   return {
     id: String(category.id),
     name: cleanText(category.name) || 'カテゴリ',
-    color: String(category.color || 'oklch(0.58 0.08 220)'),
+    color: RETIRED_CATEGORY_COLORS[color] ?? color,
   };
 }
 

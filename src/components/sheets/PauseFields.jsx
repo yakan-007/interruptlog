@@ -1,4 +1,3 @@
-import Icons from '../../icons';
 import { t } from '../../i18n';
 
 export function InterruptFields({
@@ -35,7 +34,7 @@ export function InterruptFields({
           />
           {state.whoChips.map((item) => (
             <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>
-              {Icons.user(12)} {item}
+              {item}
             </button>
           ))}
         </div>
@@ -74,7 +73,7 @@ export function BreakFields({ locale, memo, setMemo }) {
   return (
     <div className="il-field">
       <label>{t(locale, 'sheets.memo')}</label>
-      <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
+      <textarea className="il-textarea" placeholder={t(locale, 'sheets.breakMemoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
     </div>
   );
 }

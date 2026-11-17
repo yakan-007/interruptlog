@@ -5,7 +5,7 @@ import { selectForgottenTimer } from '../../state';
 import SheetShell from './SheetShell';
 
 // Stop the running timer at a past moment, for a timer left running by mistake.
-export default function StopAtSheet({ state, actions, onClose }) {
+export default function StopAtSheet({ state, actions, onClose, onBack }) {
   const locale = state.preferences.locale;
   const [initialNow] = useState(() => Date.now());
   const [value, setValue] = useState(() => toDateTimeLocalValue(
@@ -22,7 +22,9 @@ export default function StopAtSheet({ state, actions, onClose }) {
   return (
     <SheetShell title={t(locale, 'sheets.stopAtTitle')} onClose={onClose} locale={locale} footer={
       <>
-        <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
+        {onBack
+          ? <button className="btn tert" onClick={onBack}>{t(locale, 'sheets.back')}</button>
+          : <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>}
         <button className="btn primary" onClick={submit}>{t(locale, 'sheets.stopAtSubmit')}</button>
       </>
     }>

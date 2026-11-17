@@ -108,8 +108,8 @@ export function getDuePresets(base = new Date(), locale = 'ja-JP', workSchedule 
   const tomorrow = timestampAtClockForOffset(now, workSchedule.end, 1);
   const weekend = getFridayAtClock(now, workSchedule.end);
   return [
-    ...(now < todayEnd ? [{ label: ja ? '今日の終了まで' : 'By end of day', value: todayEnd }] : []),
-    { label: ja ? '明日の終了まで' : 'Tomorrow EOD', value: tomorrow },
+    ...(now < todayEnd ? [{ label: ja ? '今日中' : 'Today', value: todayEnd }] : []),
+    { label: ja ? '明日中' : 'Tomorrow', value: tomorrow },
     { label: ja ? '今週末' : 'This Friday', value: weekend },
     none,
   ];

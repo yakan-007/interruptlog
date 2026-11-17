@@ -49,26 +49,12 @@
 
 .il-setrow + .il-setrow { border-top: 0.5px solid var(--hair); }
 
-.il-setrow .tg { flex: 1; }
-.il-setrow .t { font-size: var(--text-md); color: var(--ink); }
-.il-setrow .s { font-size: var(--text-xs); color: var(--ink-3); margin-top: 2px; }
-
-.il-setrow-badge {
-  flex-shrink: 0;
-  border-radius: 999px;
-  padding: 3px 7px;
-  background: var(--bg-sunken);
-  color: var(--ink-3);
-  font-size: var(--text-2xs);
-  font-weight: 800;
-  letter-spacing: 0;
-  white-space: nowrap;
-}
-
-.il-setrow-badge.warn {
-  background: color-mix(in oklch, var(--urg-high) 13%, var(--bg-sunken));
-  color: var(--urg-high);
-}
+.il-setrow .tg { flex: 1; min-width: 0; }
+/* Every row reads the same: title on top, note on its own line below, also
+   in button rows where they are spans. */
+.il-setrow .t { display: block; font-size: var(--text-md); color: var(--ink); }
+.il-setrow .s { display: block; font-size: var(--text-xs); color: var(--ink-3); margin-top: 2px; }
+.il-setrow .s.warn { color: var(--urg-high); font-weight: 600; }
 
 .il-settings-reorderrow {
   position: relative;
@@ -156,12 +142,6 @@
   align-items: flex-start;
 }
 
-.il-settings-noteicon {
-  color: var(--accent);
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-
 .il-settings-note .t {
   font-weight: 600;
 }
@@ -211,7 +191,7 @@
 
 .il-settings-workhours-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   padding: 10px 16px 12px;
   border-top: 0.5px solid var(--hair);
 }
@@ -226,7 +206,7 @@
 }
 
 .il-settings-workhours input {
-  width: 78px;
+  width: 100px;
   min-width: 0;
   border: 1px solid var(--hair);
   border-radius: var(--r-sm);
@@ -251,7 +231,6 @@
 
 .il-setbutton:active { background: var(--bg-sunken); }
 .il-setbutton.accent,
-.accent-inline { color: var(--accent); }
 
 .il-setbutton.accent .t {
   color: var(--accent);
@@ -325,7 +304,7 @@
 
 .il-colorrow button {
   aspect-ratio: 1;
-  border-radius: var(--r-md);
+  border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -341,8 +320,12 @@
 .il-settings-catdot {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: 50%;
   flex-shrink: 0;
+}
+
+.il-settings-catdot.interrupt {
+  background: var(--interrupt);
 }
 
 .il-settings-footnote {

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import Icons from '../../icons';
+import ConfirmFooter from '../../components/sheets/ConfirmFooter';
 import SheetShell from '../../components/sheets/SheetShell';
 import { CATEGORY_COLORS } from './constants';
 import { t, translateError, tx } from '../../i18n';
@@ -9,6 +10,7 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
   const [name, setName] = useState(category?.name ?? '');
   const [color, setColor] = useState(category?.color ?? CATEGORY_COLORS[0]);
   const [error, setError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const save = () => {
     if (!name.trim()) {
@@ -19,13 +21,21 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
   };
 
   return (
-    <SheetShell title={category ? t(locale, 'settings.editCategory') : t(locale, 'settings.addCategory')} onClose={onClose} locale={locale} footer={
+    <SheetShell title={category ? t(locale, 'settings.editCategory') : t(locale, 'settings.addTaskCategory')} onClose={onClose} locale={locale} footer={confirmingDelete ? (
+      <ConfirmFooter
+        message={t(locale, 'settings.deleteCategoryConfirm')}
+        backLabel={t(locale, 'sheets.back')}
+        confirmLabel={t(locale, 'sheets.deleteAction')}
+        onBack={() => setConfirmingDelete(false)}
+        onConfirm={() => onDelete(category.id)}
+      />
+    ) : (
       <>
-        {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
+        {category && <button className="btn danger" onClick={() => setConfirmingDelete(true)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={save}>{t(locale, 'sheets.save')}</button>
       </>
-    }>
+    )}>
       <div className="il-field">
         <label>{t(locale, 'settings.categoryName')}</label>
         <input className="il-input" value={name} onChange={(event) => setName(event.target.value)} autoFocus />
@@ -46,6 +56,7 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
 export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
   const [error, setError] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const save = () => {
     if (!name.trim()) {
@@ -61,13 +72,21 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
   };
 
   return (
-    <SheetShell title={category ? t(locale, 'settings.editInterruptCategory') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} locale={locale} footer={
+    <SheetShell title={category ? t(locale, 'settings.editInterruptCategory') : t(locale, 'settings.addInterruptCategory')} onClose={onClose} locale={locale} footer={confirmingDelete ? (
+      <ConfirmFooter
+        message={t(locale, 'settings.deleteInterruptCategoryConfirm')}
+        backLabel={t(locale, 'sheets.back')}
+        confirmLabel={t(locale, 'sheets.deleteAction')}
+        onBack={() => setConfirmingDelete(false)}
+        onConfirm={() => onDelete(category.id)}
+      />
+    ) : (
       <>
-        {category && <button className="btn danger" onClick={() => onDelete(category.id)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
+        {category && <button className="btn danger" onClick={() => setConfirmingDelete(true)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>}
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={save}>{t(locale, 'sheets.save')}</button>
       </>
-    }>
+    )}>
       <div className="il-field">
         <label>{t(locale, 'settings.interruptCategoryName')}</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
@@ -92,11 +111,8 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
     ? 'settings.subjectChipPlaceholder'
     : 'settings.whoChipPlaceholder');
 
-  const addDraft = () => {
-    const next = uniqueChipTexts([...items, ...splitChipDraft(draft)]);
-    setItems(next);
-    setDraft('');
-  };
+  // What is typed is added on save: one step, no separate "add" button.
+  const save = () => onSave(uniqueChipTexts([...items, ...splitChipDraft(draft)]));
 
   const removeItem = (chip) => {
     setItems((current) => current.filter((item) => item !== chip));
@@ -106,7 +122,7 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
     <SheetShell title={label} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
-        <button className="btn primary" onClick={() => onSave(items)}>{t(locale, 'sheets.save')}</button>
+        <button className="btn primary" onClick={save}>{t(locale, 'sheets.save')}</button>
       </>
     }>
       <div className="il-sheet-copy">
@@ -121,8 +137,6 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
           placeholder={placeholder}
           autoFocus
         />
-        <div className="il-sheet-help">{t(locale, 'settings.chipHelp')}</div>
-        <button className="btn secondary fill" onClick={addDraft} disabled={!draft.trim()}>{Icons.plus(14)} {t(locale, 'settings.addCandidates')}</button>
       </div>
       <div className="il-field">
         <div className="il-sheet-listhead">
@@ -198,19 +212,31 @@ export function ImportSheet({ locale = 'ja-JP', onClose, onImport }) {
     if (!result.ok) setError(translateError(locale, result.errorCode));
   };
 
+  // A backup is written out as a file, so it can be read back from one too.
+  const readFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setText(await file.text());
+    setError('');
+  };
+
   return (
     <SheetShell title={t(locale, 'settings.importBackup')} onClose={onClose} locale={locale} footer={
       <>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
-        <button className="btn primary" onClick={importNow}>{t(locale, 'settings.importAction')}</button>
+        <button className="btn danger fill" onClick={importNow} disabled={!text.trim()}>{t(locale, 'settings.importAction')}</button>
       </>
     }>
       <div className="il-sheet-copy">
         {t(locale, 'settings.importCopy')}
       </div>
       <div className="il-field">
-        <label>{t(locale, 'settings.backupJson')}</label>
-        <textarea className="il-textarea tall" value={text} onChange={(event) => setText(event.target.value)} placeholder={t(locale, 'settings.pasteJson')} autoFocus />
+        <label htmlFor="il-import-file">{t(locale, 'settings.backupFile')}</label>
+        <input id="il-import-file" className="il-input il-fileinput" type="file" accept="application/json,.json" onChange={readFile} />
+      </div>
+      <div className="il-field">
+        <label htmlFor="il-import-text">{t(locale, 'settings.backupJson')}</label>
+        <textarea id="il-import-text" className="il-textarea tall" value={text} onChange={(event) => { setText(event.target.value); setError(''); }} placeholder={t(locale, 'settings.pasteJson')} />
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

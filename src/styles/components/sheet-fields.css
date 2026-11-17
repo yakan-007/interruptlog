@@ -8,6 +8,7 @@
   color: var(--ink-2);
   font-size: var(--text-sm);
   line-height: 1.7;
+  margin-bottom: 14px;
 }
 
 .il-sheet-help,

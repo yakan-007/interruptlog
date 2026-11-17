@@ -47,8 +47,8 @@ describe('i18n', () => {
     expect(formatDateHeader(base.getTime(), 'ja-JP', base.getTime())).toBe('今日');
     expect(formatDateHeader(base.getTime(), 'en-US', base.getTime())).toBe('Today');
     expect(jaPresets.map((item) => item.value)).toEqual(enPresets.map((item) => item.value));
-    expect(jaPresets.map((item) => item.label)).toEqual(['今日の終了まで', '明日の終了まで', '今週末', 'なし']);
-    expect(enPresets.map((item) => item.label)).toEqual(['By end of day', 'Tomorrow EOD', 'This Friday', 'None']);
+    expect(jaPresets.map((item) => item.label)).toEqual(['今日中', '明日中', '今週末', 'なし']);
+    expect(enPresets.map((item) => item.label)).toEqual(['Today', 'Tomorrow', 'This Friday', 'None']);
     expect(getDuePresets(base, 'ja-JP')).toEqual([{ label: 'なし', value: null }]);
   });
 

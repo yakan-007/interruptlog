@@ -57,7 +57,7 @@ export default function CategorySections({ state, actions, locale, onOpenPanel }
             reorderMode={interruptCategoryReordering}
           />
         ))}
-        {!interruptCategoryReordering && <AddRowButton label={t(locale, 'settings.addInterruptCategory')} onClick={() => onOpenPanel({ type: 'interruptCategory' })} />}
+        {!interruptCategoryReordering && <AddRowButton label={t(locale, 'settings.addCategory')} onClick={() => onOpenPanel({ type: 'interruptCategory' })} />}
       </div>
     </>
   );

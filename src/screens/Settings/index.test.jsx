@@ -36,7 +36,7 @@ describe('personal settings screen', () => {
     fireEvent.click(screen.getByRole('button', { name: '完了' }));
 
     fireEvent.click(screen.getByRole('button', { name: '開発' }));
-    expect(screen.getByText('カテゴリを編集')).toBeTruthy();
+    expect(screen.getByText('タスクのカテゴリを編集')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     fireEvent.click(screen.getByRole('button', { name: /よく使う発信者/ }));
     fireEvent.click(screen.getByRole('button', { name: '保存' }));

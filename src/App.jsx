@@ -142,7 +142,7 @@ export default function App() {
 
             {activeSheet === 'pause' && <PauseSheet key={`${state.running?.start ?? 'pause'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={state.running?.draft} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
-            {activeSheet === 'stopAt' && <StopAtSheet state={state} actions={actions} onClose={closeSheet} />}
+            {activeSheet === 'stopAt' && <StopAtSheet state={state} actions={actions} onClose={closeSheet} onBack={activeSheetArg?.returnSheet ? () => restoreSheet(activeSheetArg.returnSheet) : undefined} />}
             {activeSheet === 'addTask' && (
               <AddTaskSheet
                 state={state}

@@ -52,6 +52,9 @@ describe('task detail sheet', () => {
     expect(screen.getByText('入力を確認してください')).toBeTruthy();
     expect(onClose).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: '削除' }));
+    expect(actions.deleteTask).not.toHaveBeenCalled();
+    expect(screen.getByText('このタスクを削除します。これまでの記録は履歴に残ります。')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '削除する' }));
     expect(actions.deleteTask).toHaveBeenCalledWith('task-1');
   });
 });
