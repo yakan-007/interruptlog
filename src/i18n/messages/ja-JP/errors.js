@@ -3,7 +3,7 @@ errors: {
         checkInput: '入力を確認してください',
         invalidWindow: '終了は開始より後にしてください',
         invalidDate: '日時を確認してください',
-        eventNotFound: 'イベントが見つかりませんでした',
+        eventNotFound: '記録が見つかりませんでした',
         interruptNotActive: '割り込みが開始されていません',
         invalidBackup: 'JSONを読み込めませんでした',
         invalidEventWindow: '開始と終了を正しく入力してください',

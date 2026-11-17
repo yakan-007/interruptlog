@@ -5,9 +5,9 @@ import { getWorkdayBounds } from './workday';
 export function selectActiveTasks(state) {
   return state.tasks
     .filter((task) => !task.isCompleted)
-    .sort((a, b) => state.preferences.sortDue
-      ? (a.planning?.dueAt ?? Infinity) - (b.planning?.dueAt ?? Infinity)
-      : a.order - b.order);
+    .sort((a, b) => (state.preferences.sortDue
+      ? (a.planning?.dueAt ?? Infinity) - (b.planning?.dueAt ?? Infinity) || a.order - b.order
+      : a.order - b.order));
 }
 
 export function selectCompletedTasks(state) {

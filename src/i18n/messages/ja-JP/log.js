@@ -1,7 +1,7 @@
 const messages = {
 log: {
         title: 'タスク',
-        emptyTitle: '今日のタスクはまだありません',
+        emptyTitle: 'タスクはまだありません',
         emptyCopy: '下の入力欄からタスクを追加できます。',
         startUnexpected: '割り込みを記録',
         startPause: '割り込みを記録',
@@ -33,7 +33,12 @@ log: {
         workdayUnset: '作業時間を設定',
         workdayUntil: ({ time, remaining }) => `終了 ${time} · 残り ${remaining}`,
         workdayAfterEnd: (time) => `終了 ${time} を過ぎました`,
-        workdayOverflow: (duration) => `見積が ${duration} 超過`,
+        workdayOverflow: (duration) => `今日が期限の見積が、終了までの時間を ${duration} 超えています`,
+        due: (when) => `期限 ${when}`,
+        overdue: (when) => `期限切れ ${when}`,
+        resumeWaiting: '再開待ち',
+        endPause: '割り込みを終える',
+        endBreak: '休憩を終える',
         forgottenTimer: (duration) => `計測が${duration}続いています。止め忘れていませんか？`,
         forgottenTimerAction: '止めた時刻を選ぶ',
         interruptOrigin: '割り込みから発生',

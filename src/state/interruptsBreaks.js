@@ -105,7 +105,10 @@ function resumeOrStopInState(state, resume, now = Date.now(), dependencies = {})
 
 export function saveInterruptInState(state, data, now = Date.now(), dependencies = {}) {
   if (state.running?.type !== 'interrupt') return state;
-  const event = buildInterruptEvent({ ...state.running.draft, ...data }, state.running.start ?? now, now, null, dependencies);
+  // Ended without a subject or sender (e.g. from the running bar): name it
+  // after its category, as when a task start closes it.
+  const category = findInterruptCategory(state, data.categoryId ?? state.running.categoryId);
+  const event = buildInterruptEvent({ ...state.running.draft, ...data }, state.running.start ?? now, now, category?.name, dependencies);
   const next = appendInterruptEvent(state, event, data.saveWhoChip ?? state.running.draft?.saveWhoChip);
   return resumeOrStopInState(next, data.resume, now, dependencies);
 }

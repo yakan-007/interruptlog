@@ -1,7 +1,7 @@
 const messages = {
 history: {
         eyebrow: 'HISTORY',
-        title: '記録履歴',
+        title: '履歴',
         emptyTitle: 'この日の履歴はありません',
         emptyCopy: 'タスク画面で記録を始めるか、押し忘れた時間をあとから補えます。',
         addMissed: '押し忘れを記録',
@@ -20,8 +20,8 @@ history: {
         viewMode: '履歴表示モード',
         summary: ({ count, total }) => `${count}件 / 合計 ${total}`,
         anomaliesTitle: (count) => `${count}件の要確認記録`,
-        anomaliesCopy: '未終了または時刻が不整合なイベントがあります',
-        overlapTitle: (count) => `${count}件の重複イベントが未整理です`,
+        anomaliesCopy: '終わっていない記録や、時刻のおかしい記録があります',
+        overlapTitle: (count) => `${count}件の重なった記録が未整理です`,
         overlapCopy: '集計や表示に重複が含まれる可能性があります',
         repair: '重複を整理',
         rangeReRecorded: '時間帯の記録を変更しました',

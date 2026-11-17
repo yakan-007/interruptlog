@@ -31,20 +31,21 @@ describe('shared running timer bar', () => {
     expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'confirmStop');
   });
 
-  it('uses the same detail and stop behavior for interruptions and breaks', async () => {
+  it('opens the pause sheet from the bar and ends the pause from ■', async () => {
     const user = userEvent.setup();
-    const actions = { openSheet: vi.fn() };
+    const actions = { openSheet: vi.fn(), saveInterrupt: vi.fn(), saveBreak: vi.fn(), showToast: vi.fn() };
     const { rerender } = render(<RunningBar state={stateForRunning({ type: 'interrupt', start: Date.now() - 2000 })} actions={actions} />);
 
     await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
-    await user.click(screen.getByRole('button', { name: '停止' }));
+    await user.click(screen.getByRole('button', { name: '割り込みを終える' }));
     rerender(<RunningBar state={stateForRunning({ type: 'break', start: Date.now() - 180000 })} actions={actions} compact raised />);
-    await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
-    await user.click(screen.getByRole('button', { name: '停止' }));
+    await user.click(screen.getByRole('button', { name: '休憩を終える' }));
 
-    expect(actions.openSheet).toHaveBeenNthCalledWith(1, 'pause');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(2, 'pause');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(3, 'pause');
-    expect(actions.openSheet).toHaveBeenNthCalledWith(4, 'pause');
+    expect(actions.openSheet).toHaveBeenCalledTimes(1);
+    expect(actions.openSheet).toHaveBeenCalledWith('pause');
+    expect(actions.saveInterrupt).toHaveBeenCalledWith({ resume: true });
+    expect(actions.saveBreak).toHaveBeenCalledWith({ label: '休憩', resume: true });
+    expect(actions.showToast).toHaveBeenCalledWith('割り込みを記録しました');
+    expect(actions.showToast).toHaveBeenCalledWith('休憩を記録しました');
   });
 });

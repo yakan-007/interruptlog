@@ -63,13 +63,7 @@ export function createMissedDraftFromRange(start, end) {
   const dayEnd = nextHistoryDayStart(dayStart);
   const safeStart = Math.min(Math.max(start, dayStart), dayEnd - 2 * MINUTE_MS);
   const safeEnd = Math.min(Math.max(end, safeStart + MINUTE_MS), dayEnd - MINUTE_MS);
-  return {
-    dayStart,
-    startH: pad(new Date(safeStart).getHours()),
-    startM: pad(new Date(safeStart).getMinutes()),
-    endH: pad(new Date(safeEnd).getHours()),
-    endM: pad(new Date(safeEnd).getMinutes()),
-  };
+  return { start: safeStart, end: safeEnd };
 }
 
 export function formatHistoryDateParts(timestamp, now = Date.now(), locale = 'ja-JP') {

@@ -21,7 +21,7 @@ describe('history helpers', () => {
     const now = at(24, 14, 35, 42);
     const draft = createDefaultMissedDraft(startOfHistoryDay(now), now);
 
-    expect(draft).toMatchObject({ startH: '14', startM: '05', endH: '14', endM: '35' });
+    expect(draft).toEqual({ start: at(24, 14, 5), end: at(24, 14, 35) });
   });
 
   it('includes a previous-day event in the selected day and clamps it to midnight', () => {

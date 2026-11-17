@@ -163,6 +163,21 @@ describe('personal tasks', () => {
     expect(selectActiveTasks(moved).map((task) => task.id)).toEqual(['b', 'c', 'a']);
   });
 
+  it('moves within the due-sorted list as shown and keeps that order once sorting is off', () => {
+    const task = (id, order, dueAt) => ({ id, name: id, isCompleted: false, order, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt }, createdAt: 0, completedAt: null });
+    const state = {
+      ...createEmptyState(),
+      preferences: { ...createEmptyState().preferences, sortDue: true },
+      tasks: [task('a', 0, 3000), task('b', 1, 1000), task('c', 2, 2000)],
+    };
+
+    expect(selectActiveTasks(state).map((item) => item.id)).toEqual(['b', 'c', 'a']);
+    const moved = moveTaskToIndexInState(state, 'a', 0);
+
+    expect(moved.preferences.sortDue).toBe(false);
+    expect(selectActiveTasks(moved).map((item) => item.id)).toEqual(['a', 'b', 'c']);
+  });
+
   it('creates a task without auto-starting', () => {
     const state = createEmptyState();
     const result = createTaskInState(state, { name: 'あとでやる', categoryId: 'cat-dev', plannedDurationMinutes: 30 }, 1000);

@@ -12,12 +12,19 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);
   const [who, setWho] = useState(event.who ?? '');
+  const [saveWhoChip, setSaveWhoChip] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [taskTarget, setTaskTarget] = useState(() => event.taskTarget ?? taskTargetForEvent(event, state));
   const [interruptCategoryId, setInterruptCategoryId] = useState(event.type === 'interrupt' ? event.categoryId ?? interruptCategories[0]?.id ?? '' : interruptCategories[0]?.id ?? '');
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(toDateTimeLocalValue(event.start, { includeSeconds: true }));
   const [endAt, setEndAt] = useState(toDateTimeLocalValue(event.end, { includeSeconds: true }));
   const locale = state.preferences.locale;
+  const customWho = type === 'interrupt' && Boolean(who.trim()) && !state.whoChips.includes(who.trim());
+
+  const rememberSender = () => {
+    if (customWho && saveWhoChip) actions.saveChips('who', [...state.whoChips, who.trim()]);
+  };
 
   const handleTypeChange = (nextType) => {
     setError('');
@@ -53,6 +60,7 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         mode: 'taskRecord',
         preview: previewResult.preview,
         record: draft,
+        onConfirmed: rememberSender,
         returnSheet: 'editEvent',
         returnArg: draft,
         confirmLabel: t(locale, 'sheets.save'),
@@ -62,18 +70,27 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
     }
 
     const result = actions.saveTaskRecord(draft);
-    if (result.ok) onClose();
-    else setError(translateError(locale, result.errorCode, 'errors.invalidWindow'));
+    if (result.ok) {
+      rememberSender();
+      onClose();
+      actions.showToast(t(locale, 'toasts.eventSaved'));
+    } else setError(translateError(locale, result.errorCode, 'errors.invalidWindow'));
   };
 
   return (
-    <SheetShell title={t(locale, 'sheets.editWorkRecord')} onClose={onClose} locale={locale} footer={
+    <SheetShell title={t(locale, 'sheets.editRecord')} onClose={onClose} locale={locale} footer={confirmingDelete ? (
       <>
-        <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); }}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
+        <div className="il-sheet-confirm">{t(locale, 'sheets.deleteRecordConfirm')}</div>
+        <button className="btn tert" onClick={() => setConfirmingDelete(false)}>{t(locale, 'sheets.back')}</button>
+        <button className="btn danger" onClick={() => { actions.deleteEvent(event.id); onClose(); actions.showToast(t(locale, 'toasts.eventDeleted')); }}>{Icons.trash(14)} {t(locale, 'sheets.deleteAction')}</button>
+      </>
+    ) : (
+      <>
+        <button className="btn danger" onClick={() => setConfirmingDelete(true)}>{Icons.trash(14)} {t(locale, 'sheets.delete')}</button>
         <button className="btn tert" onClick={onClose}>{t(locale, 'sheets.cancel')}</button>
         <button className="btn primary" onClick={handleSave}>{t(locale, 'sheets.save')}</button>
       </>
-    }>
+    )}>
       <div className="il-field">
         <label>{t(locale, 'sheets.type')}</label>
         <div className="il-seg full">
@@ -117,6 +134,12 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
                 <button key={item} type="button" className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
               ))}
             </div>
+            {customWho && (
+              <label className="il-inline-check">
+                <input type="checkbox" checked={saveWhoChip} onChange={(current) => setSaveWhoChip(current.target.checked)} />
+                <span>{t(locale, 'sheets.saveSender')}</span>
+              </label>
+            )}
           </div>
 
           <div className="il-field">

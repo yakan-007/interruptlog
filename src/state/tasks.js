@@ -36,6 +36,16 @@ function getManualActiveOrder(state) {
     .map(({ task }) => task.id);
 }
 
+function getDueActiveOrder(state) {
+  return state.tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => !task.isCompleted)
+    .sort((a, b) => (a.task.planning?.dueAt ?? Infinity) - (b.task.planning?.dueAt ?? Infinity)
+      || a.task.order - b.task.order
+      || a.index - b.index)
+    .map(({ task }) => task.id);
+}
+
 function getNextTaskOrder(state) {
   const activeTasks = state.tasks.filter((task) => !task.isCompleted);
   if (activeTasks.length === 0) return 0;
@@ -288,8 +298,10 @@ export function reorderTaskInState(state, taskId, direction) {
   };
 }
 
+// `targetIndex` is a position in the list as shown. While the list is sorted
+// by due date, that is the due order, which then becomes the manual order.
 export function moveTaskToIndexInState(state, taskId, targetIndex) {
-  const orderedIds = getManualActiveOrder(state);
+  const orderedIds = state.preferences.sortDue ? getDueActiveOrder(state) : getManualActiveOrder(state);
   const from = orderedIds.indexOf(taskId);
   if (from < 0) return state;
 

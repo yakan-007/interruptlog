@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import Icons from '../../icons';
 import { t } from '../../i18n';
 import { fmtDateHeader } from '../../lib/formatters';
-import { selectTaskPriorSpentMs } from '../../state';
+import { getResumeTaskId, selectTaskPriorSpentMs } from '../../state';
 import TaskCard from './TaskCard';
 import { useTaskDrag } from './useTaskDrag';
 
@@ -18,6 +18,7 @@ export function ActiveTaskList({ state, actions, categoriesById, now }) {
     visibleActiveTasks,
   } = useTaskDrag(state.activeTasks, categoriesById, actions);
   const locale = state.preferences.locale;
+  const resumeTaskId = getResumeTaskId(state);
 
   if (state.activeTasks.length === 0) {
     return (
@@ -46,6 +47,7 @@ export function ActiveTaskList({ state, actions, categoriesById, now }) {
               category={categoriesById[task.categoryId]}
               running={state.running?.taskId === task.id && state.running?.type === 'task'}
               runningStart={state.running?.start}
+              waitingToResume={resumeTaskId === task.id}
               priorSpent={selectTaskPriorSpentMs(state, task.id)}
               now={now}
               locale={locale}

@@ -53,7 +53,11 @@ export function WorkdayCard({ workday, locale = 'ja-JP' }) {
       <div className="il-workday-reactive">
         <span>{t(locale, 'report.reactiveWork')}</span>
         <strong className="il-mono">{fmtDurationShort(workday.reactive.total, locale)}</strong>
-        <span className="meta">{t(locale, 'report.directInterrupt')} {fmtDurationShort(workday.reactive.direct, locale)} · {t(locale, 'report.followupWork')} {fmtDurationShort(workday.reactive.followup, locale)}</span>
+        {/* Tasks are no longer created from an interruption, so follow-up work
+            only exists in older data; show the split only when there is some. */}
+        {workday.reactive.followup > 0 && (
+          <span className="meta">{t(locale, 'report.directInterrupt')} {fmtDurationShort(workday.reactive.direct, locale)} · {t(locale, 'report.followupWork')} {fmtDurationShort(workday.reactive.followup, locale)}</span>
+        )}
       </div>
     </div>
   );

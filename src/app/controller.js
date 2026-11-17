@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { formatDate, t, translateError } from '../i18n';
+import { selectActiveTasks } from '../state';
 import { systemClock } from '../platform/clock';
 
 export function buildViewState(app, clock = systemClock) {
@@ -24,7 +25,16 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
   return {
     openSheet,
     closeSheet,
+    showToast: toast,
     ...createPassthroughActions({ app, closeSheet }),
+    moveTaskToIndex(taskId, targetIndex) {
+      const sortedByDue = app.state.preferences.sortDue;
+      const shown = selectActiveTasks(app.state).map((task) => task.id);
+      const from = shown.indexOf(taskId);
+      const to = Math.max(0, Math.min(shown.length - 1, targetIndex));
+      app.actions.moveTaskToIndex(taskId, targetIndex);
+      if (sortedByDue && from >= 0 && from !== to) toast(t(locale, 'toasts.sortDueOff'));
+    },
     saveTask(data) {
       const result = app.actions.saveTask(data);
       if (result.ok) closeSheet();
@@ -106,7 +116,6 @@ function createPassthroughActions({ app, closeSheet }) {
       'restoreTask',
       'uncompleteTask',
       'reorderTask',
-      'moveTaskToIndex',
       'selectPauseCategory',
       'setPauseKind',
       'saveCategory',

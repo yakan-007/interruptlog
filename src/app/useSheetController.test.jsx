@@ -23,11 +23,11 @@ describe('useSheetController', () => {
     const app = createApp();
     const { result } = renderHook(() => useSheetController(app, false));
 
-    act(() => result.current.openSheet('newPause', { categoryId: 'break-rest' }));
+    act(() => result.current.openSheet('newPause', { categoryId: 'int-call' }));
 
-    expect(app.actions.beginPause).toHaveBeenCalledWith('break-rest');
+    expect(app.actions.beginPause).toHaveBeenCalledWith('int-call');
     expect(result.current.activeSheet).toBe('pause');
-    expect(result.current.activeSheetArg).toEqual({ categoryId: 'break-rest' });
+    expect(result.current.activeSheetArg).toBe(null);
   });
 
   it('reopens an active pause without starting another session', () => {
@@ -44,10 +44,10 @@ describe('useSheetController', () => {
 
     expect(app.actions.beginPause).not.toHaveBeenCalled();
     expect(result.current.activeSheet).toBe('pause');
-    expect(result.current.activeSheetArg).toEqual(draft);
+    expect(result.current.activeSheetArg).toBe(null);
   });
 
-  it('keeps pause drafts in the session and visible sheet state', () => {
+  it('keeps pause drafts in the running pause', () => {
     const app = createApp();
     const { result } = renderHook(() => useSheetController(app, false));
     const draft = { categoryId: 'int-call', label: '確認' };
@@ -56,7 +56,7 @@ describe('useSheetController', () => {
     act(() => result.current.updateInterruptDraft(draft));
 
     expect(app.actions.updateInterruptDraft).toHaveBeenCalledWith(draft);
-    expect(result.current.activeSheetArg).toEqual(draft);
+    expect(result.current.activeSheetArg).toBeUndefined();
   });
 
   it('restores non-pause sheets without triggering domain actions', () => {

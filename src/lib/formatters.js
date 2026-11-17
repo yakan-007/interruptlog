@@ -2,6 +2,7 @@ import {
   formatDateHeader as formatLocalizedDateHeader,
   formatDuration as formatLocalizedDuration,
   formatDurationShort as formatLocalizedDurationShort,
+  formatDueAt,
   formatRelative,
   getDuePresets,
 } from '../i18n';
@@ -19,6 +20,10 @@ export function fmtDurationMin(mins) {
   const m = Math.floor(mins % 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+export function fmtDue(ts, locale = 'ja-JP', now = Date.now()) {
+  return formatDueAt(ts, locale, now);
 }
 
 export function fmtRel(ts, locale = 'ja-JP', now = Date.now()) {

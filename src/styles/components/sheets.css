@@ -71,6 +71,20 @@
   white-space: nowrap;
 }
 
+/* A destructive action asks in place: the footer shows what will happen
+   above the confirm button instead of opening another dialog. */
+.il-sheet .sheet-foot:has(.il-sheet-confirm) {
+  flex-wrap: wrap;
+}
+
+.il-sheet-confirm {
+  flex: 1 0 100%;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
 .il-sheet-infobox {
   display: flex;
   align-items: center;

@@ -1,7 +1,7 @@
 const messages = {
 history: {
         eyebrow: 'HISTORY',
-        title: 'Event history',
+        title: 'History',
         emptyTitle: 'No history for this day',
         emptyCopy: 'Start tracking on the Tasks screen, or add missed time later.',
         addMissed: 'Add missed time',
@@ -20,8 +20,8 @@ history: {
         viewMode: 'History view mode',
         summary: ({ count, total }) => `${count} items / ${total} total`,
         anomaliesTitle: (count) => `${count} events need review`,
-        anomaliesCopy: 'Some events are still open or have inconsistent times.',
-        overlapTitle: (count) => `${count} overlapping events need review`,
+        anomaliesCopy: 'Some records are still open or have inconsistent times.',
+        overlapTitle: (count) => `${count} overlapping records need review`,
         overlapCopy: 'Reports and views may include overlapping time.',
         repair: 'Repair overlaps',
         rangeReRecorded: 'Time range was re-recorded',

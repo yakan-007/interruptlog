@@ -29,7 +29,7 @@ export function InterruptFields({
         <div className="il-chiprow" onWheel={scrollChipRow}>
           <input
             className="c il-chipinput"
-            placeholder={t(locale, 'sheets.temporaryInput')}
+            placeholder={t(locale, 'sheets.newSender')}
             value={who && !state.whoChips.includes(who) ? who : ''}
             onChange={(event) => setWho(event.target.value)}
           />

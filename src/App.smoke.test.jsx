@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { LEGACY_STATE_KEYS, STATE_KEY } from './constants';
@@ -185,6 +185,40 @@ describe('App smoke flow', () => {
   });
 
   it.each([
+    ['interrupt', '割り込みを終える', 'チャット'],
+    ['break', '休憩を終える', '休憩'],
+  ])('ends a %s from the bar and goes back to the task', async (pauseKind, endLabel, savedLabel) => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await openPauseSheet(user, pauseKind);
+    if (pauseKind === 'interrupt') await user.click(screen.getByRole('button', { name: 'チャット' }));
+    await user.click(screen.getByRole('button', { name: '閉じる' }));
+    await user.click(await screen.findByRole('button', { name: endLabel }));
+
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+      expect(saved.running?.type).toBe('task');
+      expect(saved.events.find((event) => event.type === pauseKind)).toMatchObject({ label: savedLabel });
+    });
+  });
+
+  it('starts a split-off interruption empty instead of reusing the previous one', async () => {
+    const user = userEvent.setup();
+    await startTaskFromFreshApp(user);
+
+    await openPauseSheet(user);
+    await user.click(screen.getByRole('button', { name: 'チャット' }));
+    await user.type(screen.getByPlaceholderText('または自由記入'), '仕様確認');
+    await user.click(screen.getByRole('button', { name: 'ここで区切って休憩に入る' }));
+    await user.click(await screen.findByRole('button', { name: 'ここで区切って割り込みに移る' }));
+
+    expect(await screen.findByText('割り込み中')).toBeTruthy();
+    expect(screen.queryByDisplayValue('仕様確認')).toBeNull();
+    expect(screen.getByRole('button', { name: '電話', pressed: true })).toBeTruthy();
+  });
+
+  it.each([
     ['interrupt', 'interrupt'],
     ['break', 'break'],
   ])('saves a %s and ends the running timer', async (pauseKind, eventType) => {
@@ -233,6 +267,8 @@ describe('App smoke flow', () => {
     expect(screen.getByDisplayValue('仕様確認')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '取り消し' }));
+    expect(screen.getByText(/「スモークテストタスク」の作業になります/)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '取り消す' }));
 
     await waitFor(() => {
       expect(screen.queryByText('割り込み・休憩')).toBeNull();
@@ -256,7 +292,7 @@ describe('App smoke flow', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull();
-      expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: pauseKind === 'break' ? '休憩を終える' : '割り込みを終える' })).toBeTruthy();
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.running?.type).toBe(pauseKind);
       expect(Number.isFinite(saved.running?.start)).toBe(true);
@@ -264,6 +300,7 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getByRole('button', { name: '割り込み・休憩' }));
     await user.click(screen.getByRole('button', { name: '取り消し' }));
+    await user.click(screen.getByRole('button', { name: '取り消す' }));
 
     await waitFor(() => {
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
@@ -287,7 +324,7 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await user.click(screen.getByRole('button', { name: '履歴' }));
-    expect(await screen.findByRole('heading', { name: '記録履歴' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: '履歴' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '押し忘れ' })).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '振り返り' }));
@@ -395,7 +432,7 @@ describe('App smoke flow', () => {
     render(<App />);
     await user.click(await screen.findByRole('button', { name: '履歴' }));
     await user.click(await screen.findByRole('button', { name: /別タスク/ }));
-    expect(await screen.findByText('作業記録を修正')).toBeTruthy();
+    expect(await screen.findByText('記録を編集')).toBeTruthy();
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'タスク名' }), 'prepared');
     await user.click(screen.getByRole('button', { name: '保存' }));
@@ -407,7 +444,7 @@ describe('App smoke flow', () => {
 
   it('adds a missed personal event with a memo from history', async () => {
     const user = userEvent.setup();
-    const view = await onboardFreshApp(user);
+    await onboardFreshApp(user);
 
     expect(screen.queryByRole('button', { name: '押し忘れを記録' })).toBeNull();
 
@@ -415,16 +452,13 @@ describe('App smoke flow', () => {
     await user.click(await screen.findByRole('button', { name: '押し忘れ' }));
 
     await user.type(await screen.findByRole('textbox', { name: 'タスク名' }), 'あとから記録する作業');
-    const timeInputs = view.container.querySelectorAll('.il-hourinput-row input');
-    await replaceInputValue(user, timeInputs[0], '09');
-    await replaceInputValue(user, timeInputs[1], '00');
-    await replaceInputValue(user, timeInputs[2], '09');
-    await replaceInputValue(user, timeInputs[3], '20');
+    setTimeOfDay(screen.getByLabelText('開始'), '09:00');
+    setTimeOfDay(screen.getByLabelText('終了'), '09:20');
     await user.type(screen.getByLabelText('メモ'), 'あとで見返す個人メモ');
     await user.click(screen.getByRole('button', { name: '追加' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('過去のイベントを追加')).toBeNull();
+      expect(screen.queryByRole('button', { name: '追加' })).toBeNull();
     });
     expect(screen.getByText('あとから記録する作業')).toBeTruthy();
     expect(screen.getByText('あとで見返す個人メモ')).toBeTruthy();
@@ -435,22 +469,19 @@ describe('App smoke flow', () => {
 
   it('adds missed time to the selected history day instead of today', async () => {
     const user = userEvent.setup();
-    const view = await onboardFreshApp(user);
+    await onboardFreshApp(user);
 
     await user.click(screen.getByRole('button', { name: '履歴' }));
     await user.click(await screen.findByRole('button', { name: '前日へ' }));
     await user.click(await screen.findByRole('button', { name: '押し忘れを記録' }));
 
     await user.type(await screen.findByRole('textbox', { name: 'タスク名' }), '昨日の作業');
-    const timeInputs = view.container.querySelectorAll('.il-hourinput-row input');
-    await replaceInputValue(user, timeInputs[0], '09');
-    await replaceInputValue(user, timeInputs[1], '00');
-    await replaceInputValue(user, timeInputs[2], '09');
-    await replaceInputValue(user, timeInputs[3], '20');
+    setTimeOfDay(screen.getByLabelText('開始'), '09:00');
+    setTimeOfDay(screen.getByLabelText('終了'), '09:20');
     await user.click(screen.getByRole('button', { name: '追加' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('過去のイベントを追加')).toBeNull();
+      expect(screen.queryByRole('button', { name: '追加' })).toBeNull();
     });
     expect(screen.getByText('昨日の作業')).toBeTruthy();
   });
@@ -485,9 +516,9 @@ async function onboardFreshApp(user) {
   return view;
 }
 
-async function replaceInputValue(user, input, value) {
-  await user.clear(input);
-  await user.type(input, value);
+// Keeps the date a datetime-local field already holds and sets only the time.
+function setTimeOfDay(input, time) {
+  fireEvent.change(input, { target: { value: `${input.value.slice(0, 11)}${time}` } });
 }
 
 function readFileText(file) {

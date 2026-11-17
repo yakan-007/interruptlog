@@ -23,6 +23,17 @@ export default function RunningBar({ state, actions, raised = false, compact = f
     else actions.openSheet('pause');
   };
   const stopEvent = (event) => event.stopPropagation();
+  // ■ ends the pause the way the sheet's main button does: record it with what
+  // was entered so far and go back to the task it interrupted, if any.
+  const finishPause = () => {
+    if (running.type === 'break') {
+      actions.saveBreak({ label: t(locale, 'common.break'), resume: true });
+      actions.showToast(t(locale, 'toasts.breakSaved'));
+      return;
+    }
+    actions.saveInterrupt({ resume: true });
+    actions.showToast(t(locale, 'toasts.interruptSaved'));
+  };
   const handleKeyDown = (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -55,7 +66,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
         </div>
       ) : (
         <div className="rb-actions">
-          <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('pause'); }}>{Icons.stop(14)}</button>
+          <button className="rb-btn stop" aria-label={t(locale, running.type === 'break' ? 'log.endBreak' : 'log.endPause')} onClick={(event) => { stopEvent(event); finishPause(); }}>{Icons.stop(14)}</button>
         </div>
       )}
     </div>

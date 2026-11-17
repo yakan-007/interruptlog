@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { interruptCategoryLabel, t, translateError, tx, typeLabel } from '../../i18n';
-import { startOfHistoryDay } from '../../lib/history';
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
 import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
 
@@ -19,22 +19,18 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [interruptCategoryId, setInterruptCategoryId] = useState(initialDraft?.interruptCategoryId ?? interruptCategories[0]?.id ?? state.interruptCats[0]?.id ?? '');
   const [memo, setMemo] = useState(initialDraft?.memo ?? '');
   const [error, setError] = useState('');
-  const [initial] = useState(() => new Date(initialDraft?.dayStart ?? Date.now()));
-  const [dayStart] = useState(() => startOfHistoryDay(initialDraft?.dayStart ?? Date.now()));
-  const [startH, setStartH] = useState(initialDraft?.startH ?? String(initial.getHours()).padStart(2, '0'));
-  const [startM, setStartM] = useState(initialDraft?.startM ?? String(initial.getMinutes()).padStart(2, '0'));
-  const [endH, setEndH] = useState(initialDraft?.endH ?? String(initial.getHours()).padStart(2, '0'));
-  const [endM, setEndM] = useState(initialDraft?.endM ?? String(Math.min(initial.getMinutes() + 30, 59)).padStart(2, '0'));
+  const [startAt, setStartAt] = useState(() => toDateTimeLocalValue(initialDraft?.start ?? Date.now() - 30 * 60000));
+  const [endAt, setEndAt] = useState(() => toDateTimeLocalValue(initialDraft?.end ?? Date.now()));
   const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
   const locale = state.preferences.locale;
 
   const handleAdd = () => {
-    const base = new Date(dayStart);
-    const start = new Date(base);
-    const end = new Date(base);
-    start.setHours(Number(startH), Number(startM), 0, 0);
-    end.setHours(Number(endH), Number(endM), 0, 0);
-
+    const start = fromDateTimeLocalValue(startAt);
+    const end = fromDateTimeLocalValue(endAt);
+    if (start == null || end == null) {
+      setError(t(locale, 'sheets.dateCheck'));
+      return;
+    }
     if (end <= start) {
       setError(t(locale, 'errors.invalidWindow'));
       return;
@@ -43,8 +39,8 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
     const draft = {
       type,
       label: label || (type === 'interrupt' && who ? tx(locale, 'common.fromSender', who) : ''),
-      start: start.getTime(),
-      end: end.getTime(),
+      start,
+      end,
       memo,
       ...(type === 'task' ? { categoryId: taskTarget.categoryId, taskTarget } : {}),
       ...(type === 'interrupt' ? { who, categoryId: interruptCategoryId } : {}),
@@ -62,15 +58,17 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           preview: previewResult.preview,
           record: draft,
           returnSheet: 'addMissed',
-          returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+          returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, start, end },
           confirmLabel: t(locale, 'sheets.add'),
           successMessage: t(locale, 'toasts.eventAdded'),
         });
         return;
       }
       const result = actions.saveTaskRecord(draft);
-      if (result.ok) onClose();
-      else setError(translateError(locale, result.errorCode));
+      if (result.ok) {
+        onClose();
+        actions.showToast(t(locale, 'toasts.eventAdded'));
+      } else setError(translateError(locale, result.errorCode));
       return;
     }
 
@@ -85,15 +83,14 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
         mode: 'add',
         preview: previewResult.preview,
         returnSheet: 'addMissed',
-        returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, startH, startM, endH, endM, dayStart },
+        returnArg: { type, label, taskTarget, who, saveWhoChip, interruptCategoryId, memo, start, end },
         confirmLabel: t(locale, 'sheets.add'),
         successMessage: t(locale, 'toasts.eventAdded'),
       });
       return;
     }
 
-    const result = actions.addMissedEvent(draft, { createGap: false, saveWhoChip });
-    if (!result.ok) setError(translateError(locale, result.errorCode));
+    actions.addMissedEvent(draft, { createGap: false, saveWhoChip });
   };
 
   return (
@@ -137,7 +134,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
             <div className="il-chiprow">
               <input
                 className="c il-chipinput compact"
-                placeholder={t(locale, 'sheets.temporaryInput')}
+                placeholder={t(locale, 'sheets.newSender')}
                 value={who && !state.whoChips.includes(who) ? who : ''}
                 onChange={(event) => setWho(event.target.value)}
               />
@@ -168,30 +165,12 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
 
       <div className="il-inline-fields">
         <div className="il-field">
-          <label>{t(locale, 'sheets.start')}</label>
-          <div className="il-hourinput-row labeled" aria-label={`${t(locale, 'sheets.start')} ${startH}:${startM}`}>
-            <label className="il-timepart">
-              <input className="il-input" value={startH} onChange={(event) => setStartH(event.target.value)} inputMode="numeric" />
-              <span>{t(locale, 'sheets.hour')}</span>
-            </label>
-            <label className="il-timepart">
-              <input className="il-input" value={startM} onChange={(event) => setStartM(event.target.value)} inputMode="numeric" />
-              <span>{t(locale, 'sheets.minute')}</span>
-            </label>
-          </div>
+          <label htmlFor="il-missed-start">{t(locale, 'sheets.start')}</label>
+          <input id="il-missed-start" className="il-input il-mono" type="datetime-local" value={startAt} onChange={(event) => { setStartAt(event.target.value); setError(''); }} />
         </div>
         <div className="il-field">
-          <label>{t(locale, 'sheets.end')}</label>
-          <div className="il-hourinput-row labeled" aria-label={`${t(locale, 'sheets.end')} ${endH}:${endM}`}>
-            <label className="il-timepart">
-              <input className="il-input" value={endH} onChange={(event) => setEndH(event.target.value)} inputMode="numeric" />
-              <span>{t(locale, 'sheets.hour')}</span>
-            </label>
-            <label className="il-timepart">
-              <input className="il-input" value={endM} onChange={(event) => setEndM(event.target.value)} inputMode="numeric" />
-              <span>{t(locale, 'sheets.minute')}</span>
-            </label>
-          </div>
+          <label htmlFor="il-missed-end">{t(locale, 'sheets.end')}</label>
+          <input id="il-missed-end" className="il-input il-mono" type="datetime-local" value={endAt} onChange={(event) => { setEndAt(event.target.value); setError(''); }} />
         </div>
       </div>
       <div className="il-field">

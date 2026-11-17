@@ -13,13 +13,15 @@ export function useSheetController(app, showOnboarding) {
     if (nextSheet === 'newPause') {
       if (app.state.running?.type === 'interrupt' || app.state.running?.type === 'break') {
         setSheet('pause');
-        setSheetArg(app.state.running?.draft ?? arg ?? null);
+        setSheetArg(null);
         return;
       }
       if (arg?.kind === 'break') app.actions.beginBreak();
       else app.actions.beginPause(arg?.categoryId ?? null);
+      // The pause sheet reads its draft from the running pause, never from here,
+      // so a pause started after a split cannot inherit the previous one's input.
       setSheet('pause');
-      setSheetArg(arg ?? null);
+      setSheetArg(null);
       return;
     }
     setSheet(nextSheet);
@@ -28,8 +30,7 @@ export function useSheetController(app, showOnboarding) {
 
   const updateInterruptDraft = useCallback((draft) => {
     app.actions.updateInterruptDraft(draft);
-    if (sheet === 'pause') setSheetArg(draft);
-  }, [app.actions, sheet]);
+  }, [app.actions]);
 
   const restoreSheet = useCallback((nextSheet, arg) => {
     setSheet(nextSheet);

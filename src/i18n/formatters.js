@@ -55,6 +55,27 @@ export function formatDurationShort(ms, locale = 'ja-JP') {
   return `${m}m`;
 }
 
+// A due date as a day and clock time ("今日 18:00", "明日 9:00", "11/21 18:00"),
+// so it cannot be mistaken for a remaining duration next to work times.
+export function formatDueAt(ts, locale = 'ja-JP', nowTs = Date.now()) {
+  const startOf = (value) => {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime();
+  };
+  const dayDiff = Math.round((startOf(ts) - startOf(nowTs)) / 86400000);
+  const time = new Intl.DateTimeFormat(normalizeLocale(locale), {
+    hour: 'numeric',
+    minute: '2-digit',
+    hourCycle: getLocaleConfig(locale).hourCycle,
+  }).format(new Date(ts));
+  const ja = locale === 'ja-JP';
+  if (dayDiff === 0) return `${ja ? '今日' : 'Today'} ${time}`;
+  if (dayDiff === 1) return `${ja ? '明日' : 'Tomorrow'} ${time}`;
+  if (dayDiff === -1) return `${ja ? '昨日' : 'Yesterday'} ${time}`;
+  return formatDateTime(ts, locale);
+}
+
 export function formatRelative(ts, locale = 'ja-JP', nowTs = Date.now()) {
   const diff = ts - nowTs;
   const abs = Math.abs(diff);

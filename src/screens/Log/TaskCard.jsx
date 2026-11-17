@@ -1,6 +1,6 @@
 import Icons from '../../icons';
-import { fmtDuration, fmtDurationMin, fmtRel } from '../../lib/formatters';
-import { categoryLabel, t } from '../../i18n';
+import { fmtDue, fmtDurationMin, fmtRel } from '../../lib/formatters';
+import { categoryLabel, t, tx } from '../../i18n';
 
 export default function TaskCard({
   task,
@@ -21,6 +21,7 @@ export default function TaskCard({
   onToggle,
   onRestart,
   completedNote,
+  waitingToResume = false,
   locale = 'ja-JP',
   floating = false,
 }) {
@@ -115,14 +116,14 @@ export default function TaskCard({
         <div className="il-meta">
           <span className="il-chip task-cat-label" style={{ color: category?.color }}>{categoryLabel(locale, category)}</span>
           {task.interruptOriginId && <span className="il-chip sm interrupt-origin">{t(locale, 'log.interruptOrigin')}</span>}
+          {waitingToResume && <span className="il-chip sm resume-waiting">{t(locale, 'log.resumeWaiting')}</span>}
           {actualSummary}
-          {running && (
-            <span className="il-mono subtle">{fmtDuration(now - runningStart, { showSec: true, locale })}</span>
-          )}
           {hasDueAt && (
             <>
               <span className="sep">•</span>
-              <span className={overdue ? 'danger strong' : 'subtle'}>{fmtRel(dueAt, locale, now)}</span>
+              <span className={overdue ? 'danger strong' : 'subtle'}>
+                {tx(locale, overdue ? 'log.overdue' : 'log.due', fmtDue(dueAt, locale, now))}
+              </span>
             </>
           )}
         </div>

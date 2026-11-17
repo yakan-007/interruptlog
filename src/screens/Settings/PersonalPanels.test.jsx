@@ -35,7 +35,7 @@ describe('personal settings panels', () => {
     render(<InterruptCategorySheet category={{ id: 'int-custom', name: '' }} onClose={vi.fn()} onDelete={onDelete} onSave={onSave} />);
 
     await user.click(screen.getByRole('button', { name: '保存' }));
-    expect(screen.getByText('種類名を入力してください')).toBeTruthy();
+    expect(screen.getByText('カテゴリ名を入力してください')).toBeTruthy();
     await user.type(screen.getByRole('textbox'), '相談');
     await user.click(screen.getByRole('button', { name: '保存' }));
     await user.click(screen.getByRole('button', { name: '削除' }));

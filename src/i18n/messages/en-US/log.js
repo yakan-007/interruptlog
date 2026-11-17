@@ -1,7 +1,7 @@
 const messages = {
 log: {
         title: 'Tasks',
-        emptyTitle: 'No tasks for today yet',
+        emptyTitle: 'No tasks yet',
         emptyCopy: 'Add a task from the input below.',
         startUnexpected: 'Record interruption',
         startPause: 'Record interruption',
@@ -33,7 +33,12 @@ log: {
         workdayUnset: 'Set work hours',
         workdayUntil: ({ time, remaining }) => `Ends ${time} · ${remaining} left`,
         workdayAfterEnd: (time) => `Ended at ${time}`,
-        workdayOverflow: (duration) => `${duration} over estimate`,
+        workdayOverflow: (duration) => `Estimates due today exceed the time left by ${duration}`,
+        due: (when) => `Due ${when}`,
+        overdue: (when) => `Overdue ${when}`,
+        resumeWaiting: 'Waiting to resume',
+        endPause: 'End interruption',
+        endBreak: 'End break',
         forgottenTimer: (duration) => `This timer has been running for ${duration}. Did you forget to stop it?`,
         forgottenTimerAction: 'Choose stop time',
         interruptOrigin: 'From an interruption',

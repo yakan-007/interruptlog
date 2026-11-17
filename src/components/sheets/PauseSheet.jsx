@@ -19,6 +19,7 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   const [label, setLabel] = useState(initialDraft?.label ?? state.running?.draft?.label ?? '');
   const [memo, setMemo] = useState(initialDraft?.memo ?? state.running?.draft?.memo ?? '');
   const [breakMemo, setBreakMemo] = useState('');
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   const mode = state.running?.type === 'break' ? 'break' : 'interrupt';
   const interruptCategories = state.interruptCats;
@@ -88,9 +89,19 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   };
 
   return (
-    <SheetShell title={t(locale, 'sheets.pauseTitle')} onClose={onClose} locale={locale} footer={
+    <SheetShell title={t(locale, 'sheets.pauseTitle')} onClose={onClose} locale={locale} footer={confirmingDiscard ? (
       <>
-        <button className="btn tert" onClick={() => actions.cancelInterrupt()}>{t(locale, 'sheets.discardPause')}</button>
+        <div className="il-sheet-confirm">
+          {runTask
+            ? tx(locale, 'sheets.discardToTask', { time: startClock, task: runTask.name })
+            : tx(locale, 'sheets.discardNoTask', startClock)}
+        </div>
+        <button className="btn tert" onClick={() => setConfirmingDiscard(false)}>{t(locale, 'sheets.back')}</button>
+        <button className="btn danger" onClick={() => actions.cancelInterrupt()}>{t(locale, 'sheets.discardAction')}</button>
+      </>
+    ) : (
+      <>
+        <button className="btn tert" onClick={() => setConfirmingDiscard(true)}>{t(locale, 'sheets.discardPause')}</button>
         {runTask ? (
           <>
             <button className="btn secondary" onClick={() => save(false)}>{t(locale, 'sheets.saveAndEnd')}</button>
@@ -100,7 +111,7 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
           <button className="btn primary" onClick={() => save(false)}>{t(locale, 'sheets.save')}</button>
         )}
       </>
-    }>
+    )}>
       {runTask && (
         <div className="il-sheet-infobox">
           <div className="dot muted" />
