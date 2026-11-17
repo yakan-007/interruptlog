@@ -16,7 +16,8 @@ export function useSheetController(app, showOnboarding) {
         setSheetArg(app.state.running?.draft ?? arg ?? null);
         return;
       }
-      app.actions.beginPause(arg?.categoryId ?? null);
+      if (arg?.kind === 'break') app.actions.beginBreak();
+      else app.actions.beginPause(arg?.categoryId ?? null);
       setSheet('pause');
       setSheetArg(arg ?? null);
       return;

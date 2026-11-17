@@ -1,9 +1,9 @@
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
-  beginNextPauseWithCategoryInState,
+  beginInterruptWithCategoryInState,
+  beginNextPauseInState,
   beginPauseInState,
-  beginPauseWithCategoryInState,
   cancelPauseInState,
   deleteEventInState,
   previewAddMissedEventInState,
@@ -14,6 +14,7 @@ import {
   saveEventInState,
   saveInterruptInState,
   selectPauseCategoryInState,
+  setPauseKindInState,
   saveTaskRecordInState,
   updateInterruptDraftInState,
 } from '../../state';
@@ -31,11 +32,12 @@ export function createRecordCommands({
 }) {
   const dependencies = { createId };
   return {
-    beginPause: (categoryId) => mutate((state) => beginPauseWithCategoryInState(state, categoryId, now(), dependencies)),
-    beginNextPause: (categoryId, currentPauseData) => mutate((state) => beginNextPauseWithCategoryInState(state, categoryId, currentPauseData, now(), dependencies)),
+    beginPause: (categoryId) => mutate((state) => beginInterruptWithCategoryInState(state, categoryId, now(), dependencies)),
+    beginNextPause: (kind, currentPauseData) => mutate((state) => beginNextPauseInState(state, kind, currentPauseData, now(), dependencies)),
     beginInterrupt: () => mutate((state) => beginPauseInState(state, 'interrupt', now(), {}, dependencies)),
     beginBreak: () => mutate((state) => beginPauseInState(state, 'break', now(), {}, dependencies)),
     selectPauseCategory: mutateWith(selectPauseCategoryInState),
+    setPauseKind: mutateWith(setPauseKindInState),
     saveInterrupt: (data) => mutate((state) => saveInterruptInState(state, data, now(), dependencies)),
     cancelInterrupt: () => mutate((state) => cancelPauseInState(state, now(), dependencies)),
     updateInterruptDraft: mutateWith(updateInterruptDraftInState),

@@ -20,11 +20,12 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   const [memo, setMemo] = useState(initialDraft?.memo ?? state.running?.draft?.memo ?? '');
   const [breakMemo, setBreakMemo] = useState('');
 
-  const selectedCategory = state.interruptCats.find((category) => category.id === categoryId)
-    ?? state.interruptCats[0]
-    ?? null;
-  const mode = selectedCategory?.kind === 'break' ? 'break' : 'interrupt';
-  const selectedLabel = interruptCategoryLabel(locale, selectedCategory);
+  const mode = state.running?.type === 'break' ? 'break' : 'interrupt';
+  const interruptCategories = state.interruptCats;
+  const selectedCategory = mode === 'interrupt'
+    ? interruptCategories.find((category) => category.id === categoryId) ?? interruptCategories[0] ?? null
+    : null;
+  const selectedLabel = selectedCategory ? interruptCategoryLabel(locale, selectedCategory) : '';
   const resumeTaskId = getResumeTaskId(state);
   const runTask = resumeTaskId ? state.tasks.find((task) => task.id === resumeTaskId) : null;
   const elapsed = elapsedSince(state.running?.start ?? now, now);
@@ -37,14 +38,22 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
 
   const selectCategory = (category) => {
     setCategoryId(category.id);
-    actions.selectPauseCategory(category.id);
+    if (mode === 'break') actions.setPauseKind('interrupt', category.id);
+    else actions.selectPauseCategory(category.id);
   };
+
+  const selectBreak = () => {
+    if (mode !== 'break') actions.setPauseKind('break');
+  };
+
+  const startClock = state.running?.start != null
+    ? `${String(new Date(state.running.start).getHours()).padStart(2, '0')}:${String(new Date(state.running.start).getMinutes()).padStart(2, '0')}`
+    : null;
 
   const save = (resume) => {
     if (mode === 'break') {
       actions.saveBreak({
-        categoryId: selectedCategory?.id ?? null,
-        label: selectedLabel || t(locale, 'common.break'),
+        label: t(locale, 'common.break'),
         memo: breakMemo,
         resume,
       });
@@ -63,8 +72,7 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
 
   const currentPauseData = () => mode === 'break'
     ? {
-        categoryId: selectedCategory?.id ?? null,
-        label: selectedLabel || t(locale, 'common.break'),
+        label: t(locale, 'common.break'),
         memo: breakMemo,
       }
     : {
@@ -76,9 +84,7 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
       };
 
   const startNextPause = (nextKind) => {
-    const nextCategory = state.interruptCats.find((category) => category.kind === nextKind);
-    if (!nextCategory) return;
-    actions.beginNextPause(nextCategory.id, currentPauseData());
+    actions.beginNextPause(nextKind, currentPauseData());
   };
 
   return (
@@ -108,18 +114,20 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
       <TimerPanel
         className={'il-sheet-timer ' + mode}
         elapsed={elapsed}
-        eyebrow={mode === 'break' ? t(locale, 'sheets.breakActive') : t(locale, 'sheets.pauseActive')}
-        hint={selectedLabel}
+        eyebrow={t(locale, mode === 'break' ? 'sheets.breakActive' : 'sheets.pauseActive')}
+        hint={startClock ? tx(locale, 'sheets.since', startClock) : null}
         locale={locale}
       />
 
       <PauseSwitchButton mode={mode} locale={locale} onSwitch={startNextPause} />
 
       <PauseCategoryPicker
-        categories={state.interruptCats}
+        mode={mode}
+        categories={interruptCategories}
         categoryId={categoryId}
         locale={locale}
         onSelect={selectCategory}
+        onSelectBreak={selectBreak}
       />
 
       {mode === 'interrupt' ? (

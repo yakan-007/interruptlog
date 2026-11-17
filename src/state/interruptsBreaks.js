@@ -23,51 +23,49 @@ export function beginPauseInState(state, type, now = Date.now(), context = {}, d
   };
 }
 
-export function beginPauseWithCategoryInState(state, categoryId = null, now = Date.now(), dependencies = {}) {
-  const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
-  const type = pauseTypeFromCategory(category);
-  return beginPauseInState(state, type, now, pauseContextFromCategory(category, type), dependencies);
+// Interruptions are categorised (phone, chat, ...); a break is just a break.
+export function beginInterruptWithCategoryInState(state, categoryId = null, now = Date.now(), dependencies = {}) {
+  return beginPauseInState(state, 'interrupt', now, interruptContext(state, categoryId), dependencies);
 }
 
-export function beginNextPauseWithCategoryInState(state, categoryId = null, currentPauseData = {}, now = Date.now(), dependencies = {}) {
-  const category = findPauseCategory(state, categoryId) ?? firstPauseCategory(state, null);
-  const type = pauseTypeFromCategory(category);
-  return beginPauseInState(state, type, now, {
-    ...pauseContextFromCategory(category, type),
-    currentPauseData,
-  }, dependencies);
+// Switch between an interruption and a break from now: the current pause is
+// recorded with what the sheet holds, and the task to return to is kept.
+export function beginNextPauseInState(state, kind, currentPauseData = {}, now = Date.now(), dependencies = {}) {
+  const context = kind === 'break' ? {} : interruptContext(state, null);
+  return beginPauseInState(state, kind === 'break' ? 'break' : 'interrupt', now, { ...context, currentPauseData }, dependencies);
 }
 
 export function selectPauseCategoryInState(state, categoryId) {
   const running = state.running;
-  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
-  const category = findPauseCategory(state, categoryId);
+  if (running?.type !== 'interrupt') return state;
+  const category = findInterruptCategory(state, categoryId);
   if (!category) return state;
-
-  const type = pauseTypeFromCategory(category);
-  if (type === 'interrupt') {
-    const draft = normalizeInterruptDraft({ ...running.draft, categoryId: category.id });
-    return {
-      ...state,
-      running: {
-        ...running,
-        type,
-        categoryId: category.id,
-        label: interruptLabel(draft, category.name),
-        draft,
-      },
-    };
-  }
-
+  const draft = normalizeInterruptDraft({ ...running.draft, categoryId: category.id });
   return {
     ...state,
     running: {
       ...running,
-      type,
       categoryId: category.id,
-      label: category.name || '休憩中',
-      draft: null,
+      label: interruptLabel(draft, category.name),
+      draft,
     },
+  };
+}
+
+// Correct what the running pause is, from its start: one record either way.
+// (Switching from now instead is beginNextPauseInState.)
+export function setPauseKindInState(state, kind, categoryId = null) {
+  const running = state.running;
+  if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
+  if (running.type === kind) return kind === 'interrupt' && categoryId ? selectPauseCategoryInState(state, categoryId) : state;
+  if (kind === 'break') {
+    return { ...state, running: { ...running, type: 'break', categoryId: null, label: '休憩中', draft: null } };
+  }
+  const context = interruptContext(state, categoryId);
+  const draft = normalizeInterruptDraft(context.draft);
+  return {
+    ...state,
+    running: { ...running, type: 'interrupt', categoryId: draft.categoryId, label: interruptLabel(draft, context.label), draft },
   };
 }
 
@@ -76,7 +74,7 @@ export function updateInterruptDraftInState(state, draft) {
   const nextDraft = normalizeInterruptDraft(draft);
   const currentDraft = normalizeInterruptDraft(state.running.draft);
   if (Object.entries(nextDraft).every(([key, value]) => currentDraft[key] === value)) return state;
-  const category = findPauseCategory(state, nextDraft.categoryId);
+  const category = findInterruptCategory(state, nextDraft.categoryId);
   return {
     ...state,
     running: {
@@ -152,10 +150,10 @@ function createPauseRunning(type, now, resumeStack, context = {}) {
     type,
     taskId: null,
     start: now,
-    label: type === 'break' ? (context.label || '休憩中') : interruptLabel(draft, context.label),
+    label: type === 'break' ? '休憩中' : interruptLabel(draft, context.label),
     preTaskId: findNearestTaskId(resumeStack),
     resumeStack,
-    categoryId: type === 'interrupt' ? draft.categoryId : context.categoryId ?? null,
+    categoryId: type === 'interrupt' ? draft.categoryId : null,
     draft,
   };
 }
@@ -181,29 +179,14 @@ function findNearestTaskContext(resumeStack) {
   return context ? { type: 'task', taskId: context.taskId } : null;
 }
 
-function findPauseCategory(state, categoryId) {
+function findInterruptCategory(state, categoryId) {
   if (!categoryId) return null;
   return state.interruptCats.find((category) => category.id === categoryId) ?? null;
 }
 
-function firstPauseCategory(state, kind) {
-  return state.interruptCats.find((category) => !kind || category.kind === kind) ?? null;
-}
-
-function pauseTypeFromCategory(category) {
-  return category?.kind === 'break' ? 'break' : 'interrupt';
-}
-
-function pauseContextFromCategory(category, type) {
-  if (!category) return {};
-  if (type === 'break') {
-    return {
-      categoryId: category.id,
-      label: category.name,
-    };
-  }
-  return {
-    label: category.name,
-    draft: { categoryId: category.id },
-  };
+function interruptContext(state, categoryId) {
+  const category = findInterruptCategory(state, categoryId)
+    ?? state.interruptCats[0]
+    ?? null;
+  return category ? { label: category.name, draft: { categoryId: category.id } } : {};
 }

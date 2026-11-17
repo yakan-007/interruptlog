@@ -141,26 +141,6 @@
   flex: 1;
 }
 
-.il-pause-category-groups {
-  display: grid;
-  gap: 10px;
-}
-
-.il-pause-category-group {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.il-pause-category-group-label {
-  flex-shrink: 0;
-  width: 4.5em;
-  padding-top: 10px;
-  color: var(--ink-3);
-  font-size: var(--text-xs);
-  font-weight: 700;
-}
-
 .il-pause-category-grid {
   display: flex;
   flex-wrap: wrap;
@@ -186,17 +166,25 @@
   transform: scale(0.98);
 }
 
-.il-pause-category.interrupt.sel {
+.il-pause-category-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 2px;
+  background: var(--hair-strong);
+}
+
+.il-pause-category.break.sel {
+  background: color-mix(in oklch, var(--break) 16%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--break) 40%, var(--hair));
+  color: color-mix(in oklch, var(--break) 62%, var(--ink) 38%);
+}
+
+.il-pause-category:not(.break).sel {
   background: color-mix(in oklch, var(--interrupt) 10%, var(--bg-elevated));
   border-color: color-mix(in oklch, var(--interrupt) 34%, var(--hair));
   color: color-mix(in oklch, var(--interrupt) 74%, var(--ink) 26%);
 }
 
-.il-pause-category.break.sel {
-  background: color-mix(in oklch, var(--break) 14%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--break) 36%, var(--hair));
-  color: color-mix(in oklch, var(--break) 74%, var(--ink) 26%);
-}
 
 .il-segmented {
   display: grid;

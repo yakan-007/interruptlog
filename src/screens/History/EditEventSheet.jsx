@@ -7,7 +7,7 @@ import TaskTargetFields from './TaskTargetFields';
 import { taskTargetForEvent } from './taskRecordHelpers';
 
 export default function EditEventSheet({ event, state, actions, onClose }) {
-  const interruptCategories = state.interruptCats.filter((category) => category.kind !== 'break');
+  const interruptCategories = state.interruptCats;
   const [label, setLabel] = useState(event.label ?? '');
   const [memo, setMemo] = useState(event.memo ?? '');
   const [type, setType] = useState(event.type === 'unknown' ? 'break' : event.type);

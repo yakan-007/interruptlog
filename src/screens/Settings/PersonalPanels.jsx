@@ -45,7 +45,6 @@ export function CategorySheet({ category, locale = 'ja-JP', onClose, onSave, onD
 
 export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, onSave, onDelete }) {
   const [name, setName] = useState(category?.name ?? '');
-  const [kind, setKind] = useState(category?.kind ?? 'interrupt');
   const [error, setError] = useState('');
 
   const save = () => {
@@ -57,7 +56,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       id: category?.id,
       name,
       icon: null,
-      kind,
+      kind: 'interrupt',
     });
   };
 
@@ -72,13 +71,6 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       <div className="il-field">
         <label>{t(locale, 'settings.interruptCategoryName')}</label>
         <input className="il-input" value={name} onChange={(event) => { setName(event.target.value); setError(''); }} autoFocus />
-      </div>
-      <div className="il-field">
-        <label>{t(locale, 'settings.interruptCategoryKind')}</label>
-        <div className="il-segmented">
-          <button className={kind === 'interrupt' ? 'active' : ''} onClick={() => setKind('interrupt')}>{t(locale, 'sheets.pauseKindInterrupt')}</button>
-          <button className={kind === 'break' ? 'active' : ''} onClick={() => setKind('break')}>{t(locale, 'sheets.pauseKindBreak')}</button>
-        </div>
       </div>
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>

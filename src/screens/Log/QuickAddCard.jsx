@@ -25,6 +25,8 @@ export default function QuickAddCard({ state, actions }) {
   const taskAccent = selectedCategory?.color ?? 'var(--accent)';
   const hasDetails = draft.plannedDurationMinutes !== DEFAULT_DURATION || draft.dueAt != null || Boolean(draft.memo.trim());
 
+  // At rest the card offers interruption/break; once you start writing a task
+  // it becomes a task composer (full-width input, details, categories) instead.
   const expanded = focused || hasName || hasDetails;
 
   const updateDraft = (patch) => {
@@ -130,7 +132,7 @@ export default function QuickAddCard({ state, actions }) {
         <div className="il-quickdock-field">
           <input
             ref={inputRef}
-            className="il-input il-quickdock-input"
+            className={'il-input il-quickdock-input' + (expanded ? ' with-detail' : '')}
             placeholder={t(state.preferences.locale, 'log.addPlaceholder')}
             value={draft.name}
             onChange={(event) => updateDraft({ name: event.target.value })}
@@ -140,14 +142,16 @@ export default function QuickAddCard({ state, actions }) {
             enterKeyHint="done"
             aria-label={t(state.preferences.locale, 'log.taskName')}
           />
-          <button
-            className={'il-quickdock-detail' + (hasDetails ? ' active' : '')}
-            onMouseDown={keepInputFocus}
-            onClick={openDetails}
-            aria-label={t(state.preferences.locale, 'log.openDetails')}
-          >
-            {Icons.dots(15)}
-          </button>
+          {expanded && (
+            <button
+              className={'il-quickdock-detail' + (hasDetails ? ' active' : '')}
+              onMouseDown={keepInputFocus}
+              onClick={openDetails}
+              aria-label={t(state.preferences.locale, 'log.openDetails')}
+            >
+              {Icons.dots(15)}
+            </button>
+          )}
         </div>
 
         {hasName ? (
@@ -169,16 +173,29 @@ export default function QuickAddCard({ state, actions }) {
               {Icons.play(16)}
             </button>
           </>
-        ) : !state.running && (
-          <button
-            className="il-quickdock-pause"
-            onMouseDown={keepInputFocus}
-            onClick={() => actions.openSheet('newPause')}
-            aria-label={t(state.preferences.locale, 'log.startPause')}
-          >
-            {Icons.pause(14)}
-            <span>{t(state.preferences.locale, 'log.pauseShort')}</span>
-          </button>
+        ) : !expanded && (
+          <>
+            {!state.running && (
+              <button
+                className="il-quickdock-pause"
+                onMouseDown={keepInputFocus}
+                onClick={() => actions.openSheet('newPause')}
+                aria-label={t(state.preferences.locale, 'log.startPause')}
+              >
+                {t(state.preferences.locale, 'log.pauseShort')}
+              </button>
+            )}
+            {(!state.running || state.running.type === 'task') && (
+              <button
+                className="il-quickdock-break"
+                onMouseDown={keepInputFocus}
+                onClick={() => actions.openSheet('newPause', { kind: 'break' })}
+                aria-label={t(state.preferences.locale, 'log.startBreak')}
+              >
+                {t(state.preferences.locale, 'log.breakShort')}
+              </button>
+            )}
+          </>
         )}
       </div>
 

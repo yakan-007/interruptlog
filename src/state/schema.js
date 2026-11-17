@@ -18,10 +18,11 @@ const defaultInterruptCats = [
   { id: 'int-chat', name: 'チャット', icon: 'chat', kind: 'interrupt', defaultDurationMinutes: 0 },
   { id: 'int-q', name: '質問', icon: 'q', kind: 'interrupt', defaultDurationMinutes: 0 },
   { id: 'int-other', name: 'その他', icon: 'dots', kind: 'interrupt', defaultDurationMinutes: 0 },
-  { id: 'break-rest', name: '休憩', icon: 'coffee', kind: 'break', defaultDurationMinutes: 10 },
-  { id: 'break-lunch', name: '昼食', icon: 'coffee', kind: 'break', defaultDurationMinutes: 30 },
-  { id: 'break-personal', name: '私用', icon: 'dots', kind: 'break', defaultDurationMinutes: 0 },
 ];
+
+// Breaks no longer have categories. Older data carried these built-in break
+// categories (some re-saved as interruptions by an old settings sheet).
+const LEGACY_BREAK_CATEGORY_IDS = new Set(['break-rest', 'break-lunch', 'break-personal']);
 
 const defaultPreferences = {
   dark: false,
@@ -203,12 +204,10 @@ function normalizeRunning(running, taskIds) {
 }
 
 function normalizePauseCategoryList(categories) {
-  if (categories.length === 0) return clone(defaultInterruptCats);
-  const usedIds = new Set(categories.map((category) => category.id));
-  const missingBreakDefaults = defaultInterruptCats
-    .filter((category) => category.kind === 'break' && !usedIds.has(category.id))
-    .map(clone);
-  return [...categories, ...missingBreakDefaults];
+  const interruptCategories = categories.filter((category) => (
+    category.kind !== 'break' && !LEGACY_BREAK_CATEGORY_IDS.has(category.id)
+  ));
+  return interruptCategories.length ? interruptCategories : clone(defaultInterruptCats);
 }
 
 function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {

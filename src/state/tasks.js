@@ -149,9 +149,8 @@ function closePauseInState(state, now, createId = newId) {
   if (running?.type !== 'interrupt' && running?.type !== 'break') return state;
   const category = state.interruptCats?.find((item) => item.id === running.categoryId);
   const draft = running.draft ?? {};
-  const untitled = running.type === 'interrupt' ? !draft.label && !draft.who : !running.categoryId;
-  const fallbackLabel = running.type === 'interrupt' ? '未記録の割り込み' : '未記録の休憩';
-  const data = untitled ? { label: category?.name || fallbackLabel } : {};
+  const untitled = running.type === 'interrupt' && !draft.label && !draft.who;
+  const data = untitled ? { label: category?.name || '未記録の割り込み' } : {};
   return { ...closeRunningPauseSegmentInState(state, now, data, { createId }), running: null };
 }
 

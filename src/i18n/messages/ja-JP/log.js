@@ -6,6 +6,8 @@ log: {
         startUnexpected: '割り込みを記録',
         startPause: '割り込みを記録',
         pauseShort: '割り込み',
+        startBreak: '休憩を始める',
+        breakShort: '休憩',
         completedToday: '今日完了',
         completedArchive: '完了アーカイブ',
         archiveCopy: '過去に完了したタスクです。メイン一覧からは外れますが、再開すると同じタスクとして時間を続けて記録できます。',

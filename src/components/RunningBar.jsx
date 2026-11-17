@@ -50,7 +50,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       <div className="time il-mono">{formatElapsedClock(elapsedMs)}</div>
       {running.type === 'task' ? (
         <div className="rb-actions">
-          <button className="rb-btn" aria-label={t(locale, 'log.startPause')} onClick={(event) => { stopEvent(event); actions.openSheet('newPause'); }}>{Icons.pause(16)}</button>
+          <button className="rb-btn" aria-label={t(locale, 'log.startPause')} onClick={(event) => { stopEvent(event); actions.openSheet('newPause'); }}>{Icons.bolt(16)}</button>
           <button className="rb-btn stop" aria-label={t(locale, 'log.stop')} onClick={(event) => { stopEvent(event); actions.openSheet('confirmStop'); }}>{Icons.stop(14)}</button>
         </div>
       ) : (

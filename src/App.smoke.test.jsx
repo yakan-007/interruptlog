@@ -165,7 +165,7 @@ describe('App smoke flow', () => {
 
     await user.click(screen.getAllByRole('button', { name: '割り込みを記録' })[0]);
 
-    expect(await screen.findByText('カテゴリ')).toBeTruthy();
+    expect(await screen.findByText('割り込み・休憩')).toBeTruthy();
   });
 
   it('records an interruption and resumes the running task without render errors', async () => {
@@ -174,12 +174,12 @@ describe('App smoke flow', () => {
 
     await openPauseSheet(user);
 
-    expect(await screen.findByText('カテゴリ')).toBeTruthy();
+    expect(await screen.findByText('割り込み・休憩')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '保存して再開' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('カテゴリ')).toBeNull();
+      expect(screen.queryByText('割り込み・休憩')).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
     });
   });
@@ -192,12 +192,12 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await openPauseSheet(user, pauseKind);
-    expect(await screen.findByText('カテゴリ')).toBeTruthy();
+    expect(await screen.findByText('割り込み・休憩')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '保存して終了' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('カテゴリ')).toBeNull();
+      expect(screen.queryByText('割り込み・休憩')).toBeNull();
       expect(screen.queryAllByRole('button', { name: '停止' }).length).toBe(0);
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.running).toBeNull();
@@ -235,7 +235,7 @@ describe('App smoke flow', () => {
     await user.click(screen.getByRole('button', { name: '取り消し' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('カテゴリ')).toBeNull();
+      expect(screen.queryByText('割り込み・休憩')).toBeNull();
       expect(screen.getAllByRole('button', { name: '停止' }).length).toBeGreaterThan(0);
       const saved = JSON.parse(localStorage.getItem(STATE_KEY));
       expect(saved.events.some((event) => event.type === 'interrupt')).toBe(false);
@@ -250,7 +250,7 @@ describe('App smoke flow', () => {
     await startTaskFromFreshApp(user);
 
     await openPauseSheet(user, pauseKind);
-    expect(await screen.findByText('カテゴリ')).toBeTruthy();
+    expect(await screen.findByText('割り込み・休憩')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: '閉じる' }));
 
@@ -338,6 +338,7 @@ describe('App smoke flow', () => {
     }));
 
     render(<App />);
+    await user.click(await screen.findByRole('textbox', { name: 'タスク名' }));
     await user.click(await screen.findByRole('button', { name: '詳細を開く' }));
 
     expect(await screen.findByText('明日の終了まで')).toBeTruthy();
@@ -469,11 +470,13 @@ async function startTaskFromFreshApp(user) {
 }
 
 async function openPauseSheet(user, kind = 'interrupt') {
-  await user.click(screen.getAllByRole('button', { name: '割り込みを記録' })[0]);
-  expect(await screen.findByText('カテゴリ')).toBeTruthy();
   if (kind === 'break') {
-    await user.click(screen.getByRole('button', { name: '休憩' }));
+    await user.click(screen.getByRole('button', { name: '休憩を始める' }));
+    expect(await screen.findByRole('button', { name: 'ここで区切って割り込みに移る' })).toBeTruthy();
+    return;
   }
+  await user.click(screen.getAllByRole('button', { name: '割り込みを記録' })[0]);
+  expect(await screen.findByText('割り込み・休憩')).toBeTruthy();
 }
 
 async function onboardFreshApp(user) {

@@ -84,4 +84,34 @@ describe('quick task entry', () => {
 
     expect(actions.createTask).toHaveBeenCalledWith(expect.objectContaining({ name: 'Enterで追加' }));
   });
+
+  it('offers interruption and break when idle, break during a task, and neither during a pause', async () => {
+    const user = userEvent.setup();
+    const actions = { createTask: vi.fn(), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
+    const { rerender } = render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
+
+    expect(screen.getByRole('button', { name: '割り込みを記録' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '休憩を始める' }));
+    expect(actions.openSheet).toHaveBeenCalledWith('newPause', { kind: 'break' });
+
+    rerender(<QuickAddCard state={stateForQuickAdd({ running: { type: 'task' } })} actions={actions} />);
+    expect(screen.queryByRole('button', { name: '割り込みを記録' })).toBeNull();
+    expect(screen.getByRole('button', { name: '休憩を始める' })).toBeTruthy();
+
+    rerender(<QuickAddCard state={stateForQuickAdd({ running: { type: 'break' } })} actions={actions} />);
+    expect(screen.queryByRole('button', { name: '休憩を始める' })).toBeNull();
+  });
+
+  it('hides interruption and break while a task is being written', async () => {
+    const user = userEvent.setup();
+    const actions = { createTask: vi.fn(), createTaskAndStart: vi.fn(), openSheet: vi.fn() };
+    render(<QuickAddCard state={stateForQuickAdd()} actions={actions} />);
+
+    expect(screen.queryByRole('button', { name: '詳細を開く' })).toBeNull();
+    await user.click(screen.getByRole('textbox', { name: 'タスク名' }));
+
+    expect(screen.queryByRole('button', { name: '割り込みを記録' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '休憩を始める' })).toBeNull();
+    expect(screen.getByRole('button', { name: '詳細を開く' })).toBeTruthy();
+  });
 });

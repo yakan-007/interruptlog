@@ -33,10 +33,13 @@
 
 .il-quickdock-input {
   height: 44px;
-  padding-right: 44px;
   background: var(--bg-sunken);
   border-color: transparent;
   border-radius: var(--r-md);
+}
+
+.il-quickdock-input.with-detail {
+  padding-right: 44px;
 }
 
 .il-quickdock-input:focus {
@@ -68,7 +71,8 @@
 }
 
 .il-quickdock-icon,
-.il-quickdock-pause {
+.il-quickdock-pause,
+.il-quickdock-break {
   flex-shrink: 0;
   height: 44px;
   border-radius: var(--r-md);
@@ -85,7 +89,8 @@
 .il-quickdock-icon { width: 44px; }
 
 .il-quickdock-icon:active,
-.il-quickdock-pause:active { transform: scale(0.98); }
+.il-quickdock-pause:active,
+.il-quickdock-break:active { transform: scale(0.98); }
 
 .il-quickdock-icon.start {
   background: var(--ink);
@@ -94,14 +99,23 @@
 }
 
 .il-quickdock-pause {
-  gap: 6px;
-  padding: 0 14px;
+  padding: 0 12px;
   font-family: inherit;
   font-size: var(--text-sm);
   font-weight: 600;
   border-color: color-mix(in oklch, var(--interrupt) 30%, var(--hair));
   background: color-mix(in oklch, var(--interrupt) 8%, var(--bg-elevated));
   color: var(--interrupt);
+}
+
+.il-quickdock-break {
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-color: color-mix(in oklch, var(--break) 34%, var(--hair));
+  background: color-mix(in oklch, var(--break) 10%, var(--bg-elevated));
+  color: color-mix(in oklch, var(--break) 60%, var(--ink) 40%);
 }
 
 .il-quickdock-icon:disabled {

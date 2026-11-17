@@ -5,7 +5,7 @@ import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
 
 export default function AddMissedSheet({ state, actions, onClose, initialDraft }) {
-  const interruptCategories = state.interruptCats.filter((category) => category.kind !== 'break');
+  const interruptCategories = state.interruptCats;
   const [type, setType] = useState(initialDraft?.type ?? 'task');
   const [label, setLabel] = useState(initialDraft?.label ?? '');
   const [taskTarget, setTaskTarget] = useState(initialDraft?.taskTarget ?? {

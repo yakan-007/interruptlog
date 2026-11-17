@@ -46,6 +46,28 @@ describe('personal schema and backup', () => {
     expect('obsoleteWorkspace' in state).toBe(false);
   });
 
+  it('drops the old built-in break categories, even ones re-saved as interruptions', () => {
+    const state = normalizeState({
+      ...createEmptyState(),
+      interruptCats: [
+        { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt' },
+        { id: 'break-rest', name: '休憩', icon: 'coffee', kind: 'break' },
+        { id: 'break-lunch', name: '昼食', icon: null, kind: 'interrupt' },
+        { id: 'break-personal', name: '私用', icon: null, kind: 'interrupt' },
+        { id: 'int-visit', name: '来客', icon: null, kind: 'break' },
+      ],
+      events: [{ id: 'e1', type: 'break', label: '昼食', categoryId: 'break-lunch', start: 1, end: 2 }],
+    });
+    const onlyBreaks = normalizeState({
+      ...createEmptyState(),
+      interruptCats: [{ id: 'break-lunch', name: '昼食', kind: 'break' }],
+    });
+
+    expect(state.interruptCats.map((category) => category.id)).toEqual(['int-call']);
+    expect(state.events[0]).toMatchObject({ type: 'break', label: '昼食' });
+    expect(onlyBreaks.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
+  });
+
   it('keeps an optional standard work schedule and daily end override compatible with old state', () => {
     const legacy = normalizeState(createEmptyState());
     const configured = setWorkScheduleInState(legacy, { start: '09:00', end: '17:00' });

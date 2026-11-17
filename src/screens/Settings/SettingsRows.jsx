@@ -47,7 +47,6 @@ export function InterruptCategoryRow({ category, locale, onClick, rowProps, drag
     <>
       <span className="tg">
         <span className="t">{interruptCategoryLabel(locale, category)}</span>
-        <span className="s">{category.kind === 'break' ? t(locale, 'sheets.pauseKindBreak') : t(locale, 'sheets.pauseKindInterrupt')}</span>
       </span>
     </>
   );

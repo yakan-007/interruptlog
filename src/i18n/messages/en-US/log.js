@@ -6,6 +6,8 @@ log: {
         startUnexpected: 'Record interruption',
         startPause: 'Record interruption',
         pauseShort: 'Interrupt',
+        startBreak: 'Start a break',
+        breakShort: 'Break',
         completedToday: 'Completed today',
         completedArchive: 'Completed archive',
         archiveCopy: 'Older completed tasks are hidden from the main list. Restarting one keeps tracking on the same task.',

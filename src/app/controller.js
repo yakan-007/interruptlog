@@ -108,6 +108,7 @@ function createPassthroughActions({ app, closeSheet }) {
       'reorderTask',
       'moveTaskToIndex',
       'selectPauseCategory',
+      'setPauseKind',
       'saveCategory',
       'deleteCategory',
       'moveCategoryToIndex',

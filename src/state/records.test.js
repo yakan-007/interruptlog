@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addMissedEventInState,
   applyResolutionPreviewInState,
-  beginNextPauseWithCategoryInState,
+  beginNextPauseInState,
   beginPauseInState,
   completeTaskInState,
   createEmptyState,
@@ -18,6 +18,7 @@ import {
   saveBreakInState,
   saveEventInState,
   saveTaskRecordInState,
+  setPauseKindInState,
   replaceTimeRangeInState,
   saveInterruptInState,
   startTaskInState,
@@ -415,7 +416,7 @@ describe('personal records and resolution', () => {
   it('gives a cancelled pause back to the task even after chained pauses', () => {
     const created = createTaskAndStartInState(createEmptyState(), { name: '再開する作業', categoryId: 'cat-dev' }, 500);
     let state = beginPauseInState(created.state, 'interrupt', 1000);
-    state = beginNextPauseWithCategoryInState(state, null, { label: '最初の件' }, 3000);
+    state = beginNextPauseInState(state, 'interrupt', { label: '最初の件' }, 3000);
     const result = cancelPauseInState(state, 7000);
 
     expect(result.events.map((event) => [event.type, event.start, event.end])).toEqual([
@@ -522,10 +523,10 @@ describe('personal records and resolution', () => {
     ]);
   });
 
-  it('starts the next interruption using the current pause draft data', () => {
+  it('switches to a break from now using the current pause draft data', () => {
     const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
     let state = beginPauseInState(started.state, 'interrupt', 2000);
-    state = beginNextPauseWithCategoryInState(state, 'int-chat', {
+    state = beginNextPauseInState(state, 'break', {
       who: '佐藤',
       label: '仕様確認',
       urgency: 'high',
@@ -546,8 +547,8 @@ describe('personal records and resolution', () => {
     });
     expect(state.whoChips).toContain('佐藤');
     expect(state.running).toMatchObject({
-      type: 'interrupt',
-      categoryId: 'int-chat',
+      type: 'break',
+      categoryId: null,
       start: 3000,
       preTaskId: started.taskId,
     });
@@ -583,5 +584,26 @@ describe('personal records and resolution', () => {
     state = startTaskInState(state, first.taskId, 4500);
 
     expect(state.events[0]).toMatchObject({ type: 'interrupt', label: '見積もり確認', who: '田中', urgency: 'high', start: 3000, end: 4500 });
+  });
+
+  it('re-labels the running pause from its start without splitting it', () => {
+    const started = createTaskAndStartInState(createEmptyState(), { name: '元の作業', categoryId: 'cat-dev' }, 1000);
+    const paused = beginPauseInState(started.state, 'interrupt', 2000);
+    const asBreak = setPauseKindInState(paused, 'break');
+
+    expect(asBreak.running).toMatchObject({ type: 'break', start: 2000, categoryId: null, preTaskId: started.taskId });
+    expect(asBreak.events).toHaveLength(1);
+
+    const back = setPauseKindInState(asBreak, 'interrupt');
+    expect(back.running).toMatchObject({ type: 'interrupt', start: 2000, categoryId: 'int-call' });
+    expect(setPauseKindInState(back, 'interrupt')).toBe(back);
+    expect(setPauseKindInState(asBreak, 'interrupt', 'int-q').running).toMatchObject({ type: 'interrupt', categoryId: 'int-q', start: 2000 });
+
+    const saved = saveBreakInState(asBreak, { label: '休憩', resume: true }, 5000);
+    expect(saved.events.map((event) => [event.type, event.start, event.end])).toEqual([
+      ['task', 1000, 2000],
+      ['break', 2000, 5000],
+      ['task', 5000, null],
+    ]);
   });
 });
