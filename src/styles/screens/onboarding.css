@@ -1,5 +1,10 @@
 .il-onboarding {
   justify-content: space-between;
+  /* On short phones the content is taller than the screen; it must scroll so
+     the start button stays reachable (the app shell clips overflow). */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .il-onboarding-main {
@@ -12,9 +17,9 @@
 }
 
 .il-onboarding-mark {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 24px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
   border-radius: var(--r-xl);
   background: var(--ink);
   color: var(--bg-elevated);
@@ -30,83 +35,94 @@
   font-weight: 600;
   color: var(--ink-3);
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   margin-bottom: 6px;
 }
 
 .il-onboarding h1 {
   margin: 0 0 12px;
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.8px;
   line-height: 1.1;
 }
 
 .il-onboarding-copy {
-  margin: 0 auto 32px;
-  max-width: 300px;
+  margin: 0 auto 22px;
+  max-width: 320px;
   font-size: var(--text-md);
-  color: var(--ink-3);
-  line-height: 1.6;
+  color: var(--ink-2);
+  line-height: 1.7;
 }
 
-.il-onboarding-features {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: min(100%, 320px);
+/* The same white card as the Settings groups: one row per step. */
+.il-onboarding-steps {
+  width: min(100%, 360px);
   margin: 0 auto;
+  padding: 0;
+  list-style: none;
   text-align: left;
+  background: var(--bg-elevated);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
 }
 
-.il-onboarding-feature {
+.il-onboarding-step {
   display: flex;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  padding: 11px 16px;
 }
 
-.il-onboarding-featureicon {
+.il-onboarding-step + .il-onboarding-step {
+  border-top: 0.5px solid var(--hair);
+}
+
+/* Neutral tiles like the dock buttons; only the glyph carries the role color. */
+.il-onboarding-stepicon {
   width: 32px;
   height: 32px;
   border-radius: var(--r-md);
+  border: 1px solid var(--hair-strong);
+  background: var(--bg-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: var(--ink-2);
 }
 
-.il-onboarding-featurecopy .title {
-  font-size: var(--text-sm);
-  font-weight: 600;
+.il-onboarding-stepicon.task { color: var(--ink); }
+.il-onboarding-stepicon.interrupt { color: var(--interrupt); }
+.il-onboarding-stepicon.break { color: color-mix(in oklch, var(--break) 70%, var(--ink) 30%); }
+
+.il-onboarding-stepcopy {
+  min-width: 0;
 }
 
-.il-onboarding-featurecopy .subtitle {
-  margin-top: 2px;
-  font-size: var(--text-xs);
-  color: var(--ink-3);
-}
-
-.il-onboarding-storage {
-  width: min(100%, 320px);
-  margin: 18px auto 0;
-  padding: 14px 16px;
-  border-radius: var(--r-md);
-  background: color-mix(in oklch, var(--accent) 7%, var(--bg-elevated));
-  border: 1px solid color-mix(in oklch, var(--accent) 18%, var(--hair));
-  text-align: left;
-}
-
-.il-onboarding-storage .title {
+.il-onboarding-stepcopy .title {
+  display: block;
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
 }
 
-.il-onboarding-storage .copy {
-  margin-top: 6px;
+.il-onboarding-stepcopy .subtitle {
+  display: block;
+  margin-top: 2px;
   font-size: var(--text-xs);
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--ink-3);
+}
+
+.il-onboarding-storage {
+  width: min(100%, 360px);
+  margin: 16px auto 0;
+  padding: 0 4px;
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--ink-3);
+  text-align: left;
 }
 
 .il-onboarding-footer {
@@ -139,6 +155,6 @@
   }
 
   .il-onboarding h1 {
-    font-size: 32px;
+    font-size: 30px;
   }
 }

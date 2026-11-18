@@ -1,16 +1,16 @@
 const messages = {
 onboarding: {
         eyebrow: 'Interruption log',
-        hero: ['Work gets split by interruptions.', 'InterruptLog tracks time', 'with that reality in mind.'],
-        features: {
-          interrupt: { title: 'Log interruptions in one tap', subtitle: 'Track calls, chats, and questions accurately' },
-          edit: { title: 'Fix missed time later', subtitle: 'Edit history whenever timing needs correction' },
-          review: { title: 'See where time goes', subtitle: 'Visualize task work, interruptions, and breaks' },
+        hero: ['A timer for your tasks.', 'Interruptions and breaks are kept apart', 'from the moment you tap.'],
+        steps: {
+          task: { title: 'Write a task and tap ▶', subtitle: 'Time counts toward it until you stop' },
+          interrupt: { title: 'Tap Interrupt when something cuts in', subtitle: 'Pick call, chat and so on, then go back to the task' },
+          break: { title: 'Tap Break the same way', subtitle: 'Breaks are recorded apart from interruptions' },
+          fix: { title: 'Fix what you missed in History', subtitle: 'Correct times or add time you forgot to record' },
         },
-        storageTitle: 'About this web version',
-        storageCopy: ['Data is saved in this browser. It does not sync to other devices automatically.', 'Export a JSON backup from Settings when the logs matter.'],
+        storage: 'Data stays in this browser and does not sync to other devices. Export a personal backup from Settings to keep important records.',
         start: 'Get started',
-        note: 'Saved in this browser · No account needed',
+        note: 'No account needed',
       },
 };
 

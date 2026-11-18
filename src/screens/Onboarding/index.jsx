@@ -1,36 +1,26 @@
 import Icons from '../../icons';
 import { t, tx } from '../../i18n';
 
-const FEATURES = [
-  {
-    icon: Icons.bolt,
-    color: 'var(--interrupt)',
-    key: 'interrupt',
-  },
-  {
-    icon: Icons.clock,
-    color: 'var(--task)',
-    key: 'edit',
-  },
-  {
-    icon: Icons.report,
-    color: 'oklch(0.5 0.12 280)',
-    key: 'review',
-  },
+// How the app is used, in the order a first day goes. The icons and their
+// colors are the ones the buttons use, so the screen after this looks familiar.
+const STEPS = [
+  { key: 'task', icon: () => Icons.play(13), tone: 'task' },
+  { key: 'interrupt', icon: () => Icons.bolt(15), tone: 'interrupt' },
+  { key: 'break', icon: () => Icons.coffee(15), tone: 'break' },
+  { key: 'fix', icon: () => Icons.history(16), tone: 'neutral' },
 ];
 
 export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
   const hero = tx(locale, 'onboarding.hero');
-  const storageCopy = tx(locale, 'onboarding.storageCopy');
 
   return (
     <div className="il-screen il-onboarding il-fade">
       <div className="il-onboarding-main">
         <div className="il-onboarding-mark" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="18" r="13" stroke="currentColor" strokeWidth="1.6" opacity="0.3" />
-            <path d="M18 8v10l6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <path d="M29 5l-6 8h4l-1 6 6-8h-4l1-6z" fill="currentColor" transform="translate(-3 0)" />
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="17" cy="18" r="12" strokeWidth="2" opacity="0.35" />
+            <path d="M14 3h6" strokeWidth="2" />
+            <path d="M18.5 10.5l-5 7.5h4l-1 6 5-7.5h-4l1-6z" strokeWidth="1.8" />
           </svg>
         </div>
 
@@ -40,37 +30,22 @@ export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
           {hero.map((line) => <span key={line}>{line}<br /></span>)}
         </p>
 
-        <div className="il-onboarding-features">
-          {FEATURES.map((feature) => {
-            const Icon = feature.icon;
-            const copy = tx(locale, `onboarding.features.${feature.key}`);
+        <ol className="il-onboarding-steps">
+          {STEPS.map((step) => {
+            const copy = tx(locale, `onboarding.steps.${step.key}`);
             return (
-              <div key={feature.key} className="il-onboarding-feature">
-                <div
-                  className="il-onboarding-featureicon"
-                  style={{
-                    background: `color-mix(in oklch, ${feature.color} 12%, var(--bg-elevated))`,
-                    color: feature.color,
-                  }}
-                  aria-hidden="true"
-                >
-                  {Icon(15)}
-                </div>
-                <div className="il-onboarding-featurecopy">
-                  <div className="title">{copy.title}</div>
-                  <div className="subtitle">{copy.subtitle}</div>
-                </div>
-              </div>
+              <li key={step.key} className="il-onboarding-step">
+                <span className={`il-onboarding-stepicon ${step.tone}`} aria-hidden="true">{step.icon()}</span>
+                <span className="il-onboarding-stepcopy">
+                  <span className="title">{copy.title}</span>
+                  <span className="subtitle">{copy.subtitle}</span>
+                </span>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
-        <div className="il-onboarding-storage">
-          <div className="title">{t(locale, 'onboarding.storageTitle')}</div>
-          <div className="copy">
-            {storageCopy.map((line) => <span key={line}>{line}<br /></span>)}
-          </div>
-        </div>
+        <p className="il-onboarding-storage">{t(locale, 'onboarding.storage')}</p>
       </div>
 
       <div className="il-onboarding-footer">
