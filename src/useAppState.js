@@ -52,11 +52,23 @@ export function useAppState({ clock = systemClock, idGenerator = systemIdGenerat
     return () => { active = false; };
   }, [clock, setTrackedAppState, storage]);
 
+  const adoptedStateRef = useRef(null);
+
+  useEffect(() => {
+    if (!hydrated || typeof storage.subscribe !== 'function') return undefined;
+    return storage.subscribe((stored) => {
+      const normalized = normalizeState(stored, clock.now(), { assumeOnboarded: stored != null });
+      adoptedStateRef.current = normalized;
+      setTrackedAppState(normalized);
+    });
+  }, [clock, hydrated, setTrackedAppState, storage]);
+
   const persistence = useStatePersistence({
     hydrated,
     state: appState,
     stateRef: appStateRef,
     storage,
+    adoptedStateRef,
   });
 
   const overlapRepairPreview = useMemo(

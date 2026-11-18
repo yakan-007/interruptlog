@@ -32,6 +32,40 @@ describe('useAppState ports', () => {
     expect(storage.load).toHaveBeenCalledTimes(1);
   });
 
+  it('takes over what another tab saved without writing it back', async () => {
+    const stored = createEmptyState();
+    stored.preferences.onboardingDone = true;
+    let notifyOtherTab = null;
+    const storage = {
+      load: vi.fn(async () => ({ status: 'ok', state: stored })),
+      save: vi.fn(async () => {}),
+      clear: vi.fn(async () => {}),
+      subscribe: vi.fn((callback) => {
+        notifyOtherTab = callback;
+        return () => {};
+      }),
+    };
+    const clock = fixedClock();
+    const { result } = renderHook(() => useAppState({ clock, storage }));
+
+    await waitFor(() => expect(notifyOtherTab).toBeTypeOf('function'));
+    storage.save.mockClear();
+    const fromOtherTab = { ...stored, whoChips: ['別タブ'] };
+    act(() => notifyOtherTab(fromOtherTab));
+
+    expect(result.current.state.whoChips).toEqual(['別タブ']);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(storage.save).not.toHaveBeenCalled();
+
+    act(() => result.current.actions.setDark(true));
+    await waitFor(() => {
+      expect(storage.save).toHaveBeenLastCalledWith(expect.objectContaining({
+        whoChips: ['別タブ'],
+        preferences: expect.objectContaining({ dark: true }),
+      }));
+    });
+  });
+
   it('exposes only persistence failures and clears them after a successful retry', async () => {
     let shouldFail = true;
     const storage = {
