@@ -63,7 +63,6 @@ describe('personal records and resolution', () => {
       type: 'interrupt',
       label: 'あとから相談を記録',
       who: '佐藤',
-      urgency: 'med',
       categoryId: 'int-chat',
       memo: 'Slackで仕様確認。次回はまとめて聞く。',
       start: at(11, 10),
@@ -450,7 +449,7 @@ describe('personal records and resolution', () => {
     const saved = createTaskAndStartInState(state, { name: '見積API', categoryId: 'cat-dev', plannedDurationMinutes: 30 }, 2000);
     state = saved.state;
     state = beginPauseInState(state, 'interrupt', 5000);
-    state = saveInterruptInState(state, { who: '佐藤', label: '仕様確認', urgency: 'med', categoryId: 'int-chat', memo: '', resume: true }, 8000);
+    state = saveInterruptInState(state, { who: '佐藤', label: '仕様確認', categoryId: 'int-chat', memo: '', resume: true }, 8000);
     state = stopTaskInState(state, false, 11_000);
 
     expect(state.running).toBe(null);
@@ -460,7 +459,7 @@ describe('personal records and resolution', () => {
     expect(state.whoChips).not.toContain('佐藤');
     const savedSenderState = saveInterruptInState(
       beginPauseInState(state, 'interrupt', 11_500),
-      { who: '佐藤', saveWhoChip: true, label: '追加確認', urgency: 'med', categoryId: 'int-chat', memo: '', resume: false },
+      { who: '佐藤', saveWhoChip: true, label: '追加確認', categoryId: 'int-chat', memo: '', resume: false },
       12_000
     );
     expect(savedSenderState.whoChips).toContain('佐藤');
@@ -470,14 +469,12 @@ describe('personal records and resolution', () => {
     let state = createEmptyState();
     const saved = createTaskAndStartInState(state, { name: '外を見る', categoryId: 'cat-dev', plannedDurationMinutes: 25 }, 1000);
     state = beginPauseInState(saved.state, 'break', 3000);
-    state = saveBreakInState(state, { breakDurationMinutes: 10, resume: true }, 5000);
+    state = saveBreakInState(state, { resume: true }, 5000);
 
     expect(state.events).toHaveLength(3);
     expect(state.events[1]).toMatchObject({
       type: 'break',
       label: '休憩',
-      breakType: null,
-      breakDurationMinutes: 10,
       start: 3000,
       end: 5000,
     });
@@ -496,7 +493,7 @@ describe('personal records and resolution', () => {
     let state = beginPauseInState(started.state, 'interrupt', 2000);
     state = beginPauseInState(state, 'interrupt', 3000);
     state = beginPauseInState(state, 'break', 4000);
-    state = saveBreakInState(state, { breakDurationMinutes: 5, resume: true }, 5000);
+    state = saveBreakInState(state, { resume: true }, 5000);
     expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 5000, resumeStack: [] });
 
     const closedEvents = state.events.filter((event) => event.end !== null).sort((a, b) => a.start - b.start);
@@ -529,7 +526,6 @@ describe('personal records and resolution', () => {
     state = beginNextPauseInState(state, 'break', {
       who: '佐藤',
       label: '仕様確認',
-      urgency: 'high',
       categoryId: 'int-q',
       memo: 'その場で確認',
       saveWhoChip: true,
@@ -539,7 +535,6 @@ describe('personal records and resolution', () => {
       type: 'interrupt',
       label: '仕様確認',
       who: '佐藤',
-      urgency: 'high',
       categoryId: 'int-q',
       memo: 'その場で確認',
       start: 2000,
@@ -580,10 +575,10 @@ describe('personal records and resolution', () => {
   it('keeps what was typed for the pause when a task card starts', () => {
     const first = createTaskInState(createEmptyState(), { name: '最初', categoryId: 'cat-dev' }, 1000);
     let state = beginPauseInState(first.state, 'interrupt', 3000);
-    state = updateInterruptDraftInState(state, { who: '田中', label: '見積もり確認', urgency: 'high' });
+    state = updateInterruptDraftInState(state, { who: '田中', label: '見積もり確認' });
     state = startTaskInState(state, first.taskId, 4500);
 
-    expect(state.events[0]).toMatchObject({ type: 'interrupt', label: '見積もり確認', who: '田中', urgency: 'high', start: 3000, end: 4500 });
+    expect(state.events[0]).toMatchObject({ type: 'interrupt', label: '見積もり確認', who: '田中', start: 3000, end: 4500 });
   });
 
   it('re-labels the running pause from its start without splitting it', () => {

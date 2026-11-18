@@ -4,7 +4,8 @@ import { elapsedSince } from '../../lib/timer';
 import { interruptCategoryLabel, t, tx } from '../../i18n';
 import { getResumeTaskId } from '../../state';
 import { PauseCategoryPicker, PauseSwitchButton } from './PauseControls';
-import { BreakFields, InterruptFields } from './PauseFields';
+import { InterruptFields } from './PauseFields';
+import { MemoField } from './RecordFields';
 import { resolveInitialCategoryId } from './pausePresentation';
 import ConfirmFooter from './ConfirmFooter';
 import SheetShell from './SheetShell';
@@ -31,7 +32,6 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
   const resumeTaskId = getResumeTaskId(state);
   const runTask = resumeTaskId ? state.tasks.find((task) => task.id === resumeTaskId) : null;
   const elapsed = elapsedSince(state.running?.start ?? now, now);
-  const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
 
   useEffect(() => {
     if (mode !== 'interrupt') return;
@@ -149,18 +149,13 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
           setWho={setWho}
           saveWhoChip={saveWhoChip}
           setSaveWhoChip={setSaveWhoChip}
-          customWho={customWho}
           label={label}
           setLabel={setLabel}
           memo={memo}
           setMemo={setMemo}
         />
       ) : (
-        <BreakFields
-          locale={locale}
-          memo={breakMemo}
-          setMemo={setBreakMemo}
-        />
+        <MemoField type="break" memo={breakMemo} onChange={setBreakMemo} locale={locale} />
       )}
     </SheetShell>
   );

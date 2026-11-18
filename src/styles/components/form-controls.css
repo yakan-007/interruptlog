@@ -165,10 +165,6 @@
   font-size: var(--text-sm);
 }
 
-.il-chipinput.compact {
-  min-width: 80px;
-}
-
 .il-seg {
   display: inline-flex;
   background: var(--bg-sunken);
@@ -197,11 +193,6 @@
 
 .il-seg.full { display: flex; width: 100%; }
 .il-seg.full > button { flex: 1; }
-.il-segicon-label { margin-left: 4px; }
-
-
-
-
 
 .il-input.il-fileinput {
   height: auto;

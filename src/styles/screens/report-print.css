@@ -147,7 +147,6 @@
   color: #333;
 }
 
-
 @page {
   size: A4;
   margin: 12mm;
@@ -181,7 +180,6 @@
   }
 
   .il-topbar,
-  .il-report-mode,
   .il-report-range,
   .il-report-date-nav,
   .il-tabbar,

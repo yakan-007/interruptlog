@@ -24,9 +24,6 @@ history: {
         overlapTitle: (count) => `${count} overlapping records need review`,
         overlapCopy: 'Reports and views may include overlapping time.',
         repair: 'Repair overlaps',
-        rangeReRecorded: 'Time range was re-recorded',
-        rangeReRecordedCopy: 'You can undo this once now.',
-        undo: 'Undo',
       },
 };
 

@@ -56,7 +56,6 @@ settings: {
         storageTitle: 'Web 版の保存について',
         storageLines: ['データはこのブラウザにのみ保存されます。別端末には自動同期されません。', '大事なログは個人バックアップを書き出して控えてください。ブラウザのデータを削除すると消えます。'],
         exportBackup: '個人バックアップを書き出す',
-        exportBackupNote: 'このブラウザ内のタスク、履歴、設定をバックアップ',
         exportBackupNever: 'まだバックアップはありません',
         exportBackupFresh: (date) => `前回のバックアップ: ${date}`,
         exportBackupDue: (days) => `前回から${days}日。バックアップをおすすめします`,

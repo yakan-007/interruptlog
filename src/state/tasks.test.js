@@ -5,7 +5,6 @@ import {
   createTaskAndStartInState,
   createTaskInState,
   moveTaskToIndexInState,
-  reorderTaskInState,
   restoreTaskAndStartInState,
   restoreTaskInState,
   saveTaskInState,
@@ -129,24 +128,6 @@ describe('personal tasks', () => {
     expect(state.events[1]).toMatchObject({ label: '更新後のタスク名', memo: '更新したメモ', categoryId: 'cat-doc' });
   });
 
-  it('reorders active tasks and switches back to manual ordering', () => {
-    const state = {
-      ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, sortDue: true },
-      tasks: [
-        { id: 'a', name: 'A', isCompleted: false, order: 0, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt: 3000 }, createdAt: 0, completedAt: null },
-        { id: 'b', name: 'B', isCompleted: false, order: 1, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt: 1000 }, createdAt: 0, completedAt: null },
-        { id: 'c', name: 'C', isCompleted: false, order: 2, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt: 2000 }, createdAt: 0, completedAt: null },
-        { id: 'done', name: 'Done', isCompleted: true, order: 99, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: 1 },
-      ],
-    };
-
-    const moved = reorderTaskInState(state, 'b', 'down');
-
-    expect(moved.preferences.sortDue).toBe(false);
-    expect(selectActiveTasks(moved).map((task) => task.id)).toEqual(['a', 'c', 'b']);
-    expect(moved.tasks.find((task) => task.id === 'done')?.order).toBe(99);
-  });
 
   it('moves an active task to an insertion index', () => {
     const state = {

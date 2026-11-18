@@ -38,9 +38,6 @@ export function saveInterruptCategoryInState(state, category, now = Date.now(), 
   const normalized = normalizeInterruptCategory({
     id: category.id || createId('int', now),
     name: category.name,
-    icon: category.icon,
-    kind: category.kind,
-    defaultDurationMinutes: category.defaultDurationMinutes,
   });
   if (!normalized) return state;
   const exists = state.interruptCats.some((item) => item.id === normalized.id);

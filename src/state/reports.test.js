@@ -22,9 +22,9 @@ describe('personal reports', () => {
       ...createEmptyState(),
       interruptCats: undefined,
     });
-    const saved = saveInterruptCategoryInState(legacy, { name: '来客', icon: null }, 1000);
+    const saved = saveInterruptCategoryInState(legacy, { name: '来客' }, 1000);
     const customId = saved.interruptCats.find((category) => category.name === '来客')?.id;
-    const renamed = saveInterruptCategoryInState(saved, { id: customId, name: '来客対応', icon: 'bolt' }, 2000);
+    const renamed = saveInterruptCategoryInState(saved, { id: customId, name: '来客対応' }, 2000);
     const withEvent = {
       ...renamed,
       events: [{ id: 'e1', type: 'interrupt', label: '受付', categoryId: customId, start: 1, end: 2 }],
@@ -33,8 +33,8 @@ describe('personal reports', () => {
 
     expect(legacy.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
     expect(customId).toBeTruthy();
-    expect(saved.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客', icon: null });
-    expect(renamed.interruptCats.find((category) => category.id === customId)).toMatchObject({ name: '来客対応', icon: 'bolt' });
+    expect(saved.interruptCats.find((category) => category.id === customId)).toEqual({ id: customId, name: '来客' });
+    expect(renamed.interruptCats.find((category) => category.id === customId)).toEqual({ id: customId, name: '来客対応' });
     expect(deleted.interruptCats.some((category) => category.id === customId)).toBe(false);
     expect(deleted.events[0].categoryId).toBe(null);
   });
@@ -125,7 +125,6 @@ describe('personal reports', () => {
         type: 'interrupt',
         label: '仕様確認',
         who: '田中',
-        urgency: 'med',
         memo: '画面の確認',
         start: at(11, 10),
         end: at(11, 10, 30),
@@ -210,7 +209,6 @@ describe('personal reports', () => {
         type: 'interrupt',
         label: '=IMPORTXML("https://example.com")',
         who: '+田中',
-        urgency: 'med',
         memo: '@確認',
         start: at(11, 10),
         end: at(11, 10, 30),

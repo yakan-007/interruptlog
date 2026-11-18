@@ -2,7 +2,6 @@ const messages = {
 errors: {
         checkInput: 'Check your input',
         invalidWindow: 'End must be after start',
-        invalidDate: 'Check the date and time',
         eventNotFound: 'Event not found',
         interruptNotActive: 'No interruption is in progress',
         invalidBackup: 'Could not read JSON',

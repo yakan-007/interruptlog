@@ -1,8 +1,3 @@
-.il-sheet-toggle-row {
-  padding: 8px 0;
-  border-top: none;
-}
-
 .il-sheet-copy,
 .il-settings-resetcopy {
   color: var(--ink-2);
@@ -11,7 +6,6 @@
   margin-bottom: 14px;
 }
 
-.il-sheet-help,
 .il-sheet-emptyhint {
   color: var(--ink-3);
   font-size: var(--text-xs);
@@ -22,31 +16,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.il-sheet-chipbutton {
-  border: 1px solid var(--hair);
-  background: var(--bg-elevated);
-  color: var(--ink-2);
-  border-radius: 999px;
-  min-height: 36px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-
-.il-sheet-chipbutton:active {
-  background: var(--bg-sunken);
-}
-
-.il-sheet-chipbutton .x {
-  color: var(--ink-4);
-  display: inline-flex;
-  align-items: center;
 }
 
 .il-sheet-listhead {

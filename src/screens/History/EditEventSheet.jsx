@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import ConfirmFooter from '../../components/sheets/ConfirmFooter';
+import { InterruptCategoryField, MemoField, SenderField } from '../../components/sheets/RecordFields';
 import SheetShell from '../../components/sheets/SheetShell';
 import Icons from '../../icons';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
-import { interruptCategoryLabel, t, translateError, typeLabel } from '../../i18n';
+import { t, translateError, typeLabel } from '../../i18n';
 import TaskTargetFields from './TaskTargetFields';
 import { taskTargetForEvent } from './taskRecordHelpers';
 
@@ -117,36 +118,20 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         </>
       ) : type === 'interrupt' ? (
         <>
-          <div className="il-field">
-            <label>{t(locale, 'sheets.pauseCategory')}</label>
-            <div className="il-chipgrid">
-              {interruptCategories.map((category) => (
-                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} aria-pressed={interruptCategoryId === category.id} onClick={() => setInterruptCategoryId(category.id)}>
-                  {interruptCategoryLabel(locale, category)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="il-field">
-            <label>{t(locale, 'sheets.sender')}</label>
-            <div className="il-chiprow">
-              <input
-                className="c il-chipinput compact"
-                placeholder={t(locale, 'sheets.newSender')}
-                value={who && !state.whoChips.includes(who) ? who : ''}
-                onChange={(current) => setWho(current.target.value)}
-              />
-              {state.whoChips.map((item) => (
-                <button key={item} type="button" className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
-              ))}
-            </div>
-            {customWho && (
-              <label className="il-inline-check">
-                <input type="checkbox" checked={saveWhoChip} onChange={(current) => setSaveWhoChip(current.target.checked)} />
-                <span>{t(locale, 'sheets.saveSender')}</span>
-              </label>
-            )}
-          </div>
+          <InterruptCategoryField
+            categories={interruptCategories}
+            selectedId={interruptCategoryId}
+            locale={locale}
+            onSelect={(category) => setInterruptCategoryId(category.id)}
+          />
+          <SenderField
+            whoChips={state.whoChips}
+            who={who}
+            onChange={setWho}
+            saveWhoChip={saveWhoChip}
+            onSaveWhoChipChange={setSaveWhoChip}
+            locale={locale}
+          />
 
           <div className="il-field">
             <label>{t(locale, 'sheets.subject')}</label>
@@ -171,18 +156,10 @@ export default function EditEventSheet({ event, state, actions, onClose }) {
         </div>
       </div>
 
-      <div className="il-field">
-        <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" placeholder={t(locale, memoPlaceholderKey(type))} value={memo} onChange={(current) => setMemo(current.target.value)} />
-      </div>
+      <MemoField type={type} memo={memo} onChange={setMemo} locale={locale} />
 
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );
 }
 
-function memoPlaceholderKey(type) {
-  if (type === 'interrupt') return 'sheets.memoPlaceholder';
-  if (type === 'break') return 'sheets.breakMemoPlaceholder';
-  return 'sheets.taskMemoPlaceholder';
-}

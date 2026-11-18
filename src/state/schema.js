@@ -1,5 +1,6 @@
 import { normalizeLocale } from '../domain/locale';
 import { isWorkSchedule, normalizeWorkSchedule } from '../lib/workday';
+import { normalizeInterruptDraft } from './pauseEvents';
 import { asArray, asNumber, asPositiveTimestamp, cleanText, clone, isObject, uniqueTexts } from './utils';
 
 export const APP_NAME = 'InterruptLog Personal';
@@ -14,10 +15,10 @@ const defaultCategories = [
 ];
 
 const defaultInterruptCats = [
-  { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt', defaultDurationMinutes: 0 },
-  { id: 'int-chat', name: 'チャット', icon: 'chat', kind: 'interrupt', defaultDurationMinutes: 0 },
-  { id: 'int-q', name: '質問', icon: 'q', kind: 'interrupt', defaultDurationMinutes: 0 },
-  { id: 'int-other', name: 'その他', icon: 'dots', kind: 'interrupt', defaultDurationMinutes: 0 },
+  { id: 'int-call', name: '電話' },
+  { id: 'int-chat', name: 'チャット' },
+  { id: 'int-q', name: '質問' },
+  { id: 'int-other', name: 'その他' },
 ];
 
 // Breaks no longer have categories. Older data carried these built-in break
@@ -65,7 +66,7 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
 
   const tasks = asArray(raw.tasks).map((task) => normalizeTask(task, now)).filter(Boolean);
   const categories = asArray(raw.categories).map(normalizeCategory).filter(Boolean);
-  const interruptCats = normalizePauseCategoryList(asArray(raw.interruptCats).map(normalizeInterruptCategory).filter(Boolean));
+  const interruptCats = normalizeInterruptCategoryList(raw.interruptCats);
   const events = asArray(raw.events).map(normalizeEvent).filter(Boolean);
   const taskIds = new Set(tasks.map((task) => task.id));
   const running = normalizeRunning(raw.running, taskIds);
@@ -152,18 +153,13 @@ export function normalizeCategory(category) {
   };
 }
 
+// Interruption categories are just names; older data also stored an icon,
+// a kind and a break duration, which nothing uses any more.
 export function normalizeInterruptCategory(category) {
   if (!isObject(category) || !category.id) return null;
-  const rawIcon = category.icon;
-  const kind = category.kind === 'break' ? 'break' : 'interrupt';
   return {
     id: String(category.id),
     name: cleanText(category.name) || 'カテゴリ',
-    icon: rawIcon === null ? null : cleanText(rawIcon) || 'dots',
-    kind,
-    defaultDurationMinutes: kind === 'break'
-      ? Math.max(0, asNumber(category.defaultDurationMinutes, 0) ?? 0)
-      : 0,
   };
 }
 
@@ -182,10 +178,8 @@ export function normalizeEvent(event) {
     memo: cleanText(event.memo),
     workDetail: cleanText(event.workDetail) || null,
     who: cleanText(event.who),
-    urgency: ['low', 'med', 'high'].includes(event.urgency) ? event.urgency : 'med',
     sourceTaskId: cleanText(event.sourceTaskId) || null,
     interruptOriginId: cleanText(event.interruptOriginId) || null,
-    breakDurationMinutes: Math.max(0, asNumber(event.breakDurationMinutes, 0) ?? 0),
     start,
     end,
   };
@@ -205,17 +199,15 @@ function normalizeRunning(running, taskIds) {
     resumeStack,
     categoryId: cleanText(running.categoryId) || cleanText(running.draft?.categoryId) || null,
     draft: running.type === 'interrupt' ? normalizeInterruptDraft(running.draft) : null,
-    plannedBreakDurationMinutes: running.type === 'break'
-      ? Math.max(0, asNumber(running.plannedBreakDurationMinutes, 0) ?? 0)
-      : null,
   };
 }
 
-function normalizePauseCategoryList(categories) {
-  const interruptCategories = categories.filter((category) => (
-    category.kind !== 'break' && !LEGACY_BREAK_CATEGORY_IDS.has(category.id)
-  ));
-  return interruptCategories.length ? interruptCategories : clone(defaultInterruptCats);
+function normalizeInterruptCategoryList(raw) {
+  const categories = asArray(raw)
+    .filter((category) => category?.kind !== 'break' && !LEGACY_BREAK_CATEGORY_IDS.has(category?.id))
+    .map(normalizeInterruptCategory)
+    .filter(Boolean);
+  return categories.length ? categories : clone(defaultInterruptCats);
 }
 
 function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {
@@ -231,17 +223,6 @@ function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {
   });
   const nearestTask = taskContexts.at(-1);
   return nearestTask ? [nearestTask] : [];
-}
-
-function normalizeInterruptDraft(raw) {
-  return {
-    who: cleanText(raw?.who),
-    saveWhoChip: Boolean(raw?.saveWhoChip),
-    label: cleanText(raw?.label),
-    urgency: ['low', 'med', 'high'].includes(raw?.urgency) ? raw.urgency : 'med',
-    categoryId: cleanText(raw?.categoryId) || null,
-    memo: cleanText(raw?.memo),
-  };
 }
 
 function resolveOpenEvents(events, running, now = Date.now()) {

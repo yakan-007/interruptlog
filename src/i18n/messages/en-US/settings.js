@@ -56,7 +56,6 @@ settings: {
         storageTitle: 'About storage in the web version',
         storageLines: ['Data is stored only in this browser. It does not sync to other devices automatically.', 'Export a personal backup for important logs. Deleting browser data removes them.'],
         exportBackup: 'Export personal backup',
-        exportBackupNote: 'Back up tasks, history, and settings from this browser',
         exportBackupNever: 'No backup has been exported yet',
         exportBackupFresh: (date) => `Last backup: ${date}`,
         exportBackupDue: (days) => `${days} days since the last backup. Export is recommended.`,

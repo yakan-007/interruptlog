@@ -100,7 +100,6 @@ function prepareTaskRecordCandidate(state, record, now, { createId = newId, prev
         ...base,
         label: cleanText(record.label) || TYPE_LABELS[type] || 'イベント',
         who: type === 'interrupt' ? cleanText(record.who) : '',
-        urgency: type === 'interrupt' ? record.urgency ?? 'med' : 'med',
         categoryId: type === 'interrupt' ? record.categoryId ?? null : null,
       },
       previous,

@@ -252,10 +252,6 @@ export function restoreTaskAndStartInState(state, taskId, now = Date.now(), depe
   };
 }
 
-export function uncompleteTaskInState(state, taskId) {
-  return restoreTaskInState(state, taskId);
-}
-
 export function deleteTaskInState(state, taskId, now = Date.now(), dependencies = {}) {
   const base = state.running?.type === 'task' && state.running.taskId === taskId
     ? closeTaskSessionInState(state, now, dependencies)
@@ -271,30 +267,6 @@ export function deleteTaskInState(state, taskId, now = Date.now(), dependencies 
     ...base,
     tasks: base.tasks.filter((task) => task.id !== taskId),
     running,
-  };
-}
-
-export function reorderTaskInState(state, taskId, direction) {
-  const orderedIds = getManualActiveOrder(state);
-  const from = orderedIds.indexOf(taskId);
-  if (from < 0) return state;
-
-  const to = direction === 'up' ? from - 1 : from + 1;
-  if (to < 0 || to >= orderedIds.length) return state;
-
-  const nextIds = [...orderedIds];
-  [nextIds[from], nextIds[to]] = [nextIds[to], nextIds[from]];
-  const ordersById = new Map(nextIds.map((id, index) => [id, index]));
-
-  return {
-    ...state,
-    preferences: {
-      ...state.preferences,
-      sortDue: false,
-    },
-    tasks: state.tasks.map((task) => ordersById.has(task.id)
-      ? { ...task, order: ordersById.get(task.id) }
-      : task),
   };
 }
 

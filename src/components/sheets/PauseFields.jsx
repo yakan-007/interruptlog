@@ -1,4 +1,5 @@
 import { t } from '../../i18n';
+import { ChipRow, MemoField, SenderField } from './RecordFields';
 
 export function InterruptFields({
   state,
@@ -7,52 +8,29 @@ export function InterruptFields({
   setWho,
   saveWhoChip,
   setSaveWhoChip,
-  customWho,
   label,
   setLabel,
   memo,
   setMemo,
 }) {
-  const scrollChipRow = (event) => {
-    const row = event.currentTarget;
-    if (row.scrollWidth <= row.clientWidth) return;
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    row.scrollLeft += event.deltaY;
-    event.preventDefault();
-  };
-
   return (
     <>
-      <div className="il-field">
-        <label>{t(locale, 'sheets.sender')}</label>
-        <div className="il-chiprow" onWheel={scrollChipRow}>
-          <input
-            className="c il-chipinput"
-            placeholder={t(locale, 'sheets.newSender')}
-            value={who && !state.whoChips.includes(who) ? who : ''}
-            onChange={(event) => setWho(event.target.value)}
-          />
-          {state.whoChips.map((item) => (
-            <button key={item} className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>
-              {item}
-            </button>
-          ))}
-        </div>
-        {customWho && (
-          <label className="il-inline-check">
-            <input type="checkbox" checked={saveWhoChip} onChange={(event) => setSaveWhoChip(event.target.checked)} />
-            <span>{t(locale, 'sheets.saveSender')}</span>
-          </label>
-        )}
-      </div>
+      <SenderField
+        whoChips={state.whoChips}
+        who={who}
+        onChange={setWho}
+        saveWhoChip={saveWhoChip}
+        onSaveWhoChipChange={setSaveWhoChip}
+        locale={locale}
+      />
 
       <div className="il-field">
         <label>{t(locale, 'sheets.subject')}</label>
-        <div className="il-chiprow" onWheel={scrollChipRow}>
+        <ChipRow>
           {state.subjectChips.map((item) => (
-            <button key={item} className={'c' + (label === item ? ' sel' : '')} onClick={() => setLabel(item)}>{item}</button>
+            <button key={item} type="button" className={'c' + (label === item ? ' sel' : '')} onClick={() => setLabel(item)}>{item}</button>
           ))}
-        </div>
+        </ChipRow>
         <input
           className="il-input"
           placeholder={t(locale, 'sheets.subjectFree')}
@@ -61,19 +39,7 @@ export function InterruptFields({
         />
       </div>
 
-      <div className="il-field">
-        <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" placeholder={t(locale, 'sheets.memoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
-      </div>
+      <MemoField type="interrupt" memo={memo} onChange={setMemo} locale={locale} />
     </>
-  );
-}
-
-export function BreakFields({ locale, memo, setMemo }) {
-  return (
-    <div className="il-field">
-      <label>{t(locale, 'sheets.memo')}</label>
-      <textarea className="il-textarea" placeholder={t(locale, 'sheets.breakMemoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} />
-    </div>
   );
 }

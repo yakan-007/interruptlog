@@ -4,9 +4,6 @@ interruptCategories: {
         'int-chat': 'Chat',
         'int-q': 'Question',
         'int-other': 'Other',
-        'break-rest': 'Break',
-        'break-lunch': 'Lunch',
-        'break-personal': 'Personal',
       },
 };
 

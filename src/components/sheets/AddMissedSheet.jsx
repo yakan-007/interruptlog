@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { interruptCategoryLabel, t, translateError, tx, typeLabel } from '../../i18n';
+import { t, translateError, tx, typeLabel } from '../../i18n';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../../lib/datetime';
+import { InterruptCategoryField, MemoField, SenderField } from './RecordFields';
 import SheetShell from './SheetShell';
 import TaskTargetFields from '../../screens/History/TaskTargetFields';
 
@@ -21,7 +22,6 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
   const [error, setError] = useState('');
   const [startAt, setStartAt] = useState(() => toDateTimeLocalValue(initialDraft?.start ?? Date.now() - 30 * 60000));
   const [endAt, setEndAt] = useState(() => toDateTimeLocalValue(initialDraft?.end ?? Date.now()));
-  const customWho = Boolean(who.trim()) && !state.whoChips.includes(who);
   const locale = state.preferences.locale;
 
   const handleAdd = () => {
@@ -122,37 +122,20 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
 
       {type === 'interrupt' && (
         <>
-          <div className="il-field">
-            <label>{t(locale, 'sheets.pauseCategory')}</label>
-            <div className="il-chipgrid">
-              {interruptCategories.map((category) => (
-                <button key={category.id} type="button" className={'c' + (interruptCategoryId === category.id ? ' sel' : '')} aria-pressed={interruptCategoryId === category.id} onClick={() => setInterruptCategoryId(category.id)}>
-                  {interruptCategoryLabel(locale, category)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="il-field">
-            <label>{t(locale, 'sheets.sender')}</label>
-            <div className="il-chiprow">
-              <input
-                className="c il-chipinput compact"
-                placeholder={t(locale, 'sheets.newSender')}
-                value={who && !state.whoChips.includes(who) ? who : ''}
-                onChange={(event) => setWho(event.target.value)}
-              />
-              {state.whoChips.map((item) => (
-                <button key={item} type="button" className={'c' + (who === item ? ' sel' : '')} onClick={() => setWho(item)}>{item}</button>
-              ))}
-            </div>
-            {customWho && (
-              <label className="il-inline-check">
-                <input type="checkbox" checked={saveWhoChip} onChange={(event) => setSaveWhoChip(event.target.checked)} />
-                <span>{t(locale, 'sheets.saveSender')}</span>
-              </label>
-            )}
-          </div>
+          <InterruptCategoryField
+            categories={interruptCategories}
+            selectedId={interruptCategoryId}
+            locale={locale}
+            onSelect={(category) => setInterruptCategoryId(category.id)}
+          />
+          <SenderField
+            whoChips={state.whoChips}
+            who={who}
+            onChange={setWho}
+            saveWhoChip={saveWhoChip}
+            onSaveWhoChipChange={setSaveWhoChip}
+            locale={locale}
+          />
         </>
       )}
 
@@ -173,10 +156,7 @@ export default function AddMissedSheet({ state, actions, onClose, initialDraft }
           <input id="il-missed-end" className="il-input il-mono" type="datetime-local" value={endAt} onChange={(event) => { setEndAt(event.target.value); setError(''); }} />
         </div>
       </div>
-      <div className="il-field">
-        <label>{t(locale, 'sheets.memo')}</label>
-        <textarea className="il-textarea" placeholder={t(locale, type === 'interrupt' ? 'sheets.memoPlaceholder' : type === 'break' ? 'sheets.breakMemoPlaceholder' : 'sheets.taskMemoPlaceholder')} value={memo} onChange={(event) => setMemo(event.target.value)} aria-label={t(locale, 'sheets.memo')} />
-      </div>
+      <MemoField type={type} memo={memo} onChange={setMemo} locale={locale} />
       {error && <div className="il-inline-error">{error}</div>}
     </SheetShell>
   );

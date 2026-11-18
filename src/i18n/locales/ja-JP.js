@@ -10,7 +10,6 @@ import toasts from '../messages/ja-JP/toasts.js';
 import errors from '../messages/ja-JP/errors.js';
 import categories from '../messages/ja-JP/categories.js';
 import interruptCategories from '../messages/ja-JP/interruptCategories.js';
-import status from '../messages/ja-JP/status.js';
 import storage from '../messages/ja-JP/storage.js';
 
 export default {
@@ -18,5 +17,5 @@ export default {
   label: '日本語',
   hourCycle: 'h23',
   weekStartsOn: 0,
-  text: { tabs, log, onboarding, history, report, settings, sheets, common, toasts, errors, categories, interruptCategories, status, storage },
+  text: { tabs, log, onboarding, history, report, settings, sheets, common, toasts, errors, categories, interruptCategories, storage },
 };

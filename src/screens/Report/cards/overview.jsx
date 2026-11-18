@@ -138,9 +138,9 @@ export function MicroInterruptionsCard({ stats, locale = 'ja-JP' }) {
         <div>{tx(locale, 'report.microShare', { percent: microShare })}</div>
         <div>{tx(locale, 'report.interruptionChainRate', { percent: chainRate, count: stats.chainCount })}</div>
       </div>
-      <div className="il-urgency-report">
+      <div className="il-bucket-report">
         {stats.buckets.map((bucket) => (
-          <div key={bucket.label} className="il-urgency-report-row">
+          <div key={bucket.label} className="il-bucket-report-row">
             <div className="main">
               <span className="il-chip sm">{bucket.label}</span>
               <span className="copy">{tx(locale, 'common.count', bucket.count)}</span>

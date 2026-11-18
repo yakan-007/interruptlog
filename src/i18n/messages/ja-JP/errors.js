@@ -2,7 +2,6 @@ const messages = {
 errors: {
         checkInput: '入力を確認してください',
         invalidWindow: '終了は開始より後にしてください',
-        invalidDate: '日時を確認してください',
         eventNotFound: '記録が見つかりませんでした',
         interruptNotActive: '割り込みが開始されていません',
         invalidBackup: 'JSONを読み込めませんでした',

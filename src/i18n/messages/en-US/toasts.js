@@ -6,8 +6,6 @@ toasts: {
         interruptSaved: 'Interruption recorded',
         breakSaved: 'Break recorded',
         sortDueOff: 'Sorting by due date was turned off because you reordered',
-        rangeReRecorded: 'Time range re-recorded',
-        rangeRestored: 'Time range restored',
         repaired: 'Overlapping records repaired',
         jsonExported: 'JSON exported',
         exportCanceled: 'Export canceled',

@@ -103,11 +103,9 @@ export {
   deleteTaskInState,
   endRunningAtInState,
   moveTaskToIndexInState,
-  reorderTaskInState,
   restoreTaskAndStartInState,
   restoreTaskInState,
   saveTaskInState,
   startTaskInState,
   stopTaskInState,
-  uncompleteTaskInState,
 } from './tasks';

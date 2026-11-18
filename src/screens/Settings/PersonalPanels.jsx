@@ -63,12 +63,7 @@ export function InterruptCategorySheet({ category, locale = 'ja-JP', onClose, on
       setError(t(locale, 'settings.interruptCategoryNameRequired'));
       return;
     }
-    onSave({
-      id: category?.id,
-      name,
-      icon: null,
-      kind: 'interrupt',
-    });
+    onSave({ id: category?.id, name });
   };
 
   return (

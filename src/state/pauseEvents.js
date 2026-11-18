@@ -1,5 +1,5 @@
 import { newId } from './ids';
-import { asNumber, cleanText } from './utils';
+import { cleanText } from './utils';
 
 // Builders for the records a pause (interrupt or break) leaves behind. Shared by
 // every path that can end a pause, so a pause closed by starting a task keeps
@@ -20,12 +20,12 @@ export function closeRunningPauseSegmentInState(state, now, data = {}, dependenc
   return state;
 }
 
-export function normalizeInterruptDraft(data = {}) {
+export function normalizeInterruptDraft(raw) {
+  const data = raw ?? {};
   return {
     who: cleanText(data.who),
     saveWhoChip: Boolean(data.saveWhoChip),
     label: cleanText(data.label),
-    urgency: ['low', 'med', 'high'].includes(data.urgency) ? data.urgency : 'med',
     categoryId: cleanText(data.categoryId) || null,
     memo: cleanText(data.memo),
   };
@@ -49,8 +49,6 @@ export function buildBreakEvent(running, data, now, fallbackLabel = '休憩', { 
     label: cleanText(data.label) || (running.categoryId && runningLabel ? runningLabel : fallbackLabel),
     categoryId: cleanText(data.categoryId) || running.categoryId || null,
     memo: cleanText(data.memo),
-    breakType: data.breakType ?? null,
-    breakDurationMinutes: Math.max(0, asNumber(data.breakDurationMinutes ?? running.plannedBreakDurationMinutes, 0) ?? 0),
     start: running.start ?? now,
     end: now,
   };
@@ -62,7 +60,6 @@ export function buildInterruptEvent(data = {}, start, end, fallbackLabel = null,
     type: 'interrupt',
     label: cleanText(data.label) || (data.who ? `${data.who}から` : fallbackLabel || '割り込み作業'),
     who: cleanText(data.who),
-    urgency: data.urgency || 'med',
     categoryId: data.categoryId || null,
     memo: data.memo || '',
     start,

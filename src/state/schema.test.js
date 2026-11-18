@@ -50,7 +50,7 @@ describe('personal schema and backup', () => {
     const state = normalizeState({
       ...createEmptyState(),
       interruptCats: [
-        { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt' },
+        { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt', defaultDurationMinutes: 0 },
         { id: 'break-rest', name: '休憩', icon: 'coffee', kind: 'break' },
         { id: 'break-lunch', name: '昼食', icon: null, kind: 'interrupt' },
         { id: 'break-personal', name: '私用', icon: null, kind: 'interrupt' },
@@ -63,7 +63,7 @@ describe('personal schema and backup', () => {
       interruptCats: [{ id: 'break-lunch', name: '昼食', kind: 'break' }],
     });
 
-    expect(state.interruptCats.map((category) => category.id)).toEqual(['int-call']);
+    expect(state.interruptCats).toEqual([{ id: 'int-call', name: '電話' }]);
     expect(state.events[0]).toMatchObject({ type: 'break', label: '昼食' });
     expect(onlyBreaks.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
   });
@@ -124,7 +124,7 @@ describe('personal schema and backup', () => {
         start: at(11, 10),
         resumeStack: [
           { type: 'task', taskId: 't1' },
-          { type: 'interrupt', draft: { label: '一次対応', who: '田中', urgency: 'high' } },
+          { type: 'interrupt', draft: { label: '一次対応', who: '田中' } },
           { type: 'task', taskId: 'missing' },
         ],
       },

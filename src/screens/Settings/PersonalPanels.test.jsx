@@ -43,7 +43,7 @@ describe('personal settings panels', () => {
     expect(screen.getByText(/「カテゴリなし」になります/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '削除する' }));
 
-    expect(onSave).toHaveBeenCalledWith({ id: 'int-custom', name: '相談', icon: null, kind: 'interrupt' });
+    expect(onSave).toHaveBeenCalledWith({ id: 'int-custom', name: '相談' });
     expect(onDelete).toHaveBeenCalledWith('int-custom');
   });
 

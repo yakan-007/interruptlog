@@ -24,9 +24,6 @@ history: {
         overlapTitle: (count) => `${count}件の重なった記録が未整理です`,
         overlapCopy: '集計や表示に重複が含まれる可能性があります',
         repair: '重複を整理',
-        rangeReRecorded: '時間帯の記録を変更しました',
-        rangeReRecordedCopy: '今なら一度だけ元に戻せます。',
-        undo: '元に戻す',
       },
 };
 

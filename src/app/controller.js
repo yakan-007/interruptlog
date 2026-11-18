@@ -114,8 +114,6 @@ function createPassthroughActions({ app, closeSheet }) {
     ...bindActions(app.actions, call, [
       'completeTask',
       'restoreTask',
-      'uncompleteTask',
-      'reorderTask',
       'selectPauseCategory',
       'setPauseKind',
       'saveCategory',

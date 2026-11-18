@@ -45,14 +45,6 @@
   font-weight: 700;
 }
 
-.il-report-mode {
-  padding: 4px 16px 6px;
-}
-
-.il-report-submode {
-  padding: 4px 16px 6px;
-}
-
 .il-report-statgrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

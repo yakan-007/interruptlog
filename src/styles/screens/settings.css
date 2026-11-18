@@ -150,26 +150,6 @@
   margin-top: 6px;
 }
 
-.il-settings-member {
-  align-items: center;
-}
-
-.il-settings-memberinput {
-  width: 120px;
-  min-width: 0;
-  border: 1px solid var(--hair);
-  border-radius: var(--r-sm);
-  background: var(--bg-sunken);
-  color: var(--ink);
-  font: inherit;
-  font-size: var(--text-sm);
-  padding: 8px 10px;
-}
-
-.il-settings-memberinput::placeholder {
-  color: var(--ink-4);
-}
-
 .il-settings-select {
   width: 132px;
   min-width: 0;
@@ -313,9 +293,6 @@
   border-color: var(--ink);
   box-shadow: inset 0 0 0 2px var(--bg);
 }
-
-
-
 
 .il-settings-catdot {
   width: 10px;
