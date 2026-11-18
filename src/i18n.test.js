@@ -32,7 +32,7 @@ describe('i18n', () => {
 
     expect(formatDuration(90 * 60 * 1000, 'ja-JP')).toBe('1時間30分');
     expect(formatDuration(90 * 60 * 1000, 'en-US')).toBe('1h 30m');
-    expect(formatDurationShort(23_000, 'ja-JP')).toBe('23秒');
+    expect(formatDurationShort(23_000, 'ja-JP')).toBe('23s');
     expect(formatDurationShort(23_000, 'en-US')).toBe('23s');
     expect(formatRelative(now - 5 * 60 * 1000, 'ja-JP', now)).toBe('5分前');
     expect(formatRelative(now - 5 * 60 * 1000, 'en-US', now)).toBe('5 minutes ago');

@@ -8,6 +8,7 @@
 @import './components/task.css';
 @import './components/task-support.css';
 @import './components/running-bar.css';
+@import './components/day-stepper.css';
 @import './components/history.css';
 @import './components/history-timeline.css';
 @import './components/history-detail.css';

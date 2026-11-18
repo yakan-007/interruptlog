@@ -1,7 +1,7 @@
 import Icons from '../icons';
 import { useTicker } from '../lib/ticker';
 import { elapsedSince, formatElapsedClock } from '../lib/timer';
-import { t } from '../i18n';
+import { interruptCategoryLabel, t, tx } from '../i18n';
 
 export default function RunningBar({ state, actions, raised = false, compact = false, locale = 'ja-JP' }) {
   const now = useTicker(1000);
@@ -40,7 +40,7 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       openRunningDetails();
     }
   };
-  const label = meta.label ?? t(locale, meta.labelKey);
+  const label = runningLabel(state, running, meta, locale);
 
   return (
     <div
@@ -70,4 +70,18 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       )}
     </div>
   );
+}
+
+// The stored running label is the Japanese default; build the shown name in
+// the current language unless the user typed a subject or a sender.
+function runningLabel(state, running, meta, locale) {
+  if (running.type === 'break') return t(locale, 'common.break');
+  if (running.type === 'interrupt') {
+    const draft = running.draft ?? {};
+    if (draft.label) return draft.label;
+    if (draft.who) return tx(locale, 'common.fromSender', draft.who);
+    const category = state.interruptCats.find((item) => item.id === running.categoryId);
+    return category ? interruptCategoryLabel(locale, category) : t(locale, 'common.interrupt');
+  }
+  return meta.label ?? t(locale, meta.labelKey);
 }

@@ -7,19 +7,8 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
       <div className="il-card-intro">
         <h3>{t(locale, 'report.dayActivity')}</h3>
       </div>
-      <ActivitySection
-        title={t(locale, 'report.touchedTasks')}
-        empty={t(locale, 'report.noTouchedTasks')}
-        items={activity.touchedTasks}
-        render={(task) => (
-          <div className="il-daily-line">
-            <span className="swatch" style={{ background: task.categoryColor }} />
-            <span>{task.name}</span>
-            <span className="meta">{task.categoryName}</span>
-            <span className="il-mono">{fmtDurationShort(task.time, locale)}</span>
-          </div>
-        )}
-      />
+      {/* Tasks are listed in the card above; this card is what happened
+          around them: interruptions, work outside tasks, and notes. */}
       <ActivitySection
         title={t(locale, 'report.interruptions')}
         empty={t(locale, 'report.noInterruptions')}
@@ -47,24 +36,27 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
           )}
         />
       )}
-      <ActivitySection
-        title={t(locale, 'report.recordedMemos')}
-        empty={t(locale, 'report.noRecordedMemos')}
-        items={activity.memos}
-        render={(memo) => (
-          <div className="il-daily-memo">
-            <div className="label">{memo.label}</div>
-            <div>{memo.memo}</div>
-          </div>
-        )}
-      />
+      {activity.memos.length > 0 && (
+        <ActivitySection
+          title={t(locale, 'report.recordedMemos')}
+          empty={t(locale, 'report.noRecordedMemos')}
+          items={activity.memos}
+          render={(memo) => (
+            <div className="il-daily-memo">
+              <div className="label">{memo.label}</div>
+              <div>{memo.memo}</div>
+            </div>
+          )}
+        />
+      )}
     </div>
   );
 }
 
 function formatInterruptMeta(event) {
+  const label = event.label ?? '';
   return [event.who, event.categoryName]
-    .filter((item) => item && item !== event.label)
+    .filter((item) => item && !label.includes(item))
     .join(' · ');
 }
 
@@ -73,7 +65,6 @@ function ActivitySection({ title, empty, items, render }) {
     <div className="il-daily-section">
       <div className="il-report-tasklist-title">
         <span>{title}</span>
-        <span className="count">{items.length}</span>
       </div>
       {items.length === 0 ? (
         <div className="il-report-taskempty">{empty}</div>

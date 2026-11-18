@@ -5,8 +5,8 @@ import { elapsedSince, formatElapsedClock } from './lib/timer';
 
 describe('duration helpers', () => {
   it('shows seconds for sub-minute durations', () => {
-    expect(fmtDurationShort(0)).toBe('0秒');
-    expect(fmtDurationShort(23_400)).toBe('23秒');
+    expect(fmtDurationShort(0)).toBe('0m');
+    expect(fmtDurationShort(23_400)).toBe('23s');
     expect(fmtDurationShort(59_600)).toBe('1m');
   });
 

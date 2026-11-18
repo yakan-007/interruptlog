@@ -1,5 +1,6 @@
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
-import { categoryLabel, interruptCategoryLabel, t, typeLabel } from '../../i18n';
+import { t } from '../../i18n';
+import { eventCategoryText, eventSenderText, findEventCategory } from './eventMeta';
 
 export default function HistoryTimeline({ timeline, timelineRef, selectedDate, now, state, locale = 'ja-JP', onEdit, onGapClick }) {
   const { axis, gaps, items, nowY } = timeline;
@@ -65,10 +66,12 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
                   <div className="time il-mono">{formatHistoryTimeRange(event)}</div>
                   <div className="title">{event.workDetail || event.label}</div>
                 </div>
-                <div className="meta">
-                  <span>{typeLabel(locale, event.type)}</span>
-                  {category && <span>{event.type === 'interrupt' ? interruptCategoryLabel(locale, category) : categoryLabel(locale, category)}</span>}
-                </div>
+                {(eventCategoryText(event, category, locale) || eventSenderText(event)) && (
+                  <div className="meta">
+                    {eventCategoryText(event, category, locale) && <span>{eventCategoryText(event, category, locale)}</span>}
+                    {eventSenderText(event) && <span>{eventSenderText(event)}</span>}
+                  </div>
+                )}
                 {event.memo && <div className="il-history-memo">{event.memo}</div>}
                 <div className="chips">
                   {event.startsBeforeDay && <span className="il-chip sm accent">{t(locale, 'history.previousDay')}</span>}
@@ -82,11 +85,4 @@ export default function HistoryTimeline({ timeline, timelineRef, selectedDate, n
       </div>
     </div>
   );
-}
-
-function findEventCategory(event, state) {
-  if (!event.categoryId) return null;
-  return state.categories.find((category) => category.id === event.categoryId)
-    || state.interruptCats.find((category) => category.id === event.categoryId)
-    || null;
 }

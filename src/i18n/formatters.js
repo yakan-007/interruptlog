@@ -46,11 +46,13 @@ export function formatDuration(ms, locale = 'ja-JP', opts = {}) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function formatDurationShort(ms, locale = 'ja-JP') {
+export function formatDurationShort(ms) {
   const total = Math.max(0, Math.round(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
-  if (total < 60) return locale === 'ja-JP' ? `${total}秒` : `${total}s`;
+  // Same units as the rest ("1h 5m"): nothing reads "0秒", and under a minute is "23s".
+  if (total === 0) return '0m';
+  if (total < 60) return `${total}s`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }

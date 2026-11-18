@@ -282,22 +282,13 @@
 }
 
 .il-report-export {
-  padding: 20px 20px 8px;
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 16px 8px;
 }
 
-@media (max-width: 520px) {
-  .il-report-date-nav {
-    grid-template-columns: 44px auto 44px minmax(0, 1fr);
-  }
-
-  .il-report-print-action {
-    grid-column: 1 / -1;
-    min-height: 42px;
-  }
-}
-
-.il-weekly-review .il-review-lines {
+.il-review-lines {
   display: grid;
   gap: 5px;
   margin-top: 10px;

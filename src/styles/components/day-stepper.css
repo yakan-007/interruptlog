@@ -1,0 +1,49 @@
+.il-daystepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.il-daystepper-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-md);
+  background: var(--bg-elevated);
+  box-shadow: var(--sh-card);
+}
+
+.il-daystepper-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.il-daystepper-today {
+  height: 42px;
+  border-radius: var(--r-md);
+  border: none;
+  background: var(--bg-elevated);
+  box-shadow: var(--sh-card);
+  padding: 0 16px;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.il-daystepper-today.active {
+  background: var(--ink);
+  color: var(--bg-elevated);
+}
+
+.il-daystepper-pick {
+  position: relative;
+  overflow: hidden;
+}
+
+.il-daystepper-pick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}

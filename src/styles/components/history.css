@@ -61,44 +61,6 @@
   justify-content: flex-end;
 }
 
-.il-history-navbtn {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-md);
-  background: var(--bg-elevated);
-  box-shadow: var(--sh-card);
-}
-
-.il-history-todaybtn {
-  height: 42px;
-  border-radius: var(--r-md);
-  border: none;
-  background: var(--bg-elevated);
-  box-shadow: var(--sh-card);
-  padding: 0 16px;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.il-history-todaybtn.active {
-  background: var(--ink);
-  color: var(--bg-elevated);
-}
-
-.il-history-datepick {
-  position: relative;
-  overflow: hidden;
-}
-
-.il-history-datepick input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
 .il-history-missedbtn {
   height: 42px;
   border-radius: var(--r-md);

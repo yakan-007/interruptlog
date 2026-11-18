@@ -29,7 +29,7 @@ log: {
         workdayOverflow: (duration) => `Estimates due today exceed the time left by ${duration}`,
         due: (when) => `Due ${when}`,
         overdue: (when) => `Overdue ${when}`,
-        resumeWaiting: 'Waiting to resume',
+        resumeWaiting: 'Paused',
         endPause: 'End interruption',
         endBreak: 'End break',
         forgottenTimer: (duration) => `This timer has been running for ${duration}. Did you forget to stop it?`,

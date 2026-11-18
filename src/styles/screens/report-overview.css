@@ -121,3 +121,7 @@
   line-height: 1.5;
 }
 
+
+.il-stat > span + span {
+  margin-left: 6px;
+}

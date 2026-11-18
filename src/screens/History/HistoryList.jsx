@@ -1,6 +1,7 @@
 import { fmtDurationShort } from '../../lib/formatters';
 import { formatHistoryTimeRange, isSameHistoryDay } from '../../lib/history';
-import { categoryLabel, interruptCategoryLabel, t, typeLabel } from '../../i18n';
+import { t } from '../../i18n';
+import { eventCategoryText, eventSenderText, findEventCategory } from './eventMeta';
 
 export default function HistoryList({ items, state, now, selectedDate, locale = 'ja-JP', onEdit }) {
   return (
@@ -27,6 +28,8 @@ function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
   const category = findEventCategory(event, state);
   const showRunning = event.running && isSameHistoryDay(selectedDate, now) && !event.endsAfterDay;
   const categoryColor = event.type === 'task' ? category?.color : null;
+  const categoryText = eventCategoryText(event, category, locale);
+  const sender = eventSenderText(event);
 
   return (
     <button type="button" className={'il-ev t-' + event.type} style={{ borderBottom: last ? 'none' : '0.5px solid var(--hair)', '--history-category-color': categoryColor ?? undefined }} onClick={onEdit}>
@@ -35,10 +38,8 @@ function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
         <div className="ev-title">{event.workDetail || event.label}</div>
         <div className="ev-meta wrap">
           <span className="il-mono">{formatHistoryTimeRange(event)}</span>
-          <span>•</span>
-          <span className="type">{typeLabel(locale, event.type)}</span>
-          {category && <><span>•</span><span style={{ color: category.color || 'var(--ink-3)' }}>{event.type === 'interrupt' ? interruptCategoryLabel(locale, category) : categoryLabel(locale, category)}</span></>}
-          {event.who && <><span>•</span><span>{event.who}</span></>}
+          {categoryText && <><span>•</span><span style={{ color: categoryColor || undefined }}>{categoryText}</span></>}
+          {sender && <><span>•</span><span>{sender}</span></>}
           {event.startsBeforeDay && <span className="il-chip sm accent">{t(locale, 'history.previousDay')}</span>}
           {event.endsAfterDay && <span className="il-chip sm accent">{t(locale, 'history.nextDay')}</span>}
           {event.longEvent && <span className="il-chip sm warn">{t(locale, 'history.longEvent')}</span>}
@@ -50,11 +51,4 @@ function EventRow({ event, state, now, selectedDate, locale, last, onEdit }) {
       </div>
     </button>
   );
-}
-
-function findEventCategory(event, state) {
-  if (!event.categoryId) return null;
-  return state.categories.find((category) => category.id === event.categoryId)
-    || state.interruptCats.find((category) => category.id === event.categoryId)
-    || null;
 }

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import Icons from '../../icons';
 import { useTicker } from '../../lib/ticker';
 import { createReportSnapshot, selectReportInputs } from '../../state';
-import { t, tx } from '../../i18n';
+import { formatDate, t, tx } from '../../i18n';
+import DayStepper from '../../components/DayStepper';
 import { buildReportMetrics } from '../../features/report/buildReportMetrics';
 import StatCard from './StatCard';
 import {
@@ -94,19 +95,22 @@ export default function ReportScreen({ state, actions }) {
 
           {range === 'day' && (
             <div className="il-report-date-nav">
-              <button className="il-iconbtn" aria-label={t(state.preferences.locale, 'report.previousDay')} onClick={() => setSelectedDay(selectedDayStart - DAY_MS)}>{Icons.chevL(17)}</button>
-              <button className="btn secondary sm" onClick={() => setSelectedDay(todayStart)}>{t(state.preferences.locale, 'report.today')}</button>
-              <button className="il-iconbtn" aria-label={t(state.preferences.locale, 'report.nextDay')} onClick={() => setSelectedDay(selectedDayStart + DAY_MS)} disabled={!canGoNextDay}>{Icons.chevR(17)}</button>
-              <label className="il-report-date-input">
-                <span>{Icons.calendar(14)}</span>
-                <input
-                  type="date"
-                  value={toDateInputValue(selectedDayStart)}
-                  max={toDateInputValue(todayStart)}
-                  onChange={(event) => setDateFromInput(event.target.value)}
-                  aria-label={t(state.preferences.locale, 'report.reportDate')}
-                />
-              </label>
+              <div className="il-report-date-label">{formatDate(selectedDayStart, state.preferences.locale, { month: 'long', day: 'numeric', weekday: 'short' })}</div>
+              <DayStepper
+                dateValue={toDateInputValue(selectedDayStart)}
+                isToday={selectedDayStart === todayStart}
+                canGoNext={canGoNextDay}
+                maxDate={toDateInputValue(todayStart)}
+                locale={state.preferences.locale}
+                onShift={(delta) => setSelectedDay(Math.min(selectedDayStart + delta * DAY_MS, todayStart))}
+                onToday={() => setSelectedDay(todayStart)}
+                onPick={setDateFromInput}
+              />
+            </div>
+          )}
+
+          {range === 'day' && (
+            <div className="il-report-print-row">
               <button className="btn secondary sm il-report-print-action" onClick={() => window.print()}>
                 {Icons.print(14)}
                 {t(state.preferences.locale, 'report.dailyOutput')}

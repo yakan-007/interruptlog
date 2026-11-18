@@ -1,3 +1,4 @@
+import DayStepper from '../../components/DayStepper';
 import Icons from '../../icons';
 import { isSameHistoryDay, toHistoryDateInputValue } from '../../lib/history';
 import { t, tx } from '../../i18n';
@@ -25,23 +26,21 @@ export default function HistoryToolbar({
             <div className="year">{dateParts.year}</div>
             <div className="weekday">
               {dateParts.weekday}
-              {dateParts.relative && <span className="il-chip sm accent">{dateParts.relative}</span>}
+              {/* "Today" is already the lit button; only other days get a label. */}
+              {dateParts.relative && !isSameHistoryDay(selectedDate, now) && <span className="il-chip sm accent">{dateParts.relative}</span>}
             </div>
           </div>
         </div>
 
         <div className="il-history-navactions">
-          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(-1)} aria-label={t(locale, 'history.previous')}>{Icons.chevL(18)}</button>
-          <button className={'il-history-todaybtn' + (isSameHistoryDay(selectedDate, now) ? ' active' : '')} onClick={onToday}>{t(locale, 'history.today')}</button>
-          <button className="il-iconbtn il-history-navbtn" onClick={() => onShift(1)} aria-label={t(locale, 'history.next')}>{Icons.chevR(18)}</button>
-          <label className="il-iconbtn il-history-navbtn il-history-datepick" aria-label={t(locale, 'history.pickDate')}>
-            {Icons.calendar(18)}
-            <input
-              type="date"
-              value={toHistoryDateInputValue(selectedDate)}
-              onChange={(event) => onSelectDate(event.target.value)}
-            />
-          </label>
+          <DayStepper
+            dateValue={toHistoryDateInputValue(selectedDate)}
+            isToday={isSameHistoryDay(selectedDate, now)}
+            locale={locale}
+            onShift={onShift}
+            onToday={onToday}
+            onPick={onSelectDate}
+          />
           <button className="il-history-missedbtn" onClick={onAddMissed}>
             {Icons.plus(14)}
             <span>{t(locale, 'history.missedShort')}</span>

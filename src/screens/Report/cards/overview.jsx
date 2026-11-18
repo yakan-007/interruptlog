@@ -49,16 +49,23 @@ export function WorkdayCard({ workday, locale = 'ja-JP' }) {
       {(workday.beforeStart.task > 0 || workday.beforeStart.interrupt > 0) && (
         <WorkdayLine label={t(locale, 'report.beforeStart')} task={workday.beforeStart.task} interrupt={workday.beforeStart.interrupt} locale={locale} />
       )}
-      <WorkdayLine label={t(locale, 'report.afterEndWork')} task={workday.afterEnd.task} interrupt={workday.afterEnd.interrupt} locale={locale} emphatic />
-      <div className="il-workday-reactive">
-        <span>{t(locale, 'report.reactiveWork')}</span>
-        <strong className="il-mono">{fmtDurationShort(workday.reactive.total, locale)}</strong>
-        {/* Tasks are no longer created from an interruption, so follow-up work
-            only exists in older data; show the split only when there is some. */}
-        {workday.reactive.followup > 0 && (
+      <WorkdayLine
+        label={t(locale, 'report.afterEndWork')}
+        task={workday.afterEnd.task}
+        interrupt={workday.afterEnd.interrupt}
+        locale={locale}
+        emphatic={workday.afterEnd.task + workday.afterEnd.interrupt > 0}
+      />
+      {/* Tasks are no longer created from an interruption, so work that came
+          out of one only exists in older data. Without it this row would just
+          repeat the interruption time. */}
+      {workday.reactive.followup > 0 && (
+        <div className="il-workday-reactive">
+          <span>{t(locale, 'report.reactiveWork')}</span>
+          <strong className="il-mono">{fmtDurationShort(workday.reactive.total, locale)}</strong>
           <span className="meta">{t(locale, 'report.directInterrupt')} {fmtDurationShort(workday.reactive.direct, locale)} · {t(locale, 'report.followupWork')} {fmtDurationShort(workday.reactive.followup, locale)}</span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -117,8 +124,6 @@ export function HourlyInterruptsCard({
 export function MicroInterruptionsCard({ stats, locale = 'ja-JP' }) {
   if (!stats || stats.interruptCount === 0) return null;
 
-  const microShare = Math.round(stats.microCountShare * 100);
-  const chainRate = Math.round(stats.chainRate * 100);
   const maxBucketCount = Math.max(...stats.buckets.map((bucket) => bucket.count), 1);
 
   return (
@@ -128,16 +133,15 @@ export function MicroInterruptionsCard({ stats, locale = 'ja-JP' }) {
         <TaskStat label={t(locale, 'report.microCount')} value={tx(locale, 'common.count', stats.microCount)} accent />
         <TaskStat label={t(locale, 'report.microTotal')} value={fmtDurationShort(stats.microTotalMs, locale)} />
         <TaskStat label={t(locale, 'report.microMedian')} value={stats.microCount ? fmtDurationShort(stats.microMedianMs, locale) : '-'} />
+        <TaskStat label={t(locale, 'report.chainCount')} value={tx(locale, 'common.count', stats.chainCount)} />
       </div>
-      <div className="il-review-lines">
-        <div>
-          {stats.microCount
-            ? tx(locale, 'report.microPeak', { hour: stats.peakHour, count: stats.peakHourCount })
-            : t(locale, 'report.noMicroInterruptions')}
+      {/* The numbers and bars speak for themselves; only where short ones pile
+          up is worth a sentence. */}
+      {stats.microCount > 0 && (
+        <div className="il-review-lines">
+          <div>{tx(locale, 'report.microPeak', { hour: stats.peakHour, count: stats.peakHourCount })}</div>
         </div>
-        <div>{tx(locale, 'report.microShare', { percent: microShare })}</div>
-        <div>{tx(locale, 'report.interruptionChainRate', { percent: chainRate, count: stats.chainCount })}</div>
-      </div>
+      )}
       <div className="il-bucket-report">
         {stats.buckets.map((bucket) => (
           <div key={bucket.label} className="il-bucket-report-row">
