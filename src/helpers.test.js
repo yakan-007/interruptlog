@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { toDateTimeLocalValue } from './lib/datetime';
 import { fmtDurationShort } from './lib/formatters';
 import { elapsedSince, formatElapsedClock } from './lib/timer';
+import { csvCell } from './state/utils';
 
 describe('duration helpers', () => {
   it('shows seconds for sub-minute durations', () => {
@@ -29,5 +30,15 @@ describe('duration helpers', () => {
   it('keeps every timer elapsed value non-negative and consistently formatted', () => {
     expect(elapsedSince(2_000, 1_000)).toBe(0);
     expect(formatElapsedClock(elapsedSince(1_000, 3_500))).toBe('00:00:03');
+  });
+});
+
+describe('csv cells', () => {
+  it('quotes line breaks including a bare CR and defuses formulas', () => {
+    expect(csvCell('a\rb')).toBe('"a\rb"');
+    expect(csvCell('a\nb')).toBe('"a\nb"');
+    expect(csvCell('say "hi"')).toBe('"say ""hi"""');
+    expect(csvCell('=SUM(A1)')).toBe("'=SUM(A1)");
+    expect(csvCell('plain')).toBe('plain');
   });
 });

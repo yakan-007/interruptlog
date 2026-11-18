@@ -20,7 +20,8 @@ export function startOfDay(ts) {
 
 export function csvCell(value) {
   const text = protectCsvFormula(String(value ?? ''));
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  // CR counts as a line break too; leaving it unquoted splits the row in some readers.
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 function protectCsvFormula(text) {
