@@ -200,11 +200,6 @@
   margin-bottom: 4px;
 }
 
-.il-confirmstop-copy .note {
-  color: var(--ink-3);
-  font-size: var(--text-sm);
-}
-
 .il-confirmstop-stat {
   background: var(--bg-elevated);
   border-radius: var(--r-md);

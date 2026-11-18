@@ -18,9 +18,6 @@ export default function ResolveEventSheet({ resolution, locale = 'ja-JP', onBack
         </>
       )}
     >
-      <div className="il-sheet-copy">
-        {t(locale, 'sheets.overlapCopy')}
-      </div>
 
       <div className="il-resolution-focus">
         <div className="eyebrow">{t(locale, 'sheets.eventToSave')}</div>

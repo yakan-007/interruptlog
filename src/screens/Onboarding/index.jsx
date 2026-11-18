@@ -24,7 +24,6 @@ export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
           </svg>
         </div>
 
-        <div className="il-onboarding-eyebrow">{t(locale, 'onboarding.eyebrow')}</div>
         <h1>InterruptLog</h1>
         <p className="il-onboarding-copy">
           {hero.map((line) => <span key={line}>{line}<br /></span>)}
@@ -36,10 +35,7 @@ export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
             return (
               <li key={step.key} className="il-onboarding-step">
                 <span className={`il-onboarding-stepicon ${step.tone}`} aria-hidden="true">{step.icon()}</span>
-                <span className="il-onboarding-stepcopy">
-                  <span className="title">{copy.title}</span>
-                  <span className="subtitle">{copy.subtitle}</span>
-                </span>
+                <span className="il-onboarding-stepcopy">{copy}</span>
               </li>
             );
           })}
@@ -52,7 +48,6 @@ export default function OnboardingScreen({ actions, locale = 'ja-JP' }) {
         <button className="btn primary fill il-onboarding-cta" onClick={() => actions.finishOnboarding()}>
           {t(locale, 'onboarding.start')}
         </button>
-        <div className="il-onboarding-note">{t(locale, 'onboarding.note')}</div>
       </div>
     </div>
   );

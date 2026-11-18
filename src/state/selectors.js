@@ -41,7 +41,6 @@ export function selectRunningTaskMeta(state) {
       type: 'task',
       label: task?.name ?? null,
       labelKey: 'common.task',
-      subLabelKey: 'log.taskRunning',
       task,
       variant: '',
     };
@@ -52,7 +51,6 @@ export function selectRunningTaskMeta(state) {
       type: 'interrupt',
       label: running.label || null,
       labelKey: 'common.interrupt',
-      subLabelKey: 'log.interruptRunning',
       task: null,
       variant: 'interrupt',
     };
@@ -62,7 +60,6 @@ export function selectRunningTaskMeta(state) {
     type: 'break',
     label: running.label || null,
     labelKey: 'common.break',
-    subLabelKey: 'log.breakRunning',
     task: null,
     variant: 'break',
   };

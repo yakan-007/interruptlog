@@ -90,25 +90,6 @@
   overflow: hidden;
 }
 
-.il-runbar .label .top {
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.6;
-  line-height: 1;
-}
-
-.il-runbar:not(.task) .label .top {
-  color: color-mix(in oklch, var(--runbar-state) 62%, var(--ink-3) 38%);
-  opacity: 1;
-}
-
-.il-runbar.task .label .top {
-  color: color-mix(in oklch, var(--runbar-accent, var(--accent)) 52%, var(--ink) 48%);
-  opacity: 0.88;
-}
-
 .il-runbar .label .name {
   font-size: var(--text-sm);
   font-weight: 500;
@@ -247,10 +228,6 @@
 
 .il-runbar.compact:not(.task) .label {
   min-width: 0;
-}
-
-.il-runbar.compact:not(.task) .label .top {
-  font-size: var(--text-2xs);
 }
 
 .il-runbar.compact:not(.task) .label .name {

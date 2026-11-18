@@ -213,7 +213,7 @@ describe('App smoke flow', () => {
     await user.click(screen.getByRole('button', { name: 'ここで区切って休憩に入る' }));
     await user.click(await screen.findByRole('button', { name: 'ここで区切って割り込みに移る' }));
 
-    expect(await screen.findByText('割り込み中')).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'ここで区切って休憩に入る' })).toBeTruthy();
     expect(screen.queryByDisplayValue('仕様確認')).toBeNull();
     expect(screen.getByRole('button', { name: '電話', pressed: true })).toBeTruthy();
   });

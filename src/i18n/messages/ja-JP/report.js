@@ -1,6 +1,5 @@
 const messages = {
 report: {
-        eyebrow: 'REVIEW',
         title: '振り返り',
         review: '週次レビュー',
         focus: 'タスク作業時間',
@@ -19,7 +18,6 @@ report: {
         breakdown: '時間の内訳',
         noBreakdown: 'この期間に時間の内訳はまだありません',
         taskEngagement: 'タスクごとの作業',
-        taskEngagementCopy: '期間中に作業したタスクを、作業時間・作業回数・作業日で見ます。',
         noTaskEngagement: 'この期間に記録されたタスク作業はありません',
         sessionsCount: (count) => `${count}回の作業`,
         workDaysCount: (count) => `${count}日`,
@@ -36,7 +34,6 @@ report: {
         showAllSessions: (count) => `ほか${count}件を表示`,
         collapseSessions: '作業の記録を畳む',
         dayActivity: 'この日の記録',
-        dayActivityCopy: 'タスク、割り込み、メモをこの日の文脈でまとめます。',
         touchedTasks: '触ったタスク',
         interruptions: '割り込み',
         recordOnlyWork: '記録のみの作業',
@@ -83,8 +80,6 @@ report: {
         noIncompleteTasks: '未完了の記録タスクはありません',
         csvSave: 'CSV保存',
         analysisCsvSave: '分析CSV保存',
-        csvCopy: 'CSV には現在の表示期間だけを書き出します。集計元はこのブラウザに保存された履歴です。',
-        overlapReportCopy: 'レポート集計や CSV に重複時間が含まれる可能性があります',
         focusRate: 'タスク作業の割合',
         topSender: '主な発信者',
         topCategory: '多いカテゴリ',

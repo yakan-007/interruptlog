@@ -30,16 +30,14 @@ export default function PersonalDataSections({ state, actions, locale, onOpenPan
       )}
       <div className="il-settings-group">
         <NavRow title={t(locale, 'settings.reportProfile')} note={reportProfileNote} onClick={() => onOpenPanel({ type: 'reportProfile' })} />
-        <SettingsNote title={t(locale, 'settings.storageTitle')} lines={tx(locale, 'settings.storageLines')} />
+        <SettingsNote lines={tx(locale, 'settings.storageLines')} />
         <ExportRow title={t(locale, 'settings.exportBackup')} note={backupStatus.note} due={backupStatus.due} onClick={() => actions.exportJson()} />
-        <NavRow title={t(locale, 'settings.importBackup')} note={t(locale, 'settings.importBackupNote')} onClick={() => onOpenPanel({ type: 'import' })} />
-        <NavRow title={t(locale, 'settings.resetAll')} note={t(locale, 'settings.resetAllNote')} danger onClick={() => onOpenPanel({ type: 'reset' })} />
+        <NavRow title={t(locale, 'settings.importBackup')} onClick={() => onOpenPanel({ type: 'import' })} />
+        <NavRow title={t(locale, 'settings.resetAll')} danger onClick={() => onOpenPanel({ type: 'reset' })} />
       </div>
 
       <div className="il-settings-footnote">
         <div className="title">{t(locale, 'settings.webFootTitle')}</div>
-        <div>{t(locale, 'settings.webFootSave')}</div>
-        <div>{t(locale, 'settings.webFootBackup')}</div>
         <div className="il-settings-footlinks">
           <a href="/privacy.html" target="_blank" rel="noreferrer">{t(locale, 'settings.privacyPolicy')}</a>
           <a href="https://github.com/yakan-007/interruptlog" target="_blank" rel="noreferrer">{t(locale, 'settings.feedback')}</a>

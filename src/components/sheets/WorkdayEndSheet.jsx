@@ -40,9 +40,6 @@ export default function WorkdayEndSheet({ state, actions, onClose }) {
         <button className="btn primary" onClick={save}>{t(locale, 'sheets.save')}</button>
       </>
     }>
-      <div className="il-sheet-copy">
-        {configured ? t(locale, 'sheets.todayEndCopy') : t(locale, 'settings.workScheduleNote')}
-      </div>
       {!configured && (
         <div className="il-field">
           <label>{t(locale, 'settings.workStart')}</label>

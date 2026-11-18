@@ -24,13 +24,6 @@
   font-weight: 700;
 }
 
-.il-archivecopy {
-  margin: 2px 16px 8px;
-  font-size: var(--text-xs);
-  line-height: 1.6;
-  color: var(--ink-3);
-}
-
 .il-forgotten-timer {
   margin: 8px 16px 4px;
   padding: 12px;

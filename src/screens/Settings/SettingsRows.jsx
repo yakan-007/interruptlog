@@ -92,7 +92,7 @@ export function AddRowButton({ label, onClick }) {
 export function NavRow({ title, note, danger = false, onClick }) {
   return (
     <button className="il-setrow il-setbutton" onClick={onClick}>
-      <span className="tg"><span className={danger ? 't danger-inline' : 't'}>{title}</span><span className="s">{note}</span></span>
+      <span className="tg"><span className={danger ? 't danger-inline' : 't'}>{title}</span>{note && <span className="s">{note}</span>}</span>
       {Icons.chevR(14)}
     </button>
   );
@@ -112,11 +112,10 @@ export function ExportRow({ title, note, due = false, onClick }) {
   );
 }
 
-export function SettingsNote({ title, lines }) {
+export function SettingsNote({ lines }) {
   return (
     <div className="il-setrow il-settings-note">
       <span className="tg">
-        <div className="t">{title}</div>
         {lines.map((line) => <div key={line} className="s">{line}</div>)}
       </span>
     </div>
@@ -128,7 +127,6 @@ export function RepairWarningRow({ locale, onRepair }) {
     <div className="il-setrow">
       <span className="tg">
         <span className="t danger-inline">{Icons.alert(14)} {t(locale, 'settings.repairTitle')}</span>
-        <span className="s">{t(locale, 'settings.repairCopy')}</span>
       </span>
       <button className="btn secondary sm" onClick={onRepair}>{t(locale, 'settings.repairAction')}</button>
     </div>

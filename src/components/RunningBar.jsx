@@ -41,7 +41,6 @@ export default function RunningBar({ state, actions, raised = false, compact = f
     }
   };
   const label = meta.label ?? t(locale, meta.labelKey);
-  const subLabel = meta.subLabel ?? t(locale, meta.subLabelKey);
 
   return (
     <div
@@ -54,8 +53,8 @@ export default function RunningBar({ state, actions, raised = false, compact = f
       aria-label={running.type === 'task' ? t(locale, 'sheets.taskEdit') : t(locale, 'sheets.pauseTitle')}
     >
       <div className="dot" />
-      <div className={'label' + (running.type === 'task' ? ' single' : '')}>
-        {running.type !== 'task' && <div className="top">{subLabel}</div>}
+      {/* The bar's color says task, interruption or break; only the name is written. */}
+      <div className="label single">
         <div className="name">{label}</div>
       </div>
       <div className="time il-mono">{formatElapsedClock(elapsedMs)}</div>

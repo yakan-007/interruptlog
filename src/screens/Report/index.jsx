@@ -80,7 +80,7 @@ export default function ReportScreen({ state, actions }) {
   return (
     <div className="il-screen il-fade">
       <div className="il-topbar">
-        <div><div className="sub">{t(state.preferences.locale, 'report.eyebrow')}</div><h1>{t(state.preferences.locale, 'report.title')}</h1></div>
+        <div><h1>{t(state.preferences.locale, 'report.title')}</h1></div>
       </div>
 
       <>
@@ -120,7 +120,6 @@ export default function ReportScreen({ state, actions }) {
                 {Icons.alert(14)}
                 <div>
                   <div className="title">{tx(state.preferences.locale, 'history.overlapTitle', state.overlapRepair.warning.conflicts.length)}</div>
-                  <div className="copy">{t(state.preferences.locale, 'report.overlapReportCopy')}</div>
                 </div>
                 <button className="btn secondary sm" onClick={() => actions.openOverlapRepair()}>{t(state.preferences.locale, 'history.repair')}</button>
               </div>
@@ -183,9 +182,6 @@ export default function ReportScreen({ state, actions }) {
             <div className="il-report-export">
               <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
               <button className="btn secondary fill" onClick={() => actions.exportAnalysisCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.analysisCsvSave')}</button>
-              <div className="il-report-exportcopy">
-                {t(state.preferences.locale, 'report.csvCopy')}
-              </div>
             </div>
 
             {range === 'day' && (

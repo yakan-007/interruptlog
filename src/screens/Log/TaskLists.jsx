@@ -24,7 +24,6 @@ export function ActiveTaskList({ state, actions, categoriesById, now }) {
     return (
       <div className="il-empty">
         <div className="t">{t(locale, 'log.emptyTitle')}</div>
-        <div className="s">{t(locale, 'log.emptyCopy')}</div>
       </div>
     );
   }
@@ -117,7 +116,6 @@ export function CompletedTaskSections({ state, actions, categoriesById, complete
               <span className={'chev' + (showArchive ? ' open' : '')}>{Icons.chevD(16)}</span>
             </span>
           </button>
-          {showArchive && <div className="il-archivecopy">{t(locale, 'log.archiveCopy')}</div>}
           {showArchive && completed.archived.map((task) => (
             <CompletedTaskCard key={task.id} task={task} state={state} actions={actions} categoriesById={categoriesById} now={now} />
           ))}

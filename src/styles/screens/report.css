@@ -82,10 +82,3 @@
   font-size: var(--text-xs);
   line-height: 1.5;
 }
-
-.il-report-exportcopy {
-  margin-top: 10px;
-  font-size: var(--text-xs);
-  line-height: 1.6;
-  color: var(--ink-3);
-}

@@ -42,8 +42,8 @@ function BehaviorSection({ state, actions, locale }) {
     <>
       <div className="il-section-h"><span>{t(locale, 'settings.behavior')}</span></div>
       <div className="il-settings-group">
-        <ToggleSetting title={t(locale, 'settings.topAdd')} note={t(locale, 'settings.topAddNote')} value={state.preferences.topAdd} onToggle={() => actions.setTopAdd(!state.preferences.topAdd)} ariaLabel={t(locale, 'settings.topAdd')} />
-        <ToggleSetting title={t(locale, 'settings.sortDue')} note={t(locale, 'settings.sortDueNote')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
+        <ToggleSetting title={t(locale, 'settings.topAdd')} value={state.preferences.topAdd} onToggle={() => actions.setTopAdd(!state.preferences.topAdd)} ariaLabel={t(locale, 'settings.topAdd')} />
+        <ToggleSetting title={t(locale, 'settings.sortDue')} value={state.preferences.sortDue} onToggle={() => actions.setSortDue(!state.preferences.sortDue)} ariaLabel={t(locale, 'settings.sortDue')} />
       </div>
     </>
   );
@@ -56,13 +56,8 @@ function WorkdaySection({ state, actions, locale }) {
   const hasValues = Boolean(state.preferences.workSchedule.start || state.preferences.workSchedule.end);
   const enabled = editing || hasValues;
   const invalid = Boolean(enabled && hasValues && !isWorkSchedule(state.preferences.workSchedule));
-  const note = !enabled
-    ? t(locale, 'settings.workScheduleOffNote')
-    : !hasValues
-      ? t(locale, 'settings.workScheduleSetupNote')
-      : invalid
-        ? t(locale, 'settings.workScheduleInvalid')
-        : t(locale, 'settings.workScheduleNote');
+  // Only a problem needs words; the switch and the two fields explain the rest.
+  const note = invalid ? t(locale, 'settings.workScheduleInvalid') : null;
 
   const toggle = () => {
     if (enabled) {

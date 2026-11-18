@@ -15,9 +15,6 @@ export default function RepairOverlapsSheet({ preview, locale = 'ja-JP', onDefer
         </>
       )}
     >
-      <div className="il-sheet-copy">
-        {t(locale, 'sheets.repairCopy')}
-      </div>
 
       <div className="il-resolution-summary">
         <span className="il-chip warn">{tx(locale, 'sheets.overlapCount', preview.conflicts.length)}</span>

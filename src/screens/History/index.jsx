@@ -102,7 +102,6 @@ export default function HistoryScreen({ state, actions }) {
               {Icons.alert(14)}
               <div>
                 <div className="title">{tx(state.preferences.locale, 'history.anomaliesTitle', anomalies.length)}</div>
-                <div className="copy">{t(state.preferences.locale, 'history.anomaliesCopy')}</div>
               </div>
             </div>
           </div>
@@ -114,7 +113,6 @@ export default function HistoryScreen({ state, actions }) {
               {Icons.alert(14)}
               <div>
                 <div className="title">{tx(state.preferences.locale, 'history.overlapTitle', state.overlapRepair.warning.conflicts.length)}</div>
-                <div className="copy">{t(state.preferences.locale, 'history.overlapCopy')}</div>
               </div>
               <button className="btn secondary sm" onClick={() => actions.openOverlapRepair()}>{t(state.preferences.locale, 'history.repair')}</button>
             </div>
@@ -124,7 +122,6 @@ export default function HistoryScreen({ state, actions }) {
         {dayItems.length === 0 && (
           <div className="il-empty">
             <div className="t">{t(state.preferences.locale, 'history.emptyTitle')}</div>
-            <div className="s">{t(state.preferences.locale, 'history.emptyCopy')}</div>
             <button className="il-history-missedbtn il-empty-action" onClick={() => actions.openSheet('addMissed', createDefaultMissedDraft(selectedDate, now))}>
               {Icons.plus(14)}
               <span>{t(state.preferences.locale, 'history.addMissed')}</span>

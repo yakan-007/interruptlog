@@ -13,17 +13,8 @@
   background: color-mix(in oklch, var(--break) 10%, transparent);
 }
 
-.il-sheet-timer .eyebrow {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.il-sheet-timer.interrupt .eyebrow,
 .il-sheet-timer.interrupt .value { color: var(--interrupt); }
 
-.il-sheet-timer.break .eyebrow,
 .il-sheet-timer.break .value { color: oklch(0.42 0.09 95); }
 
 .il-sheet-timer .hint {

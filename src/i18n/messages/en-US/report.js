@@ -1,6 +1,5 @@
 const messages = {
 report: {
-        eyebrow: 'REVIEW',
         title: 'Review',
         review: 'Weekly',
         focus: 'Task time',
@@ -19,7 +18,6 @@ report: {
         breakdown: 'Time breakdown',
         noBreakdown: 'No time breakdown has been recorded for this period yet',
         taskEngagement: 'Work by task',
-        taskEngagementCopy: 'Review worked-on tasks by time, work sessions, and work days.',
         noTaskEngagement: 'No task work was recorded in this period',
         sessionsCount: (count) => `${count} work sessions`,
         workDaysCount: (count) => `${count} days`,
@@ -36,7 +34,6 @@ report: {
         showAllSessions: (count) => `Show ${count} more`,
         collapseSessions: 'Collapse work records',
         dayActivity: "Today's records",
-        dayActivityCopy: 'Tasks, interruptions, and memos in the context of this day.',
         touchedTasks: 'Touched tasks',
         interruptions: 'Interruptions',
         recordOnlyWork: 'Recorded work without a task',
@@ -83,8 +80,6 @@ report: {
         noIncompleteTasks: 'No open tracked tasks in this period',
         csvSave: 'Save CSV',
         analysisCsvSave: 'Save analysis CSV',
-        csvCopy: 'The CSV exports only the current display period from history saved in this browser.',
-        overlapReportCopy: 'Reports and CSV exports may include overlapping time.',
         focusRate: 'Task time share',
         topSender: 'Main sender',
         topCategory: 'Top category',

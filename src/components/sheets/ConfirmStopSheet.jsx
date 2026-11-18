@@ -19,7 +19,6 @@ export default function ConfirmStopSheet({ state, actions, onClose }) {
     }>
       <div className="il-confirmstop-copy">
         <div className="title">{task?.name}</div>
-        <div className="note">{t(locale, 'sheets.stopCopy')}</div>
       </div>
       <div className="il-confirmstop-stat">
         <span>{t(locale, 'sheets.thisSession')}</span>

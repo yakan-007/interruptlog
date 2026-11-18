@@ -19,7 +19,6 @@ export function TaskEngagementCard({ engagement, locale = 'ja-JP' }) {
     <div className="il-card il-task-engagement-card">
       <div className="il-card-intro">
         <h3>{t(locale, 'report.taskEngagement')}</h3>
-        <div className="il-card-copy">{t(locale, 'report.taskEngagementCopy')}</div>
       </div>
       {engagement.rows.length === 0 ? (
         <div className="il-report-taskempty">{t(locale, 'report.noTaskEngagement')}</div>

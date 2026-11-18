@@ -13,7 +13,7 @@ export default function SettingsScreen({ state, actions }) {
   return (
     <div className="il-screen il-fade">
       <div className="il-topbar">
-        <div><div className="sub">{t(locale, 'settings.eyebrow')}</div><h1>{t(locale, 'settings.title')}</h1></div>
+        <div><h1>{t(locale, 'settings.title')}</h1></div>
       </div>
 
       <div className="il-body il-body-settings">

@@ -68,7 +68,6 @@ function SectionHeader({ title, count, locale, reorderActive, onToggleReorder })
     <div className="il-section-h il-settings-section-h">
       <span>{title}</span>
       <span className="il-settings-section-actions">
-        <span className="count">{count}</span>
         {count > 1 && (
           <button
             type="button"

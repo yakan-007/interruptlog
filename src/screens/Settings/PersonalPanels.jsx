@@ -120,9 +120,6 @@ export function ChipsSheet({ kind, chips, locale = 'ja-JP', onClose, onSave }) {
         <button className="btn primary" onClick={save}>{t(locale, 'sheets.save')}</button>
       </>
     }>
-      <div className="il-sheet-copy">
-        {t(locale, 'settings.chipsCopy')}
-      </div>
       <div className="il-field">
         <label>{t(locale, 'settings.chipCandidates')}</label>
         <textarea
@@ -185,7 +182,6 @@ export function ReportProfileSheet({ profile, locale = 'ja-JP', onClose, onSave 
         <button className="btn primary" onClick={() => onSave({ affiliation, name })}>{t(locale, 'sheets.save')}</button>
       </>
     }>
-      <div className="il-sheet-copy">{t(locale, 'settings.reportProfileCopy')}</div>
       <div className="il-field">
         <label>{t(locale, 'settings.reportAffiliation')}</label>
         <input className="il-input" value={affiliation} onChange={(event) => setAffiliation(event.target.value)} placeholder={t(locale, 'settings.reportAffiliationPlaceholder')} aria-label={t(locale, 'settings.reportAffiliation')} autoFocus />

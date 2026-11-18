@@ -119,14 +119,12 @@ export default function PauseSheet({ state, actions, onClose, onDraftChange, ini
           <div className="meta">
             <span className="strong">{t(locale, 'sheets.pausedTask')}</span> <span>{runTask.name}</span>
           </div>
-          <div className="il-mono quiet">{t(locale, 'sheets.paused')}</div>
         </div>
       )}
 
       <TimerPanel
         className={'il-sheet-timer ' + mode}
         elapsed={elapsed}
-        eyebrow={t(locale, mode === 'break' ? 'sheets.breakActive' : 'sheets.pauseActive')}
         hint={startClock ? tx(locale, 'sheets.since', startClock) : null}
       />
 

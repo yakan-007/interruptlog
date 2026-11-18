@@ -28,7 +28,6 @@ export default function StopAtSheet({ state, actions, onClose, onBack }) {
         <button className="btn primary" onClick={submit}>{t(locale, 'sheets.stopAtSubmit')}</button>
       </>
     }>
-      <div className="il-sheet-copy">{t(locale, 'sheets.stopAtCopy')}</div>
       <div className="il-field">
         <label htmlFor="il-stop-at">{t(locale, 'sheets.stopAtLabel')}</label>
         <input

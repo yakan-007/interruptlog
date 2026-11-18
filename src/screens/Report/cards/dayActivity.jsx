@@ -6,7 +6,6 @@ export function DayActivityCard({ activity, locale = 'ja-JP' }) {
     <div className="il-card il-day-activity-card">
       <div className="il-card-intro">
         <h3>{t(locale, 'report.dayActivity')}</h3>
-        <div className="il-card-copy">{t(locale, 'report.dayActivityCopy')}</div>
       </div>
       <ActivitySection
         title={t(locale, 'report.touchedTasks')}
