@@ -11,6 +11,8 @@ toasts: {
         exportCanceled: '書き出しをキャンセルしました',
         jsonImported: 'JSONを読み込みました',
         csvExported: 'CSVを書き出しました',
+        dailyReportCopied: '日報をコピーしました',
+        copyFailed: 'コピーできませんでした',
         storageSaveFailed: 'このブラウザに保存できません。容量やプライベートモードを確認してください',
       },
 };

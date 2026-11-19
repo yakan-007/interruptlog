@@ -118,3 +118,22 @@ describe('workday report metrics', () => {
     expect(metrics.taskEngagement.rows.reduce((sum, row) => sum + row.rangeTime, 0)).toBe(count * duration);
   });
 });
+
+describe('daily print data', () => {
+  it('lists a task completed on a later day as incomplete on the earlier day', () => {
+    const state = {
+      ...createEmptyState(),
+      tasks: [{
+        id: 'task-1', name: '資料作成', isCompleted: true, order: 0, categoryId: 'cat-doc',
+        planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: at(9), completedAt: at(9) + 86400000,
+      }],
+      events: [{ id: 'session', type: 'task', taskId: 'task-1', label: '資料作成', categoryId: 'cat-doc', start: at(9), end: at(10) }],
+    };
+    const bounds = { since: at(0), until: at(23, 59) };
+    const currentStats = calcStats(state.events, bounds.since, bounds.until, bounds.until);
+    const { dailyReport } = buildReportMetrics(state, currentStats, bounds, bounds.until);
+
+    expect(dailyReport.completedTasks).toEqual([]);
+    expect(dailyReport.incompleteTasks.map((task) => task.id)).toEqual(['task-1']);
+  });
+});

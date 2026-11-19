@@ -333,14 +333,20 @@ describe('App smoke flow', () => {
     expect(screen.getByText('タスクごとの作業')).toBeTruthy();
     expect(screen.getByText('この日の記録')).toBeTruthy();
     expect(screen.getByRole('button', { name: '詳細分析を表示' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: '日報出力' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '印刷' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '日報をコピー' })).toBeTruthy();
     expect(screen.getByText('日報')).toBeTruthy();
     expect(screen.queryByText('時間帯別の割り込み')).toBeNull();
     expect(screen.getAllByRole('button', { name: 'CSV保存' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'CSV エクスポート' })).toBeNull();
     expect(screen.queryByText('チーム')).toBeNull();
-    await user.click(screen.getByRole('button', { name: '日報出力' }));
+    await user.click(screen.getByRole('button', { name: '印刷' }));
     expect(window.print).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: '日報をコピー' }));
+    expect(await screen.findByText('日報をコピーしました')).toBeTruthy();
+    const copied = await navigator.clipboard.readText();
+    expect(copied).toMatch(/^【日報】 \d{4}\/\d{1,2}\/\d{1,2}（.）\n/);
+    expect(copied).toContain('■ 進行中\n・スモークテストタスク（開発）');
     let downloadedAnchor = null;
     const appendChild = document.body.appendChild.bind(document.body);
     vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
@@ -354,7 +360,7 @@ describe('App smoke flow', () => {
     expect(navigator.share).not.toHaveBeenCalled();
     expect(downloadedAnchor?.download).toMatch(/^interruptlog-report-day-\d{4}-\d{2}-\d{2}\.csv$/);
     await user.click(screen.getByRole('button', { name: '週' }));
-    expect(screen.queryByRole('button', { name: '日報出力' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '日報をコピー' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '設定' }));
     expect(await screen.findByRole('heading', { name: '設定' })).toBeTruthy();

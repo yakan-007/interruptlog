@@ -20,6 +20,9 @@
 }
 
 .il-report-print-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   padding: 0 16px 12px;
 }
 

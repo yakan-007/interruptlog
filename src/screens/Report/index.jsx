@@ -5,6 +5,8 @@ import { createReportSnapshot, selectReportInputs } from '../../state';
 import { formatDate, t, tx } from '../../i18n';
 import DayStepper from '../../components/DayStepper';
 import { buildReportMetrics } from '../../features/report/buildReportMetrics';
+import { buildDailyReport } from '../../features/report/dailyReport';
+import { formatDailyReportText } from '../../features/report/dailyReportText';
 import StatCard from './StatCard';
 import {
   BreakdownCard,
@@ -111,6 +113,13 @@ export default function ReportScreen({ state, actions }) {
 
           {range === 'day' && (
             <div className="il-report-print-row">
+              <button
+                className="btn secondary sm il-report-print-action"
+                onClick={() => actions.copyDailyReport(formatDailyReportText(buildDailyReport(state, selectedDayStart, reportNow), state.preferences.locale))}
+              >
+                {Icons.copy(14)}
+                {t(state.preferences.locale, 'report.copyDailyReport')}
+              </button>
               <button className="btn secondary sm il-report-print-action" onClick={() => window.print()}>
                 {Icons.print(14)}
                 {t(state.preferences.locale, 'report.dailyOutput')}

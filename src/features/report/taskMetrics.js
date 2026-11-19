@@ -86,6 +86,7 @@ export function buildDayActivity(state, events, taskGroups) {
         categoryColor: category?.color ?? 'var(--task)',
         time: group.time,
         isCompleted: Boolean(task?.isCompleted),
+        completedAt: task?.completedAt ?? null,
       };
     })
     .sort((left, right) => right.time - left.time || left.name.localeCompare(right.name, 'ja'));
@@ -123,8 +124,10 @@ export function buildDayActivity(state, events, taskGroups) {
 }
 
 export function buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity) {
-  const completedTasks = dayActivity.touchedTasks.filter((task) => task.isCompleted);
-  const incompleteTasks = dayActivity.touchedTasks.filter((task) => !task.isCompleted);
+  // Judge by the completion time, so a past day's report shows that day's state.
+  const doneByEnd = (task) => task.isCompleted && (task.completedAt == null || task.completedAt < bounds.until);
+  const completedTasks = dayActivity.touchedTasks.filter(doneByEnd);
+  const incompleteTasks = dayActivity.touchedTasks.filter((task) => !doneByEnd(task));
   return {
     date: bounds.since,
     range: bounds,

@@ -82,6 +82,14 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
     finishOnboarding() {
       app.actions.finishOnboarding();
     },
+    async copyDailyReport(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast(t(locale, 'toasts.dailyReportCopied'));
+      } catch {
+        toast(t(locale, 'toasts.copyFailed'));
+      }
+    },
     async exportReportCsv(range, asOf) {
       await exportText({
         filename: datedFilename(`interruptlog-report-${range}`, 'csv', asOf),

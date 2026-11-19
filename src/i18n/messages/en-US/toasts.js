@@ -11,6 +11,8 @@ toasts: {
         exportCanceled: 'Export canceled',
         jsonImported: 'JSON imported',
         csvExported: 'CSV exported',
+        dailyReportCopied: 'Daily report copied',
+        copyFailed: 'Could not copy',
         storageSaveFailed: 'Could not save in this browser. Check storage space or private browsing mode.',
       },
 };
