@@ -7,6 +7,7 @@ import DayStepper from '../../components/DayStepper';
 import { buildReportMetrics } from '../../features/report/buildReportMetrics';
 import { buildDailyReport } from '../../features/report/dailyReport';
 import { formatDailyReportText } from '../../features/report/dailyReportText';
+import { buildWorkTable, formatWorkTableTsv } from '../../features/report/workTable';
 import StatCard from './StatCard';
 import {
   BreakdownCard,
@@ -193,6 +194,15 @@ export default function ReportScreen({ state, actions }) {
             )}
 
             <div className="il-report-export">
+              <button
+                className="btn secondary fill"
+                onClick={() => {
+                  const table = buildWorkTable(state, bounds.since, bounds.until, reportNow);
+                  actions.copyWorkTable(formatWorkTableTsv(table), table.rows.length);
+                }}
+              >
+                {Icons.copy(14)} {t(state.preferences.locale, 'report.copyWorkTable')}
+              </button>
               <button className="btn secondary fill" onClick={() => actions.exportReportCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.csvSave')}</button>
               <button className="btn secondary fill" onClick={() => actions.exportAnalysisCsv(range, reportNow)}>{Icons.download(14)} {t(state.preferences.locale, 'report.analysisCsvSave')}</button>
             </div>

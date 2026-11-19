@@ -12,6 +12,7 @@ toasts: {
         jsonImported: 'JSONを読み込みました',
         csvExported: 'CSVを書き出しました',
         dailyReportCopied: '日報をコピーしました',
+        workTableCopied: (count) => `表をコピーしました（${count}行）`,
         copyFailed: 'コピーできませんでした',
         storageSaveFailed: 'このブラウザに保存できません。容量やプライベートモードを確認してください',
       },

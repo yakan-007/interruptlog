@@ -10,6 +10,22 @@ report: {
         compareLabels: { day: 'vs yesterday', week: 'vs last week', month: 'vs last month', year: 'vs last year' },
         dailyOutput: 'Print',
         copyDailyReport: 'Copy daily report',
+        copyWorkTable: 'Copy table',
+        workTable: {
+          columns: {
+            date: 'Date',
+            affiliation: 'Team',
+            name: 'Name',
+            start: 'Start',
+            end: 'End',
+            minutes: 'Minutes',
+            type: 'Type',
+            category: 'Category',
+            content: 'Work',
+            who: 'From',
+            memo: 'Notes',
+          },
+        },
         dailyText: {
           title: 'Daily report',
           date: ({ ymd, weekday }) => `${weekday} ${ymd}`,

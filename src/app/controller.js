@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatDate, t, translateError } from '../i18n';
+import { formatDate, t, translateError, tx } from '../i18n';
 import { selectActiveTasks } from '../state';
 import { systemClock } from '../platform/clock';
 
@@ -86,6 +86,14 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
       try {
         await navigator.clipboard.writeText(text);
         toast(t(locale, 'toasts.dailyReportCopied'));
+      } catch {
+        toast(t(locale, 'toasts.copyFailed'));
+      }
+    },
+    async copyWorkTable(text, rowCount) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast(tx(locale, 'toasts.workTableCopied', rowCount));
       } catch {
         toast(t(locale, 'toasts.copyFailed'));
       }

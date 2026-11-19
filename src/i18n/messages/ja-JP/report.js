@@ -10,6 +10,22 @@ report: {
         compareLabels: { day: '昨日比', week: '先週比', month: '先月比', year: '前年比' },
         dailyOutput: '印刷',
         copyDailyReport: '日報をコピー',
+        copyWorkTable: '表をコピー',
+        workTable: {
+          columns: {
+            date: '日付',
+            affiliation: '所属',
+            name: '名前',
+            start: '開始',
+            end: '終了',
+            minutes: '分',
+            type: '区分',
+            category: 'カテゴリ',
+            content: '内容',
+            who: '発信者',
+            memo: 'メモ',
+          },
+        },
         dailyText: {
           title: '日報',
           date: ({ ymd, weekday }) => `${ymd}（${weekday}）`,
