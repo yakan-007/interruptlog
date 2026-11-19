@@ -31,12 +31,12 @@ export function useAppLayout(containerRef, preferences) {
         stableViewportHeightRef.current = window.innerHeight;
       }
 
-      const rawInset = Math.max(
-        0,
-        stableViewportHeightRef.current - visualHeight - visualOffsetTop
-      );
+      // iOS scrolls the page up to reveal the focused field (visualViewport
+      // offsetTop > 0). That scroll is not the keyboard getting smaller, so
+      // whether a keyboard is up is judged from the visible height alone.
+      const shrink = Math.max(0, stableViewportHeightRef.current - visualHeight);
       const wantsKeyboard = activeElementWantsKeyboard();
-      const keyboardOpen = wantsKeyboard && rawInset > 80;
+      const keyboardOpen = wantsKeyboard && shrink > 80;
 
       if (!wantsKeyboard) {
         stableViewportHeightRef.current = window.innerHeight;

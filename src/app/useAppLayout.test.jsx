@@ -94,4 +94,20 @@ describe('app layout viewport vars', () => {
     expect(shell.style.getPropertyValue('--keyboard-inset')).toBe('0px');
     expect(shell.hasAttribute('data-keyboard-open')).toBe(false);
   });
+
+  it('detects the keyboard even when iOS scrolls the page to the field', () => {
+    setInnerHeight(812);
+    const visualViewport = setVisualViewport({ height: 812 });
+
+    render(<LayoutProbe />);
+    const shell = screen.getByTestId('app-shell');
+
+    screen.getByRole('textbox', { name: 'タスク名' }).focus();
+    visualViewport.viewport.height = 472;
+    visualViewport.viewport.offsetTop = 300;
+    visualViewport.emit('resize');
+
+    expect(shell.hasAttribute('data-keyboard-open')).toBe(true);
+    expect(shell.style.getPropertyValue('--keyboard-inset')).toBe('40px');
+  });
 });

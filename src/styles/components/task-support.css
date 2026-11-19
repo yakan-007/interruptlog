@@ -54,10 +54,22 @@
   transition: opacity .18s ease, transform .22s ease;
 }
 
+/* While typing, the tab bar leaves the layout entirely so the input card sits
+   right on the keyboard; the content inset then counts the whole overlap. */
+.il-appshell[data-keyboard-open] {
+  --content-keyboard-inset: var(--keyboard-inset, 0px);
+}
+
 .il-appshell[data-keyboard-open] .il-tabbar {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(100%);
+  display: none;
+}
+
+/* Fallback for phones where the keyboard can't be measured: never show the tab
+   bar between the task input and the keyboard. */
+@media (pointer: coarse) {
+  .il-appshell:has(.il-quickdock-input:focus) .il-tabbar {
+    display: none;
+  }
 }
 
 /* While a sheet is open the tab bar sits under the same scrim and cannot be
