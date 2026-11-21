@@ -1,5 +1,6 @@
 import { getFridayAtClock, isWorkSchedule, timestampAtClock, timestampAtClockForOffset } from '../lib/workday';
 import { getLocaleConfig, normalizeLocale } from './localeConfig.js';
+import { daysBetween } from '../lib/day.js';
 
 export function formatDate(ts, locale = 'ja-JP', options = {}) {
   return new Intl.DateTimeFormat(normalizeLocale(locale), {
@@ -57,15 +58,19 @@ export function formatDurationShort(ms) {
   return `${m}m`;
 }
 
+// A target day: "今日", "明日", or "11/25(水)".
+export function formatDayLabel(ts, locale = 'ja-JP', nowTs = Date.now()) {
+  const dayDiff = daysBetween(nowTs, ts);
+  const ja = locale === 'ja-JP';
+  if (dayDiff === 0) return ja ? '今日' : 'Today';
+  if (dayDiff === 1) return ja ? '明日' : 'Tomorrow';
+  return formatDate(ts, locale, { weekday: 'short' });
+}
+
 // A due date as a day and clock time ("今日 18:00", "明日 9:00", "11/21 18:00"),
 // so it cannot be mistaken for a remaining duration next to work times.
 export function formatDueAt(ts, locale = 'ja-JP', nowTs = Date.now()) {
-  const startOf = (value) => {
-    const date = new Date(value);
-    date.setHours(0, 0, 0, 0);
-    return date.getTime();
-  };
-  const dayDiff = Math.round((startOf(ts) - startOf(nowTs)) / 86400000);
+  const dayDiff = daysBetween(nowTs, ts);
   const time = new Intl.DateTimeFormat(normalizeLocale(locale), {
     hour: 'numeric',
     minute: '2-digit',

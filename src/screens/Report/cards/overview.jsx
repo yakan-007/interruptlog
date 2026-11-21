@@ -39,6 +39,8 @@ export function BreakdownCard({ currentStats, locale, recordedTotal, total }) {
 
 export function WorkdayCard({ workday, locale = 'ja-JP' }) {
   if (!workday) return null;
+  const overtime = workday.overtime.task + workday.overtime.interrupt;
+  const holiday = workday.holiday.task + workday.holiday.interrupt;
   return (
     <div className="il-card il-workday-card">
       <div className="il-card-intro">
@@ -46,25 +48,9 @@ export function WorkdayCard({ workday, locale = 'ja-JP' }) {
         <div className="il-card-copy">{workday.schedule.start} – {workday.schedule.end}</div>
       </div>
       <WorkdayLine label={t(locale, 'report.withinWorkday')} task={workday.inside.task} interrupt={workday.inside.interrupt} locale={locale} />
-      {(workday.beforeStart.task > 0 || workday.beforeStart.interrupt > 0) && (
-        <WorkdayLine label={t(locale, 'report.beforeStart')} task={workday.beforeStart.task} interrupt={workday.beforeStart.interrupt} locale={locale} />
-      )}
-      <WorkdayLine
-        label={t(locale, 'report.afterEndWork')}
-        task={workday.afterEnd.task}
-        interrupt={workday.afterEnd.interrupt}
-        locale={locale}
-        emphatic={workday.afterEnd.task + workday.afterEnd.interrupt > 0}
-      />
-      {/* Tasks are no longer created from an interruption, so work that came
-          out of one only exists in older data. Without it this row would just
-          repeat the interruption time. */}
-      {workday.reactive.followup > 0 && (
-        <div className="il-workday-reactive">
-          <span>{t(locale, 'report.reactiveWork')}</span>
-          <strong className="il-mono">{fmtDurationShort(workday.reactive.total, locale)}</strong>
-          <span className="meta">{t(locale, 'report.directInterrupt')} {fmtDurationShort(workday.reactive.direct, locale)} · {t(locale, 'report.followupWork')} {fmtDurationShort(workday.reactive.followup, locale)}</span>
-        </div>
+      <WorkdayLine label={t(locale, 'report.overtime')} task={workday.overtime.task} interrupt={workday.overtime.interrupt} locale={locale} emphatic={overtime > 0} />
+      {holiday > 0 && (
+        <WorkdayLine label={t(locale, 'report.holidayWork')} task={workday.holiday.task} interrupt={workday.holiday.interrupt} locale={locale} emphatic />
       )}
     </div>
   );
@@ -86,7 +72,6 @@ export function HourlyInterruptsCard({
   locale,
   maxHourly,
   peakHour,
-  quietHour,
 }) {
   if (!hasInterruptTrend) {
     return (
@@ -99,23 +84,25 @@ export function HourlyInterruptsCard({
     );
   }
 
+  // Every hour is labelled while they fit; on long days every third one.
+  const labelEvery = hourly.counts.length > 12 ? 3 : 1;
   return (
     <div className="il-card">
       <h3>{t(locale, 'report.hourlyInterrupts')}</h3>
       <div className="il-vchart">
-        {hourly.map((value, index) => {
-          const hot = index === peakHour && value > 0;
+        {hourly.counts.map((count, index) => {
+          const hour = hourly.firstHour + index;
+          const hot = hour === peakHour && count > 0;
           return (
-            <div key={index}>
-              <div className="bar" style={{ height: `${Math.round((value / maxHourly) * 80)}%`, background: hot ? 'var(--interrupt)' : 'var(--ink-5)', borderRadius: '3px 3px 0 0' }} />
-              <div className={'lbl' + (hot ? ' hot' : '')}>{9 + index}</div>
+            <div key={hour} aria-label={tx(locale, 'report.hourlyBar', { hour, count })}>
+              <div className={'bar' + (hot ? ' hot' : '')} style={{ height: `calc((100% - 18px) * ${count / maxHourly})` }} />
+              <div className={'lbl' + (hot ? ' hot' : '')}>{index % labelEvery === 0 ? hour : ''}</div>
             </div>
           );
         })}
       </div>
       <div className="il-report-meta">
-        <span>{t(locale, 'report.peak')}: <strong className="peak">{9 + peakHour}:00</strong> · {fmtDurationShort(hourly[peakHour], locale)}</span>
-        <span>{t(locale, 'report.quietHour')}: {9 + quietHour}:00</span>
+        <span>{t(locale, 'report.peak')}: <strong className="peak">{tx(locale, 'report.peakHour', peakHour)}</strong> · {tx(locale, 'common.count', hourly.counts[peakHour - hourly.firstHour])}</span>
       </div>
     </div>
   );

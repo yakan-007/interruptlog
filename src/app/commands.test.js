@@ -11,8 +11,6 @@ function task(id = 'task-1') {
     isCompleted: false,
     order: 0,
     categoryId: 'cat-dev',
-    sourceTaskId: null,
-    interruptOriginId: null,
     planning: { plannedDurationMinutes: 0, dueAt: null },
     createdAt: 1,
     completedAt: null,
@@ -131,7 +129,7 @@ describe('personal app commands', () => {
     const commands = createHarness(initial);
 
     commands.actions.beginInterrupt();
-    expect(commands.state().running).toMatchObject({ type: 'interrupt', preTaskId: 'task-1' });
+    expect(commands.state().running).toMatchObject({ type: 'interrupt', returnTaskId: 'task-1' });
     commands.actions.cancelInterrupt();
     expect(commands.state().running).toMatchObject({ type: 'task', taskId: 'task-1' });
 

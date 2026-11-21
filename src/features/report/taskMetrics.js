@@ -1,4 +1,5 @@
 import { categoryLabel, interruptCategoryLabel } from '../../i18n';
+import { startOfDay } from '../../lib/day';
 
 export function buildTaskReport(state, groups, bounds) {
   const uniqueTaskIds = [...groups.keys()];
@@ -174,8 +175,3 @@ function buildTaskDailyWork(events, bounds) {
   return [...daily.entries()].map(([dayStart, durationMs]) => ({ dayStart, durationMs }));
 }
 
-function startOfDay(timestamp) {
-  const date = new Date(timestamp);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}

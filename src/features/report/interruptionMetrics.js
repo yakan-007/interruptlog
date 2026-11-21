@@ -1,44 +1,63 @@
 import { normalizeLocale } from '../../i18n';
 import { calculateRangeStats, getWorkdayBounds } from '../../state';
+import { isWorkSchedule } from '../../lib/workday';
+import { addDays, startOfDay } from '../../lib/day';
 
+// How the period's work sits against the work hours: inside them, overtime
+// (before start or after end on a working day) and holiday work (any work on
+// a day off). Works for a day, a week or a month, one day at a time.
 export function buildWorkdayReport(state, events, bounds, now) {
-  if (bounds.until - bounds.since > 86400000) return null;
-  const workday = getWorkdayBounds(state, bounds.since);
-  if (!workday) return null;
+  if (!isWorkSchedule(state.preferences?.workSchedule)) return null;
 
   const result = {
-    schedule: workday.schedule,
+    schedule: state.preferences.workSchedule,
     inside: { task: 0, interrupt: 0 },
-    beforeStart: { task: 0, interrupt: 0 },
-    afterEnd: { task: 0, interrupt: 0 },
-    reactive: { direct: 0, followup: 0 },
+    overtime: { task: 0, interrupt: 0 },
+    holiday: { task: 0, interrupt: 0 },
   };
-  for (const event of events) {
-    if (event.type !== 'task' && event.type !== 'interrupt') continue;
-    const eventStart = event.clippedStart;
-    const eventEnd = event.clippedEnd ?? now;
-    const insideStart = Math.max(eventStart, workday.start);
-    const insideEnd = Math.min(eventEnd, workday.end);
-    const insideMs = Math.max(0, insideEnd - insideStart);
-    const beforeStartMs = Math.max(0, Math.min(eventEnd, workday.start) - eventStart);
-    const afterEndMs = Math.max(0, eventEnd - Math.max(eventStart, workday.end));
-    result.inside[event.type] += insideMs;
-    result.beforeStart[event.type] += beforeStartMs;
-    result.afterEnd[event.type] += afterEndMs;
-    if (event.type === 'interrupt') result.reactive.direct += event.durationMs;
-    if (event.type === 'task' && event.interruptOriginId) result.reactive.followup += event.durationMs;
+  const worked = events.filter((event) => event.type === 'task' || event.type === 'interrupt');
+  for (let dayStart = startOfDay(bounds.since); dayStart < bounds.until; dayStart = addDays(dayStart, 1)) {
+    const dayEnd = Math.min(addDays(dayStart, 1), bounds.until);
+    const workday = getWorkdayBounds(state, dayStart);
+    for (const event of worked) {
+      const start = Math.max(event.clippedStart, dayStart);
+      const end = Math.min(event.clippedEnd ?? now, dayEnd);
+      if (end <= start) continue;
+      if (!workday) {
+        result.holiday[event.type] += end - start;
+        continue;
+      }
+      const insideMs = Math.max(0, Math.min(end, workday.end) - Math.max(start, workday.start));
+      result.inside[event.type] += insideMs;
+      result.overtime[event.type] += end - start - insideMs;
+    }
   }
-  result.reactive.total = result.reactive.direct + result.reactive.followup;
   return result;
 }
 
-export function buildHourlyInterrupts(events) {
-  const hourly = Array(12).fill(0);
-  for (const event of events.filter((item) => item.type === 'interrupt')) {
-    const hour = new Date(event.clippedStart).getHours();
-    if (hour >= 9 && hour <= 20) hourly[hour - 9] += event.durationMs;
-  }
-  return hourly;
+
+
+// How many interruptions started in each hour. The hours shown are the work
+// hours (9-18 without a schedule), widened to any hour that had one, so an
+// early call or a late chat is never dropped.
+export function buildHourlyInterrupts(events, workSchedule = null) {
+  const hours = events
+    .filter((item) => item.type === 'interrupt')
+    .map((event) => new Date(event.clippedStart ?? event.start).getHours());
+  const scheduleStart = parseHour(workSchedule?.start);
+  const scheduleEnd = parseHour(workSchedule?.end);
+  const firstHour = Math.min(scheduleStart ?? 9, ...hours);
+  const lastHour = Math.max(scheduleEnd != null ? scheduleEnd - 1 : 17, ...hours);
+  const counts = Array(lastHour - firstHour + 1).fill(0);
+  for (const hour of hours) counts[hour - firstHour] += 1;
+  return { firstHour, counts };
+}
+
+function parseHour(clock) {
+  if (typeof clock !== 'string') return null;
+  const [hours, minutes] = clock.split(':').map(Number);
+  if (!Number.isFinite(hours)) return null;
+  return minutes > 0 ? hours + 1 : hours;
 }
 
 export function buildDayStats(snapshot, now, locale) {

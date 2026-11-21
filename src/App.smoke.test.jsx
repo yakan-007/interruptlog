@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
-import { LEGACY_STATE_KEYS, STATE_KEY } from './constants';
+import { STATE_KEY } from './constants';
 import { createEmptyState } from './state';
 
 describe('App smoke flow', () => {
@@ -58,18 +58,6 @@ describe('App smoke flow', () => {
     await waitFor(() => {
       expect(screen.queryByText('作業を停止')).toBeNull();
     });
-  });
-
-  it('starts fresh and removes the legacy localStorage key', async () => {
-    localStorage.setItem(LEGACY_STATE_KEYS[0], JSON.stringify({
-      ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, onboardingDone: true },
-    }));
-
-    render(<App />);
-
-    expect(await screen.findByRole('button', { name: 'はじめる' })).toBeTruthy();
-    expect(localStorage.getItem(LEGACY_STATE_KEYS[0])).toBeNull();
   });
 
   it('keeps a recovery warning visible until browser storage succeeds again', async () => {

@@ -6,7 +6,7 @@ import { getResumeTaskId, selectTaskPriorSpentMs } from '../../state';
 import TaskCard from './TaskCard';
 import { useTaskDrag } from './useTaskDrag';
 
-export function ActiveTaskList({ state, actions, categoriesById, now }) {
+export function ActiveTaskList({ state, actions, categoriesById, now, forecast = null }) {
   const {
     activeIndexById,
     armDrag,
@@ -47,6 +47,7 @@ export function ActiveTaskList({ state, actions, categoriesById, now }) {
               running={state.running?.taskId === task.id && state.running?.type === 'task'}
               runningStart={state.running?.start}
               waitingToResume={resumeTaskId === task.id}
+              forecast={forecast?.byTaskId.get(task.id) ?? null}
               priorSpent={selectTaskPriorSpentMs(state, task.id)}
               now={now}
               locale={locale}

@@ -7,7 +7,7 @@ afterEach(() => cleanup());
 
 function createActions() {
   return Object.fromEntries([
-    'setLocale', 'setDark', 'setTopAdd', 'setSortDue', 'setWorkSchedule',
+    'setLocale', 'setDark', 'setTaskOrder', 'setWorkSchedule',
     'setReportProfile',
     'moveCategoryToIndex', 'moveInterruptCategoryToIndex', 'saveCategory', 'deleteCategory',
     'saveInterruptCategory', 'deleteInterruptCategory', 'saveChips', 'exportJson', 'importJson',
@@ -60,4 +60,18 @@ describe('personal settings screen', () => {
     expect(actions.exportJson).toHaveBeenCalledTimes(1);
     expect(actions.resetAll).toHaveBeenCalledTimes(1);
   }, 10000);
+
+  it('sets the task order with one choice', () => {
+    const state = createEmptyState();
+    state.preferences.onboardingDone = true;
+    state.overlapRepair = { warning: null };
+    const actions = createActions();
+    render(<SettingsScreen state={state} actions={actions} />);
+
+    expect(screen.getByRole('radio', { name: '新しいものを上' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByRole('radio', { name: '期限順' }));
+    expect(actions.setTaskOrder).toHaveBeenLastCalledWith('due');
+    fireEvent.click(screen.getByRole('radio', { name: '新しいものを下' }));
+    expect(actions.setTaskOrder).toHaveBeenLastCalledWith('bottom');
+  });
 });

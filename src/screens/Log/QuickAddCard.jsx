@@ -46,14 +46,15 @@ export default function QuickAddCard({ state, actions }) {
     inputRef.current?.focus();
   };
 
-  const revealAddedTask = () => {
-    if (!state.preferences.topAdd) return;
-    window.requestAnimationFrame(() => {
-      inputRef.current
-        ?.closest('.il-screen')
-        ?.querySelector('.il-body-log')
-        ?.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+  // Bring the new task into view wherever the list order put it (top, bottom,
+  // or its place by due date). Two frames: the list renders it first.
+  const revealAddedTask = (taskId) => {
+    if (!taskId) return;
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const cards = inputRef.current?.closest('.il-screen')?.querySelectorAll('.il-taskcard[data-task-id]') ?? [];
+      [...cards].find((card) => card.dataset.taskId === taskId)
+        ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    }));
   };
 
   const scrollCategoriesWithWheel = (event) => {
@@ -85,7 +86,7 @@ export default function QuickAddCard({ state, actions }) {
       },
       onAfterSubmit: (nextDraft) => {
         resetDraft(nextDraft?.categoryId ?? selectedCategoryId);
-        revealAddedTask();
+        revealAddedTask(nextDraft?.taskId);
       },
     });
   };
@@ -108,7 +109,7 @@ export default function QuickAddCard({ state, actions }) {
     }
     resetDraft(selectedCategoryId);
     if (mode === 'start') inputRef.current?.blur();
-    revealAddedTask();
+    revealAddedTask(result.taskId);
   };
 
   // Buttons must not take focus from the input: the dock resizes on focus change,

@@ -1,3 +1,4 @@
+export { startOfDay } from '../lib/day';
 export const clone = (value) => JSON.parse(JSON.stringify(value));
 export const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
 export const asArray = (value) => Array.isArray(value) ? value : [];
@@ -12,11 +13,6 @@ export function uniqueTexts(values) {
   return [...new Set(asArray(values).map(cleanText).filter(Boolean))];
 }
 
-export function startOfDay(ts) {
-  const date = new Date(ts);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
 
 export function csvCell(value) {
   const text = protectCsvFormula(String(value ?? ''));

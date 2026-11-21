@@ -6,9 +6,13 @@ import {
   parseBackup,
   saveTaskInState,
   clearTodayWorkdayEndInState,
+  getEffectiveWorkdaySchedule,
+  isWorkingDay,
   setTodayWorkdayEndInState,
+  setWorkDaysInState,
   setWorkScheduleInState,
 } from './index';
+import { ensureWorkdayScheduleInState } from './workday';
 import { at, createPersonalState } from '../test/factories';
 
 describe('personal schema and backup', () => {
@@ -46,28 +50,6 @@ describe('personal schema and backup', () => {
     expect('obsoleteWorkspace' in state).toBe(false);
   });
 
-  it('drops the old built-in break categories, even ones re-saved as interruptions', () => {
-    const state = normalizeState({
-      ...createEmptyState(),
-      interruptCats: [
-        { id: 'int-call', name: '電話', icon: 'phone', kind: 'interrupt', defaultDurationMinutes: 0 },
-        { id: 'break-rest', name: '休憩', icon: 'coffee', kind: 'break' },
-        { id: 'break-lunch', name: '昼食', icon: null, kind: 'interrupt' },
-        { id: 'break-personal', name: '私用', icon: null, kind: 'interrupt' },
-        { id: 'int-visit', name: '来客', icon: null, kind: 'break' },
-      ],
-      events: [{ id: 'e1', type: 'break', label: '昼食', categoryId: 'break-lunch', start: 1, end: 2 }],
-    });
-    const onlyBreaks = normalizeState({
-      ...createEmptyState(),
-      interruptCats: [{ id: 'break-lunch', name: '昼食', kind: 'break' }],
-    });
-
-    expect(state.interruptCats).toEqual([{ id: 'int-call', name: '電話' }]);
-    expect(state.events[0]).toMatchObject({ type: 'break', label: '昼食' });
-    expect(onlyBreaks.interruptCats.map((category) => category.id)).toEqual(['int-call', 'int-chat', 'int-q', 'int-other']);
-  });
-
   it('keeps an optional standard work schedule and daily end override compatible with old state', () => {
     const legacy = normalizeState(createEmptyState());
     const configured = setWorkScheduleInState(legacy, { start: '09:00', end: '17:00' });
@@ -76,9 +58,30 @@ describe('personal schema and backup', () => {
 
     expect(legacy.preferences.workSchedule).toEqual({ start: null, end: null });
     expect(configured.preferences.workSchedule).toEqual({ start: '09:00', end: '17:00' });
-    expect(overridden.workdaySchedules['2026-05-11']).toEqual({ start: '09:00', end: '18:30' });
+    expect(overridden.workdaySchedules['2026-05-11']).toEqual({ start: '09:00', end: '18:30', override: true });
     expect(reset.workdaySchedules['2026-05-11']).toEqual({ start: '09:00', end: '17:00' });
     expect(normalizeState({ ...legacy, preferences: { workSchedule: { start: '18:00', end: '09:00' } } }).preferences.workSchedule).toEqual({ start: '18:00', end: '09:00' });
+  });
+
+  it('treats weekends as days off by default and lets the user work one on purpose', () => {
+    const configured = setWorkScheduleInState(normalizeState(createEmptyState()), { start: '09:00', end: '17:00' });
+    const saturday = new Date(2026, 4, 16, 10).getTime();
+    const monday = new Date(2026, 4, 11, 10).getTime();
+
+    expect(configured.preferences.workDays).toEqual([1, 2, 3, 4, 5]);
+    expect(isWorkingDay(configured, monday)).toBe(true);
+    expect(isWorkingDay(configured, saturday)).toBe(false);
+    expect(getEffectiveWorkdaySchedule(configured, saturday)).toBe(null);
+    expect(ensureWorkdayScheduleInState(configured, saturday)).toBe(configured);
+
+    const workedSaturday = setTodayWorkdayEndInState(configured, '13:00', saturday);
+    expect(isWorkingDay(workedSaturday, saturday)).toBe(true);
+    expect(getEffectiveWorkdaySchedule(workedSaturday, saturday)).toMatchObject({ start: '09:00', end: '13:00' });
+    expect(isWorkingDay(clearTodayWorkdayEndInState(workedSaturday, saturday), saturday)).toBe(false);
+
+    const sixDays = setWorkDaysInState(configured, [1, 2, 3, 4, 5, 6, 9]);
+    expect(sixDays.preferences.workDays).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(normalizeState({ ...sixDays }).preferences.workDays).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it('treats zero due dates as unset when loading and saving tasks', () => {
@@ -115,28 +118,16 @@ describe('personal schema and backup', () => {
     expect(normalized.tasks[0].createdAt).toBe(now);
   });
 
-  it('keeps only the originating task as the resumable activity across a reload', () => {
-    const state = normalizeState({
+  it('keeps the task to return to across a reload only while that task exists', () => {
+    const base = {
       ...createEmptyState(),
       tasks: [{ id: 't1', name: '元の作業', categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null } }],
-      running: {
-        type: 'break',
-        start: at(11, 10),
-        resumeStack: [
-          { type: 'task', taskId: 't1' },
-          { type: 'interrupt', draft: { label: '一次対応', who: '田中' } },
-          { type: 'task', taskId: 'missing' },
-        ],
-      },
-    }, at(11, 11));
+    };
+    const kept = normalizeState({ ...base, running: { type: 'break', start: at(11, 10), returnTaskId: 't1' } }, at(11, 11));
+    const dropped = normalizeState({ ...base, running: { type: 'break', start: at(11, 10), returnTaskId: 'missing' } }, at(11, 11));
 
-    expect(state.running).toMatchObject({
-      type: 'break',
-      preTaskId: 't1',
-      resumeStack: [
-        { type: 'task', taskId: 't1' },
-      ],
-    });
+    expect(kept.running).toMatchObject({ type: 'break', returnTaskId: 't1' });
+    expect(dropped.running).toMatchObject({ type: 'break', returnTaskId: null });
   });
 
   it('round-trips JSON backup payloads in the personal format', () => {

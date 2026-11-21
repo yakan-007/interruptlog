@@ -36,7 +36,6 @@ describe('useSheetController', () => {
       type: 'interrupt',
       start: 1000,
       draft,
-      resumeStack: [],
     });
     const { result } = renderHook(() => useSheetController(app, false));
 

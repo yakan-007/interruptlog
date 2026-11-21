@@ -333,3 +333,38 @@
 .il-settings-footlinks a:active {
   color: var(--accent);
 }
+
+/* Working days: one round toggle per weekday, lit when it is a working day. */
+.il-settings-workdays {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 16px 14px;
+}
+
+.il-settings-workday {
+  flex: 1;
+  max-width: 40px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid var(--hair-strong);
+  background: var(--bg-elevated);
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.il-settings-workday.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg-elevated);
+}
+
+/* The order choice: title above, the three options full width below. */
+.il-setrow.il-settings-order {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}

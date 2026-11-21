@@ -87,8 +87,6 @@ function prepareTaskRecordCandidate(state, record, now, { createId = newId, prev
     end,
     memo: cleanText(record.memo),
     taskId: null,
-    sourceTaskId: null,
-    interruptOriginId: null,
     workDetail: null,
   };
   delete base.taskTarget;
@@ -124,8 +122,6 @@ function prepareTaskRecordCandidate(state, record, now, { createId = newId, prev
       id: preview ? '__new-task-preview__' : '__new-task__',
       name,
       categoryId: taskTarget.categoryId ?? state.categories[0]?.id ?? null,
-      sourceTaskId: null,
-      interruptOriginId: null,
     };
     return {
       candidate: taskEventFromTask(base, virtualTask, record.workDetail),
@@ -154,8 +150,6 @@ function taskEventFromTask(base, task, workDetail) {
     taskId: task.id,
     label: task.name,
     categoryId: task.categoryId ?? null,
-    sourceTaskId: task.sourceTaskId ?? null,
-    interruptOriginId: task.interruptOriginId ?? null,
     workDetail: cleanText(workDetail) || null,
   };
 }

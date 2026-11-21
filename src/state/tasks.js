@@ -3,6 +3,7 @@ import { asNumber, asPositiveTimestamp, cleanText } from './utils';
 import { ensureWorkdayScheduleInState } from './workday';
 import { ERROR_CODES } from '../domain/errors';
 import { closeRunningPauseSegmentInState } from './pauseEvents';
+import { compareByDueDate } from '../domain/records';
 
 function validateTaskInput(data) {
   if (!cleanText(data.name)) return ERROR_CODES.TASK_NAME_REQUIRED;
@@ -17,8 +18,6 @@ function buildTask(state, data, taskId, now) {
     order: getNextTaskOrder(state),
     categoryId: data.categoryId ?? state.categories[0]?.id ?? null,
     memo: cleanText(data.memo),
-    sourceTaskId: cleanText(data.sourceTaskId) || null,
-    interruptOriginId: cleanText(data.interruptOriginId) || null,
     planning: {
       plannedDurationMinutes: Math.max(0, asNumber(data.plannedDurationMinutes, 0) ?? 0),
       dueAt: asPositiveTimestamp(data.dueAt, null),
@@ -40,9 +39,7 @@ function getDueActiveOrder(state) {
   return state.tasks
     .map((task, index) => ({ task, index }))
     .filter(({ task }) => !task.isCompleted)
-    .sort((a, b) => (a.task.planning?.dueAt ?? Infinity) - (b.task.planning?.dueAt ?? Infinity)
-      || a.task.order - b.task.order
-      || a.index - b.index)
+    .sort((a, b) => compareByDueDate(a.task, b.task) || a.index - b.index)
     .map(({ task }) => task.id);
 }
 
@@ -50,7 +47,7 @@ function getNextTaskOrder(state) {
   const activeTasks = state.tasks.filter((task) => !task.isCompleted);
   if (activeTasks.length === 0) return 0;
   const orders = activeTasks.map((task) => task.order);
-  return state.preferences.topAdd
+  return state.preferences.taskOrder !== 'bottom'
     ? Math.min(...orders) - 1
     : Math.max(...orders) + 1;
 }
@@ -61,7 +58,7 @@ export function createTaskInState(state, data, now = Date.now(), { createId = ne
 
   const taskId = createId('tn', now);
   const task = buildTask(state, data, taskId, now);
-  const tasks = state.preferences.topAdd ? [task, ...state.tasks] : [...state.tasks, task];
+  const tasks = state.preferences.taskOrder !== 'bottom' ? [task, ...state.tasks] : [...state.tasks, task];
   return {
     state: { ...state, tasks },
     taskId,
@@ -132,8 +129,6 @@ export function startTaskInState(state, taskId, now = Date.now(), options = {}) 
     label: task.name,
     categoryId: task.categoryId,
     memo: task.memo ?? '',
-      sourceTaskId: task.sourceTaskId ?? null,
-      interruptOriginId: task.interruptOriginId ?? null,
     start: now,
     end: null,
   };
@@ -145,8 +140,6 @@ export function startTaskInState(state, taskId, now = Date.now(), options = {}) 
       taskId,
       start: now,
       label: null,
-      preTaskId: findNearestTaskId(options.resumeStack ?? []),
-      resumeStack: options.resumeStack ?? [],
     },
   };
 }
@@ -164,9 +157,6 @@ function closePauseInState(state, now, createId = newId) {
   return { ...closeRunningPauseSegmentInState(state, now, data, { createId }), running: null };
 }
 
-function findNearestTaskId(resumeStack) {
-  return [...resumeStack].reverse().find((context) => context.type === 'task')?.taskId ?? null;
-}
 
 
 export function closeTaskSessionInState(state, now = Date.now(), { createId = newId } = {}) {
@@ -195,8 +185,6 @@ export function closeTaskSessionInState(state, now = Date.now(), { createId = ne
       label: task?.name ?? 'タスク',
       categoryId: task?.categoryId ?? null,
       memo: task?.memo ?? '',
-      sourceTaskId: task?.sourceTaskId ?? null,
-      interruptOriginId: task?.interruptOriginId ?? null,
       start: running.start,
       end: now,
     }],
@@ -256,12 +244,11 @@ export function deleteTaskInState(state, taskId, now = Date.now(), dependencies 
   const base = state.running?.type === 'task' && state.running.taskId === taskId
     ? closeTaskSessionInState(state, now, dependencies)
     : state;
-  const resumeStack = base.running?.resumeStack?.filter((context) => context.taskId !== taskId) ?? [];
   const running = base.running?.taskId === taskId
     ? null
-    : base.running
-      ? { ...base.running, resumeStack, preTaskId: findNearestTaskId(resumeStack) }
-      : null;
+    : base.running?.returnTaskId === taskId
+      ? { ...base.running, returnTaskId: null }
+      : base.running;
 
   return {
     ...base,
@@ -273,7 +260,7 @@ export function deleteTaskInState(state, taskId, now = Date.now(), dependencies 
 // `targetIndex` is a position in the list as shown. While the list is sorted
 // by due date, that is the due order, which then becomes the manual order.
 export function moveTaskToIndexInState(state, taskId, targetIndex) {
-  const orderedIds = state.preferences.sortDue ? getDueActiveOrder(state) : getManualActiveOrder(state);
+  const orderedIds = state.preferences.taskOrder === 'due' ? getDueActiveOrder(state) : getManualActiveOrder(state);
   const from = orderedIds.indexOf(taskId);
   if (from < 0) return state;
 
@@ -290,9 +277,10 @@ export function moveTaskToIndexInState(state, taskId, targetIndex) {
   const ordersById = new Map(nextIds.map((id, index) => [id, index]));
   return {
     ...state,
+    // Dragging means a hand-made order; from due order it becomes "new on top".
     preferences: {
       ...state.preferences,
-      sortDue: false,
+      taskOrder: state.preferences.taskOrder === 'due' ? 'top' : state.preferences.taskOrder,
     },
     tasks: state.tasks.map((task) => ordersById.has(task.id)
       ? { ...task, order: ordersById.get(task.id) }

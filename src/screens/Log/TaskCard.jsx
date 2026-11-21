@@ -1,5 +1,5 @@
 import Icons from '../../icons';
-import { fmtDue, fmtDurationMin, fmtRel } from '../../lib/formatters';
+import { fmtDay, fmtDue, fmtDurationMin, fmtDurationShort, fmtRel } from '../../lib/formatters';
 import { categoryLabel, t, tx } from '../../i18n';
 
 export default function TaskCard({
@@ -22,6 +22,7 @@ export default function TaskCard({
   onRestart,
   completedNote,
   waitingToResume = false,
+  forecast = null,
   locale = 'ja-JP',
   floating = false,
 }) {
@@ -75,7 +76,6 @@ export default function TaskCard({
           </div>
           <div className="il-meta">
             <span className="il-chip sm subtle">{completedNote || (task.completedAt ? `${t(locale, 'log.completed')} ${fmtRel(task.completedAt, locale, now)}` : t(locale, 'log.completed'))}</span>
-            {task.interruptOriginId && <span className="il-chip sm interrupt-origin">{t(locale, 'log.interruptOrigin')}</span>}
             <span className="meta-stat">
               <span className="muted">{t(locale, 'log.total')}</span>
               <span className="il-mono strong">{fmtDurationMin(actualMs / 60000)}</span>
@@ -115,18 +115,25 @@ export default function TaskCard({
         </div>
         <div className="il-meta">
           <span className="il-chip task-cat-label" style={{ color: category?.color }}>{categoryLabel(locale, category)}</span>
-          {task.interruptOriginId && <span className="il-chip sm interrupt-origin">{t(locale, 'log.interruptOrigin')}</span>}
           {waitingToResume && <span className="il-chip sm resume-waiting">{t(locale, 'log.resumeWaiting')}</span>}
           {actualSummary}
-          {hasDueAt && (
-            <>
-              <span className="sep">•</span>
-              <span className={overdue ? 'danger strong' : 'subtle'}>
+        </div>
+        {/* When it is due and when it should be done read as one line of their own. */}
+        {(hasDueAt || forecast?.finishAt != null) && (
+          <div className="il-meta il-meta-plan">
+            {hasDueAt && (
+              <span className={overdue || forecast?.late ? 'danger strong' : 'subtle'}>
                 {tx(locale, overdue ? 'log.overdue' : 'log.due', fmtDue(dueAt, locale, now))}
               </span>
-            </>
-          )}
-        </div>
+            )}
+            {forecast?.finishAt != null && (
+              <span className={forecast.late ? 'danger' : 'subtle'}>{tx(locale, 'log.target', fmtDay(forecast.finishAt, locale, now))}</span>
+            )}
+            {forecast?.late && (
+              <span className="danger strong">{tx(locale, 'log.shortfall', fmtDurationShort(forecast.shortfallMs, locale))}</span>
+            )}
+          </div>
+        )}
       </div>
       <div className="task-actions">
         {running ? (

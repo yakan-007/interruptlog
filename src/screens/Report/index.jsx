@@ -23,6 +23,7 @@ import {
   WeeklyReviewCard,
   WorkdayCard,
 } from './PersonalReportCards';
+import { startOfDay } from '../../lib/day';
 
 export default function ReportScreen({ state, actions }) {
   const [range, setRange] = useState('day');
@@ -64,7 +65,6 @@ export default function ReportScreen({ state, actions }) {
     completedInRange,
     taskRate,
     peakHour,
-    quietHour,
     hasInterruptTrend,
     taskEngagement,
     dayActivity,
@@ -146,7 +146,7 @@ export default function ReportScreen({ state, actions }) {
               <StatCard locale={state.preferences.locale} label={t(state.preferences.locale, 'report.break')} color="var(--break)" value={currentStats.break} previousValue={previousStats.break} deltaLabel={localizedCompareLabel || compareLabel} />
             </div>
 
-            {range === 'day' && <WorkdayCard workday={workday} locale={state.preferences.locale} />}
+            <WorkdayCard workday={workday} locale={state.preferences.locale} />
 
             {range === 'week' && <WeeklyReviewCard state={state} now={now} snapshot={reportSnapshot} />}
 
@@ -173,7 +173,6 @@ export default function ReportScreen({ state, actions }) {
                   locale={state.preferences.locale}
                   maxHourly={maxHourly}
                   peakHour={peakHour}
-                  quietHour={quietHour}
                 />
 
                 <MicroInterruptionsCard stats={microInterruptions} locale={state.preferences.locale} />
@@ -218,11 +217,6 @@ export default function ReportScreen({ state, actions }) {
 
 const DAY_MS = 86400000;
 
-function startOfDay(timestamp) {
-  const date = new Date(timestamp);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
 
 function endOfDay(timestamp) {
   return startOfDay(timestamp) + DAY_MS - 1;

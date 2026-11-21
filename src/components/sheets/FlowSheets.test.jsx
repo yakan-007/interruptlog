@@ -27,7 +27,7 @@ function taskState() {
   state.preferences.onboardingDone = true;
   state.tasks = [{
     id: 'task-1', name: '元のタスク', memo: '', isCompleted: false, order: 0,
-    categoryId: 'cat-dev', sourceTaskId: null, interruptOriginId: null,
+    categoryId: 'cat-dev',
     planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: start, completedAt: null,
   }];
   return state;

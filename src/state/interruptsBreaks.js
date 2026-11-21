@@ -12,14 +12,16 @@ import { ensureWorkdayScheduleInState } from './workday';
 export function beginPauseInState(state, type, now = Date.now(), context = {}, dependencies = {}) {
   const snapshotted = ensureWorkdayScheduleInState(state, now);
   const running = snapshotted.running;
-  const resumeStack = buildResumeStackForNextPause(running);
+  // The task to go back to: the one that was running, or the one the current
+  // pause was already going back to.
+  const returnTaskId = running?.type === 'task' ? running.taskId : running?.returnTaskId ?? null;
   const suspended = running?.type === 'task'
     ? closeTaskSessionInState(snapshotted, now, dependencies)
     : closeRunningPauseSegmentInState(snapshotted, now, context.currentPauseData, dependencies);
 
   return {
     ...suspended,
-    running: createPauseRunning(type, now, resumeStack, context),
+    running: createPauseRunning(type, now, returnTaskId, context),
   };
 }
 
@@ -86,12 +88,12 @@ export function updateInterruptDraftInState(state, draft) {
   };
 }
 
-// The task a pause returns to: the nearest task in the resume stack, as long as
+// The task a pause returns to, as long as
 // it still exists and has not been completed while the pause was running.
 export function getResumeTaskId(state) {
   const running = state.running;
   if (running?.type !== 'interrupt' && running?.type !== 'break') return null;
-  const taskId = findNearestTaskContext(getResumeStack(running))?.taskId;
+  const taskId = running.returnTaskId;
   const task = taskId ? state.tasks.find((item) => item.id === taskId) : null;
   return task && !task.isCompleted ? task.id : null;
 }
@@ -100,7 +102,7 @@ function resumeOrStopInState(state, resume, now = Date.now(), dependencies = {})
   const taskId = resume ? getResumeTaskId(state) : null;
   const base = { ...state, running: null };
   if (!taskId) return base;
-  return startTaskInState(base, taskId, now, { ...dependencies, resumeStack: [] });
+  return startTaskInState(base, taskId, now, dependencies);
 }
 
 export function saveInterruptInState(state, data, now = Date.now(), dependencies = {}) {
@@ -135,7 +137,7 @@ export function cancelPauseInState(state, _now, dependencies = {}) {
     event.type === 'task' && event.taskId === taskId && event.end === running.start
   );
   if (sessionIndex < 0) {
-    return startTaskInState({ ...state, running: null }, taskId, running.start, { ...dependencies, resumeStack: [] });
+    return startTaskInState({ ...state, running: null }, taskId, running.start, dependencies);
   }
   const session = state.events[sessionIndex];
   const events = [...state.events];
@@ -143,43 +145,21 @@ export function cancelPauseInState(state, _now, dependencies = {}) {
   return {
     ...state,
     events,
-    running: { type: 'task', taskId, start: session.start, label: null, preTaskId: null, resumeStack: [] },
+    running: { type: 'task', taskId, start: session.start, label: null },
   };
 }
 
-function createPauseRunning(type, now, resumeStack, context = {}) {
+function createPauseRunning(type, now, returnTaskId, context = {}) {
   const draft = type === 'interrupt' ? normalizeInterruptDraft(context.draft) : null;
   return {
     type,
     taskId: null,
     start: now,
     label: type === 'break' ? '休憩中' : interruptLabel(draft, context.label),
-    preTaskId: findNearestTaskId(resumeStack),
-    resumeStack,
+    returnTaskId,
     categoryId: type === 'interrupt' ? draft.categoryId : null,
     draft,
   };
-}
-
-function getResumeStack(running) {
-  if (Array.isArray(running?.resumeStack)) return running.resumeStack;
-  return running?.preTaskId ? [{ type: 'task', taskId: running.preTaskId }] : [];
-}
-
-function buildResumeStackForNextPause(running) {
-  if (!running) return [];
-  if (running.type === 'task' && running.taskId) return [{ type: 'task', taskId: running.taskId }];
-  const taskContext = findNearestTaskContext(getResumeStack(running));
-  return taskContext ? [taskContext] : [];
-}
-
-function findNearestTaskId(resumeStack) {
-  return findNearestTaskContext(resumeStack)?.taskId ?? null;
-}
-
-function findNearestTaskContext(resumeStack) {
-  const context = [...resumeStack].reverse().find((item) => item.type === 'task' && item.taskId);
-  return context ? { type: 'task', taskId: context.taskId } : null;
 }
 
 function findInterruptCategory(state, categoryId) {

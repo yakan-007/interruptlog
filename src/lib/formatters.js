@@ -1,6 +1,7 @@
 import {
   formatDateHeader as formatLocalizedDateHeader,
   formatDurationShort as formatLocalizedDurationShort,
+  formatDayLabel,
   formatDueAt,
   formatRelative,
   getDuePresets,
@@ -15,6 +16,10 @@ export function fmtDurationMin(mins) {
   const m = Math.floor(mins % 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+export function fmtDay(ts, locale = 'ja-JP', now = Date.now()) {
+  return formatDayLabel(ts, locale, now);
 }
 
 export function fmtDue(ts, locale = 'ja-JP', now = Date.now()) {

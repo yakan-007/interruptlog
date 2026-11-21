@@ -1,5 +1,5 @@
 import { normalizeLocale } from '../domain/locale';
-import { isWorkSchedule, normalizeWorkSchedule } from '../lib/workday';
+import { isWorkSchedule, normalizeWorkDays, normalizeWorkSchedule } from '../lib/workday';
 import { normalizeInterruptDraft } from './pauseEvents';
 import { asArray, asNumber, asPositiveTimestamp, cleanText, clone, isObject, uniqueTexts } from './utils';
 
@@ -21,18 +21,18 @@ const defaultInterruptCats = [
   { id: 'int-other', name: 'その他' },
 ];
 
-// Breaks no longer have categories. Older data carried these built-in break
-// categories (some re-saved as interruptions by an old settings sheet).
-const LEGACY_BREAK_CATEGORY_IDS = new Set(['break-rest', 'break-lunch', 'break-personal']);
+
+// How the task list is ordered: by due date, or by hand with new tasks on
+// top or at the bottom.
+const TASK_ORDERS = ['due', 'top', 'bottom'];
 
 const defaultPreferences = {
   dark: false,
-  accent: 'oklch(0.35 0.03 250)',
   locale: 'ja-JP',
   reportProfile: { affiliation: '', name: '' },
-  topAdd: true,
-  sortDue: false,
+  taskOrder: 'top',
   workSchedule: { start: null, end: null },
+  workDays: [1, 2, 3, 4, 5],
   historyView: 'timeline',
   lastBackupExportAt: null,
   onboardingDone: false,
@@ -88,12 +88,11 @@ export function normalizeState(raw, now = Date.now(), options = {}) {
 function normalizePreferences(raw = {}, options = {}) {
   return {
     dark: Boolean(raw.dark ?? defaultPreferences.dark),
-    accent: cleanText(raw.accent) || defaultPreferences.accent,
     locale: normalizeLocale(raw.locale ?? defaultPreferences.locale),
     reportProfile: normalizeReportProfile(raw.reportProfile),
-    topAdd: Boolean(raw.topAdd ?? defaultPreferences.topAdd),
-    sortDue: Boolean(raw.sortDue ?? defaultPreferences.sortDue),
+    taskOrder: TASK_ORDERS.includes(raw.taskOrder) ? raw.taskOrder : defaultPreferences.taskOrder,
     workSchedule: normalizeWorkSchedule(raw.workSchedule),
+    workDays: normalizeWorkDays(raw.workDays),
     historyView: raw.historyView === 'list' ? 'list' : 'timeline',
     lastBackupExportAt: asPositiveTimestamp(raw.lastBackupExportAt, null),
     onboardingDone: Boolean(raw.onboardingDone ?? options.assumeOnboarded ?? defaultPreferences.onboardingDone),
@@ -112,7 +111,7 @@ function normalizeWorkdaySchedules(raw) {
   return Object.fromEntries(
     Object.entries(raw)
       .filter(([key, schedule]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && isWorkSchedule(schedule))
-      .map(([key, schedule]) => [key, normalizeWorkSchedule(schedule)])
+      .map(([key, schedule]) => [key, schedule.override ? { ...normalizeWorkSchedule(schedule), override: true } : normalizeWorkSchedule(schedule)])
   );
 }
 
@@ -125,8 +124,6 @@ function normalizeTask(task, now) {
     isCompleted: Boolean(task.isCompleted),
     order: asNumber(task.order, 0),
     categoryId: task.categoryId ? String(task.categoryId) : null,
-    sourceTaskId: cleanText(task.sourceTaskId) || null,
-    interruptOriginId: cleanText(task.interruptOriginId) || null,
     planning: {
       plannedDurationMinutes: Math.max(0, asNumber(task.planning?.plannedDurationMinutes, 0) ?? 0),
       dueAt: asPositiveTimestamp(task.planning?.dueAt, null),
@@ -136,25 +133,15 @@ function normalizeTask(task, now) {
   };
 }
 
-// Two former palette colors sat on the interruption orange and the break
-// ochre, so a task chip could read as an interruption or a break.
-const RETIRED_CATEGORY_COLORS = {
-  'oklch(0.60 0.13 35)': 'oklch(0.58 0.12 345)',
-  'oklch(0.62 0.04 80)': 'oklch(0.55 0.03 250)',
-};
-
 export function normalizeCategory(category) {
   if (!isObject(category) || !category.id) return null;
-  const color = String(category.color || 'oklch(0.58 0.08 220)');
   return {
     id: String(category.id),
     name: cleanText(category.name) || 'カテゴリ',
-    color: RETIRED_CATEGORY_COLORS[color] ?? color,
+    color: String(category.color || 'oklch(0.58 0.08 220)'),
   };
 }
 
-// Interruption categories are just names; older data also stored an icon,
-// a kind and a break duration, which nothing uses any more.
 export function normalizeInterruptCategory(category) {
   if (!isObject(category) || !category.id) return null;
   return {
@@ -178,8 +165,6 @@ export function normalizeEvent(event) {
     memo: cleanText(event.memo),
     workDetail: cleanText(event.workDetail) || null,
     who: cleanText(event.who),
-    sourceTaskId: cleanText(event.sourceTaskId) || null,
-    interruptOriginId: cleanText(event.interruptOriginId) || null,
     start,
     end,
   };
@@ -189,41 +174,22 @@ function normalizeRunning(running, taskIds) {
   if (!isObject(running) || !running.type || running.start == null) return null;
   if (running.type === 'task' && (!running.taskId || !taskIds.has(running.taskId))) return null;
   if (!['task', 'interrupt', 'break'].includes(running.type)) return null;
-  const resumeStack = normalizeResumeStack(running.resumeStack, taskIds, running.preTaskId);
   return {
     type: running.type,
     taskId: running.taskId ?? null,
     start: asNumber(running.start, null),
     label: running.label ?? null,
-    preTaskId: resumeStack.slice().reverse().find((context) => context.type === 'task')?.taskId ?? null,
-    resumeStack,
+    returnTaskId: running.type !== 'task' && taskIds.has(running.returnTaskId) ? String(running.returnTaskId) : null,
     categoryId: cleanText(running.categoryId) || cleanText(running.draft?.categoryId) || null,
     draft: running.type === 'interrupt' ? normalizeInterruptDraft(running.draft) : null,
   };
 }
 
 function normalizeInterruptCategoryList(raw) {
-  const categories = asArray(raw)
-    .filter((category) => category?.kind !== 'break' && !LEGACY_BREAK_CATEGORY_IDS.has(category?.id))
-    .map(normalizeInterruptCategory)
-    .filter(Boolean);
+  const categories = asArray(raw).map(normalizeInterruptCategory).filter(Boolean);
   return categories.length ? categories : clone(defaultInterruptCats);
 }
 
-function normalizeResumeStack(raw, taskIds, legacyPreTaskId) {
-  const source = Array.isArray(raw)
-    ? raw
-    : legacyPreTaskId ? [{ type: 'task', taskId: legacyPreTaskId }] : [];
-  const taskContexts = source.flatMap((context) => {
-    if (!isObject(context)) return [];
-    if (context.type === 'task' && context.taskId && taskIds.has(context.taskId)) {
-      return [{ type: 'task', taskId: String(context.taskId) }];
-    }
-    return [];
-  });
-  const nearestTask = taskContexts.at(-1);
-  return nearestTask ? [nearestTask] : [];
-}
 
 function resolveOpenEvents(events, running, now = Date.now()) {
   return events.map((event) => {

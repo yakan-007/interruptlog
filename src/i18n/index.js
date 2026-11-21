@@ -17,7 +17,7 @@ const ERROR_MESSAGE_PATHS = {
 
 export { LOCALES, normalizeLocale, SUPPORTED_LOCALES };
 export { categoryLabel, interruptCategoryLabel } from './taxonomy.js';
-export { formatDate, formatDateHeader, formatDateTime, formatDueAt, formatDuration, formatDurationShort, formatRelative, getDuePresets } from './formatters.js';
+export { formatDate, formatDateHeader, formatDateTime, formatDayLabel, formatDueAt, formatDuration, formatDurationShort, formatRelative, getDuePresets } from './formatters.js';
 
 export function t(locale, path) {
   const parts = path.split('.');

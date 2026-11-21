@@ -233,3 +233,61 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* Forecast sheet: what "usual" was computed from, then one row per task. */
+.il-forecast-basis {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.il-forecast-list {
+  background: var(--bg-elevated);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+}
+
+.il-forecast-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  padding: 11px 14px;
+}
+
+.il-forecast-row + .il-forecast-row {
+  border-top: 0.5px solid var(--hair);
+}
+
+.il-forecast-row .name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.il-forecast-row .target {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.il-forecast-row .due {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.il-forecast-row.late .target,
+.il-forecast-row.late .due strong {
+  color: var(--urg-high);
+}
+
+.il-forecast-note {
+  margin-top: 12px;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}

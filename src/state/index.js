@@ -80,7 +80,9 @@ export {
   clearTodayWorkdayEndInState,
   getEffectiveWorkdaySchedule,
   getWorkdayBounds,
+  isWorkingDay,
   setTodayWorkdayEndInState,
+  setWorkDaysInState,
   setWorkScheduleInState,
 } from './workday';
 

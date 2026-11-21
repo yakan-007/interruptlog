@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { t, tx } from '../../i18n';
 import { fmtDurationShort } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
+import { isWorkSchedule } from '../../lib/workday';
+import { buildForecast } from '../../features/forecast/forecast';
+import { fmtDay } from '../../lib/formatters';
 import { partitionCompletedTasks, selectForgottenTimer, selectWorkdayStatus } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import { ActiveTaskList, CompletedTaskSections } from './TaskLists';
@@ -18,6 +21,13 @@ export default function LogScreen({ state, actions }) {
     [state.completedTasks, now]
   );
   const workdayStatus = selectWorkdayStatus(state, now);
+  // Recomputed once a minute; the timer ticks every second.
+  const minute = Math.floor(now / 60000);
+  const forecast = useMemo(
+    () => buildForecast(state, minute * 60000),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `state` changes every render; these are what the forecast reads.
+    [state.tasks, state.events, state.preferences, state.workdaySchedules, minute]
+  );
   const forgottenTimer = selectForgottenTimer(state, now);
 
   return (
@@ -29,7 +39,9 @@ export default function LogScreen({ state, actions }) {
             ? workdayStatus.afterEnd
               ? tx(locale, 'log.workdayAfterEnd', workdayStatus.schedule.end)
               : tx(locale, 'log.workdayUntil', { time: workdayStatus.schedule.end, remaining: fmtDurationShort(workdayStatus.remainingMs, locale) })
-            : t(locale, 'log.workdayUnset')}
+            : isWorkSchedule(state.preferences.workSchedule)
+              ? t(locale, 'log.workdayOff')
+              : t(locale, 'log.workdayUnset')}
         </button>
       </div>
 
@@ -40,15 +52,20 @@ export default function LogScreen({ state, actions }) {
             <button type="button" onClick={() => actions.openSheet('stopAt')}>{t(locale, 'log.forgottenTimerAction')}</button>
           </div>
         )}
-        {workdayStatus?.overflowMs > 0 && (
-          <div className="il-workday-overflow">{tx(locale, 'log.workdayOverflow', fmtDurationShort(workdayStatus.overflowMs, locale))}</div>
+        {forecast?.firstLate && (
+          <button type="button" className="il-workday-overflow" onClick={() => actions.openSheet('forecast')}>
+            {tx(locale, 'log.forecastLate', {
+              day: fmtDay(forecast.firstLate.dueAt, locale, now),
+              duration: fmtDurationShort(forecast.firstLate.shortfallMs, locale),
+            })}
+          </button>
         )}
         <div className="il-section-h">
           <span>{t(locale, 'log.title')}</span>
           <span className="count">{state.activeTasks.length}</span>
         </div>
 
-        <ActiveTaskList state={state} actions={actions} categoriesById={categoriesById} now={now} />
+        <ActiveTaskList state={state} actions={actions} categoriesById={categoriesById} now={now} forecast={forecast} />
         <CompletedTaskSections state={state} actions={actions} categoriesById={categoriesById} completed={completed} now={now} />
         <div className="il-log-bottomspace" />
       </div>

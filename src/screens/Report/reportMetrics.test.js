@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { calculateRangeStats, calcStats, createEmptyState, createReportSnapshot, getRangeBounds, selectRangeEvents, setWorkScheduleInState } from '../../state';
 import { buildReportMetrics } from '../../features/report/buildReportMetrics';
+import { buildHourlyInterrupts } from '../../features/report/interruptionMetrics';
 
 const at = (hour, minute = 0, second = 0) => new Date(2026, 4, 11, hour, minute, second).getTime();
 
 describe('workday report metrics', () => {
-  it('splits task and interruption time at workday boundaries and groups reactive follow-up work', () => {
+  it('splits task and interruption time at workday boundaries', () => {
     const state = {
       ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '17:00' }),
       events: [
         { id: 'task-early', type: 'task', taskId: 'task-1', label: '準備', start: at(8, 30), end: at(9, 30) },
         { id: 'interrupt', type: 'interrupt', label: '電話', categoryId: 'int-call', start: at(16, 30), end: at(17, 30) },
-        { id: 'followup', type: 'task', taskId: 'task-2', interruptOriginId: 'interrupt', label: '後続対応', start: at(17, 30), end: at(18) },
+        { id: 'followup', type: 'task', taskId: 'task-2', label: '後続対応', start: at(17, 30), end: at(18) },
       ],
     };
     const bounds = { since: at(0), until: at(23, 59) };
@@ -20,9 +21,8 @@ describe('workday report metrics', () => {
 
     expect(metrics.workday).toMatchObject({
       inside: { task: 30 * 60000, interrupt: 30 * 60000 },
-      beforeStart: { task: 30 * 60000, interrupt: 0 },
-      afterEnd: { task: 30 * 60000, interrupt: 30 * 60000 },
-      reactive: { direct: 60 * 60000, followup: 30 * 60000, total: 90 * 60000 },
+      overtime: { task: 60 * 60000, interrupt: 30 * 60000 },
+      holiday: { task: 0, interrupt: 0 },
     });
     expect(metrics.dayActivity.interruptions[0].categoryName).toBe('電話');
   });
@@ -135,5 +135,46 @@ describe('daily print data', () => {
 
     expect(dailyReport.completedTasks).toEqual([]);
     expect(dailyReport.incompleteTasks.map((task) => task.id)).toEqual(['task-1']);
+  });
+});
+
+describe('hourly interruptions', () => {
+  it('counts interruptions per hour over the work hours, widened to any hour that had one', () => {
+    const at = (hour, minute = 0) => new Date(2026, 10, 20, hour, minute).getTime();
+    const events = [
+      { type: 'interrupt', clippedStart: at(7, 50) },
+      { type: 'interrupt', clippedStart: at(10, 5) },
+      { type: 'interrupt', clippedStart: at(10, 40) },
+      { type: 'task', clippedStart: at(11) },
+    ];
+
+    const hourly = buildHourlyInterrupts(events, { start: '09:00', end: '17:30' });
+
+    expect(hourly.firstHour).toBe(7);
+    expect(hourly.counts).toHaveLength(11);
+    expect(hourly.counts[0]).toBe(1);
+    expect(hourly.counts[3]).toBe(2);
+    expect(buildHourlyInterrupts([], null)).toEqual({ firstHour: 9, counts: Array(9).fill(0) });
+  });
+});
+
+describe('overtime and holiday work', () => {
+  it('counts work outside the hours as overtime and any work on a day off as holiday work over a week', () => {
+    const day = (date, hour, minute = 0) => new Date(2026, 10, date, hour, minute).getTime();
+    const state = {
+      ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '18:00' }),
+      events: [
+        { id: 'mon', type: 'task', taskId: 't', label: '月曜', start: day(16, 17), end: day(16, 19) },
+        { id: 'sat', type: 'task', taskId: 't', label: '土曜', start: day(21, 10), end: day(21, 12) },
+        { id: 'sat-call', type: 'interrupt', label: '電話', start: day(21, 12), end: day(21, 12, 30) },
+      ],
+    };
+    const bounds = { since: day(16, 0), until: day(23, 0) };
+    const stats = calcStats(state.events, bounds.since, bounds.until, bounds.until);
+    const metrics = buildReportMetrics(state, stats, bounds, bounds.until);
+
+    expect(metrics.workday.inside.task).toBe(60 * 60000);
+    expect(metrics.workday.overtime.task).toBe(60 * 60000);
+    expect(metrics.workday.holiday).toEqual({ task: 120 * 60000, interrupt: 30 * 60000 });
   });
 });

@@ -21,8 +21,8 @@ import {
 export function buildReportMetrics(state, currentStats, bounds, now, snapshot = null) {
   const facts = snapshot ?? createReportSnapshot(state, now);
   const total = currentStats.focus + currentStats.interrupt + currentStats.break || 1;
-  const hourly = buildHourlyInterrupts(currentStats.events);
-  const maxHourly = Math.max(...hourly, 1);
+  const hourly = buildHourlyInterrupts(currentStats.events, state.preferences.workSchedule);
+  const maxHourly = Math.max(...hourly.counts, 1);
   const locale = state.preferences.locale;
   const dayStats = buildDayStats(facts, now, locale);
   const maxDay = Math.max(...dayStats.map((day) => day.focus + day.interrupt), 1);
@@ -38,9 +38,8 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
   const dailyReport = buildDailyReportData(currentStats, bounds, taskEngagement, dayActivity);
   const workday = buildWorkdayReport(state, currentStats.events, bounds, now);
   const microInterruptions = buildMicroInterruptionStats(currentStats.events);
-  const peakHour = hourly.indexOf(Math.max(...hourly));
-  const quietHour = hourly.indexOf(Math.min(...hourly));
-  const hasInterruptTrend = hourly.some((value) => value >= 60000);
+  const peakHour = hourly.firstHour + hourly.counts.indexOf(Math.max(...hourly.counts));
+  const hasInterruptTrend = hourly.counts.some((count) => count > 0);
 
   return {
     total,
@@ -53,7 +52,6 @@ export function buildReportMetrics(state, currentStats, bounds, now, snapshot = 
     categoryList,
     totalCategoryTime,
     peakHour,
-    quietHour,
     hasInterruptTrend,
     taskEngagement,
     dayActivity,

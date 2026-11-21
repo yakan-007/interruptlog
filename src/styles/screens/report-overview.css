@@ -93,24 +93,6 @@
 .il-workday-line.emphatic .label,
 .il-workday-line.emphatic strong { color: color-mix(in oklch, var(--interrupt) 70%, var(--ink) 30%); }
 
-.il-workday-reactive {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 10px;
-  border-top: 0.5px solid var(--hair);
-  padding-top: 10px;
-  color: var(--interrupt);
-  font-size: var(--text-sm);
-  font-weight: 700;
-}
-
-.il-workday-reactive .meta {
-  grid-column: 1 / -1;
-  color: var(--ink-3);
-  font-size: var(--text-xs);
-  font-weight: 500;
-}
-
 .il-report-emptytrend {
   margin-top: 10px;
   padding: 10px 12px;

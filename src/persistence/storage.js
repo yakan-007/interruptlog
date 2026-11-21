@@ -1,4 +1,4 @@
-import { LEGACY_STATE_KEYS, STATE_KEY } from '../constants';
+import { STATE_KEY } from '../constants';
 
 function canUseLocalStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -26,7 +26,6 @@ function writeLocalJson(key, value) {
 }
 
 async function loadPersistedState() {
-  removeLegacyState();
   return readLocalState(STATE_KEY);
 }
 
@@ -65,8 +64,3 @@ export const browserStateStorage = Object.freeze({
   clear: clearPersistedState,
   subscribe: subscribeToOtherTabs,
 });
-
-function removeLegacyState() {
-  if (!canUseLocalStorage()) return;
-  for (const key of LEGACY_STATE_KEYS) window.localStorage.removeItem(key);
-}

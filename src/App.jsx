@@ -8,6 +8,7 @@ import {
   AddMissedSheet,
   AddTaskSheet,
   ConfirmStopSheet,
+  ForecastSheet,
   StopAtSheet,
   PauseSheet,
   RepairOverlapsSheet,
@@ -140,8 +141,9 @@ export default function App() {
             )}
             {toast && <div className="il-toast">{Icons.check(14)} {toast}</div>}
 
-            {activeSheet === 'pause' && <PauseSheet key={`${state.running?.start ?? 'pause'}-${state.running?.resumeStack?.length ?? 0}`} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={state.running?.draft} />}
+            {activeSheet === 'pause' && <PauseSheet key={state.running?.start ?? 'pause'} state={state} actions={actions} onClose={closeSheet} onDraftChange={updateInterruptDraft} initialDraft={state.running?.draft} />}
             {activeSheet === 'confirmStop' && <ConfirmStopSheet state={state} actions={actions} onClose={closeSheet} />}
+            {activeSheet === 'forecast' && <ForecastSheet state={state} onClose={closeSheet} />}
             {activeSheet === 'stopAt' && <StopAtSheet state={state} actions={actions} onClose={closeSheet} onBack={activeSheetArg?.returnSheet ? () => restoreSheet(activeSheetArg.returnSheet) : undefined} />}
             {activeSheet === 'addTask' && (
               <AddTaskSheet

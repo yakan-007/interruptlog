@@ -1,13 +1,13 @@
 import { getRangeBounds } from './reports';
-import { calculateRangeStats, createReportSnapshot, selectRangeEvents } from './reportFacts';
+import { calculateRangeStats, createReportSnapshot } from './reportFacts';
 import { getWorkdayBounds } from './workday';
+import { startOfDay } from '../lib/day';
+import { compareByDueDate, LIKELY_FORGOTTEN_MS } from '../domain/records';
 
 export function selectActiveTasks(state) {
   return state.tasks
     .filter((task) => !task.isCompleted)
-    .sort((a, b) => (state.preferences.sortDue
-      ? (a.planning?.dueAt ?? Infinity) - (b.planning?.dueAt ?? Infinity) || a.order - b.order
-      : a.order - b.order));
+    .sort((a, b) => (state.preferences.taskOrder === 'due' ? compareByDueDate(a, b) : a.order - b.order));
 }
 
 export function selectCompletedTasks(state) {
@@ -71,40 +71,19 @@ export function selectTaskPriorSpentMs(state, taskId) {
     .reduce((sum, event) => sum + (event.end - event.start), 0);
 }
 
+// Today's work hours as shown in the Tasks header. Whether tasks fit before
+// their due dates is the forecast's job (features/forecast).
 export function selectWorkdayStatus(state, now = Date.now()) {
   const bounds = getWorkdayBounds(state, now);
   if (!bounds) return null;
-
-  const spentByTask = new Map();
-  for (const event of selectRangeEvents(createReportSnapshot(state, now), Number.NEGATIVE_INFINITY, now)) {
-    if (event.type !== 'task' || !event.taskId) continue;
-    spentByTask.set(event.taskId, (spentByTask.get(event.taskId) ?? 0) + event.durationMs);
-  }
-
-  const commitments = state.tasks
-    .filter((task) => !task.isCompleted)
-    .filter((task) => (task.planning?.plannedDurationMinutes ?? 0) > 0)
-    .filter((task) => task.planning?.dueAt != null && task.planning.dueAt <= bounds.end)
-    .map((task) => {
-      const spentMs = spentByTask.get(task.id) ?? 0;
-      const estimatedMs = task.planning.plannedDurationMinutes * 60000;
-      return { taskId: task.id, remainingMs: Math.max(0, estimatedMs - spentMs) };
-    });
-  const estimateRemainingMs = commitments.reduce((sum, item) => sum + item.remainingMs, 0);
-  const remainingMs = Math.max(0, bounds.end - Math.max(now, bounds.start));
-
   return {
     ...bounds,
-    commitmentCount: commitments.length,
-    estimateRemainingMs,
-    remainingMs,
-    overflowMs: Math.max(0, estimateRemainingMs - remainingMs),
+    remainingMs: Math.max(0, bounds.end - Math.max(now, bounds.start)),
     afterEnd: now >= bounds.end,
   };
 }
 
 const FORGOTTEN_AFTER_WORKDAY_MS = 30 * 60000;
-const FORGOTTEN_LONG_RUN_MS = 4 * 3600000;
 
 // A timer that has probably been left running. Inside a work schedule, long
 // focused stretches are normal, so only running well past that day's work end
@@ -118,7 +97,7 @@ export function selectForgottenTimer(state, now = Date.now()) {
   if (bounds && running.start < bounds.end) {
     return now >= bounds.end + FORGOTTEN_AFTER_WORKDAY_MS ? { elapsedMs, suggestedEnd: bounds.end } : null;
   }
-  if (elapsedMs >= FORGOTTEN_LONG_RUN_MS) return { elapsedMs, suggestedEnd: null };
+  if (elapsedMs >= LIKELY_FORGOTTEN_MS) return { elapsedMs, suggestedEnd: null };
   return null;
 }
 
@@ -141,8 +120,3 @@ export function selectReportInputs(state, range, now = Date.now(), snapshot = nu
   };
 }
 
-function startOfDay(ts) {
-  const date = new Date(ts);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}

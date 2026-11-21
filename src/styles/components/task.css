@@ -206,12 +206,6 @@
   border: 1px solid color-mix(in oklch, var(--task-cat, var(--accent)) 22%, transparent);
 }
 
-.il-taskcard .interrupt-origin {
-  color: color-mix(in oklch, var(--interrupt) 76%, var(--ink) 24%);
-  background: color-mix(in oklch, var(--interrupt) 10%, var(--bg-elevated));
-  border-color: color-mix(in oklch, var(--interrupt) 28%, var(--hair));
-}
-
 /* The task an interruption or break will go back to. Neutral, dashed like the
    "戻り先" box in the pause sheet. */
 .il-taskcard .resume-waiting {
@@ -323,4 +317,9 @@
 .il-task-action.secondary {
   background: var(--bg-sunken);
   color: var(--ink-2);
+}
+
+.il-taskcard .il-meta-plan {
+  margin-top: 3px;
+  gap: 10px;
 }

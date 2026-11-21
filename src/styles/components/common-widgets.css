@@ -150,6 +150,10 @@
 
 .il-vchart > div {
   flex: 1;
+  /* Each column fills the chart height; otherwise the bars' percentage
+     heights resolve against nothing and every bar collapses to 2px. */
+  align-self: stretch;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -173,3 +177,5 @@
 }
 
 .il-vchart .lbl.hot { color: var(--interrupt); font-weight: 700; }
+.il-vchart .bar.hot { background: var(--interrupt); }
+.il-vchart .lbl { min-height: 12px; }

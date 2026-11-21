@@ -28,7 +28,7 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
     showToast: toast,
     ...createPassthroughActions({ app, closeSheet }),
     moveTaskToIndex(taskId, targetIndex) {
-      const sortedByDue = app.state.preferences.sortDue;
+      const sortedByDue = app.state.preferences.taskOrder === 'due';
       const shown = selectActiveTasks(app.state).map((task) => task.id);
       const from = shown.indexOf(taskId);
       const to = Math.max(0, Math.min(shown.length - 1, targetIndex));
@@ -142,9 +142,9 @@ function createPassthroughActions({ app, closeSheet }) {
       'moveChipToIndex',
       'setDark',
       'setLocale',
-      'setTopAdd',
-      'setSortDue',
+      'setTaskOrder',
       'setWorkSchedule',
+      'setWorkDays',
       'setTodayWorkdayEnd',
       'clearTodayWorkdayEnd',
       'setHistoryView',

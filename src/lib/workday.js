@@ -30,6 +30,15 @@ export function normalizeWorkSchedule(value) {
   };
 }
 
+// Weekdays (0 = Sunday) that are working days. Monday to Friday by default.
+export const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
+
+export function normalizeWorkDays(value) {
+  if (!Array.isArray(value)) return [...DEFAULT_WORK_DAYS];
+  return [...new Set(value.map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6))].sort();
+}
+
+
 export function workdayKey(timestamp = Date.now()) {
   const date = new Date(timestamp);
   const year = date.getFullYear();

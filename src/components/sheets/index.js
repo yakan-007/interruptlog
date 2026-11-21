@@ -2,6 +2,7 @@ export { default as AddMissedSheet } from './AddMissedSheet';
 export { default as AddTaskSheet } from './AddTaskSheet';
 export { default as WorkdayEndSheet } from './WorkdayEndSheet';
 export { default as ConfirmStopSheet } from './ConfirmStopSheet';
+export { default as ForecastSheet } from './ForecastSheet';
 export { default as PauseSheet } from './PauseSheet';
 export { default as RepairOverlapsSheet } from './RepairOverlapsSheet';
 export { default as ResolveEventSheet } from './ResolveEventSheet';

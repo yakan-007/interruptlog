@@ -22,7 +22,7 @@ describe('pause sheet', () => {
   it('switches from an interruption to a break from now', async () => {
     const user = userEvent.setup();
     const state = createEmptyState();
-    state.running = { type: 'interrupt', start: Date.now() - 30_000, draft: { categoryId: 'int-chat' }, resumeStack: [] };
+    state.running = { type: 'interrupt', start: Date.now() - 30_000, draft: { categoryId: 'int-chat' } };
     const actions = baseActions();
 
     render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} initialDraft={{ categoryId: 'int-chat' }} />);
@@ -39,7 +39,7 @@ describe('pause sheet', () => {
   it('switches from a break to an interruption from now', async () => {
     const user = userEvent.setup();
     const state = createEmptyState();
-    state.running = { type: 'break', start: Date.now() - 30_000, categoryId: 'break-lunch', resumeStack: [] };
+    state.running = { type: 'break', start: Date.now() - 30_000, categoryId: 'break-lunch' };
     const actions = baseActions();
 
     render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} />);
@@ -54,7 +54,7 @@ describe('pause sheet', () => {
   it('re-labels the timer from the category row, including break', async () => {
     const user = userEvent.setup();
     const state = createEmptyState();
-    state.running = { type: 'interrupt', start: new Date(2026, 10, 18, 10, 2).getTime(), draft: { categoryId: 'int-chat' }, resumeStack: [] };
+    state.running = { type: 'interrupt', start: new Date(2026, 10, 18, 10, 2).getTime(), draft: { categoryId: 'int-chat' } };
     const actions = { ...baseActions(), setPauseKind: vi.fn(), selectPauseCategory: vi.fn() };
 
     const { rerender } = render(<PauseSheet state={state} actions={actions} onClose={vi.fn()} onDraftChange={vi.fn()} />);

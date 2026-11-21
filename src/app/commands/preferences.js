@@ -12,6 +12,7 @@ import {
   setPreferenceInState,
   setReportProfileInState,
   setTodayWorkdayEndInState,
+  setWorkDaysInState,
   setWorkScheduleInState,
 } from '../../state';
 
@@ -32,11 +33,11 @@ export function createPreferenceCommands({ createId, mutate, mutateWith, now, se
     moveChipToIndex: mutateWith(moveChipToIndexInState),
     setDark: setPreference('dark'),
     setLocale: setPreference('locale'),
-    setTopAdd: setPreference('topAdd'),
-    setSortDue: setPreference('sortDue'),
+    setTaskOrder: setPreference('taskOrder'),
     setHistoryView: setPreference('historyView'),
     setReportProfile: mutateWith(setReportProfileInState),
     setWorkSchedule: mutateWith(setWorkScheduleInState),
+    setWorkDays: mutateWith(setWorkDaysInState),
     setTodayWorkdayEnd: (end) => mutate((state) => setTodayWorkdayEndInState(state, end, now())),
     clearTodayWorkdayEnd: () => mutate((state) => clearTodayWorkdayEndInState(state, now())),
     finishOnboarding: () => mutate((state) => setPreferenceInState(state, 'onboardingDone', true)),

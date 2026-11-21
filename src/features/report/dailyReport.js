@@ -1,5 +1,6 @@
 import { categoryLabel, interruptCategoryLabel } from '../../i18n';
 import { createReportSnapshot, getWorkdayBounds, selectRangeEvents } from '../../state';
+import { addDays } from '../../lib/day';
 
 const SOON_DAYS = 3;
 const TOP_INTERRUPTIONS = 5;
@@ -230,8 +231,3 @@ function sumTime(items) {
   return items.reduce((total, item) => total + item.time, 0);
 }
 
-function addDays(timestamp, days) {
-  const date = new Date(timestamp);
-  date.setDate(date.getDate() + days);
-  return date.getTime();
-}

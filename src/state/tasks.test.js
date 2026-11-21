@@ -18,7 +18,7 @@ import { at } from '../test/factories';
 import { ERROR_CODES } from '../domain/errors';
 
 describe('personal tasks', () => {
-  it('calculates remaining committed estimate and overflow against today’s end time', () => {
+  it('reports the time left until today’s end', () => {
     const state = {
       ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '12:00' }),
       tasks: [{
@@ -34,8 +34,8 @@ describe('personal tasks', () => {
     const atTen = selectWorkdayStatus(state, at(11, 10));
     const atLate = selectWorkdayStatus(state, at(11, 11, 30));
 
-    expect(atTen).toMatchObject({ commitmentCount: 1, estimateRemainingMs: 90 * 60000, remainingMs: 120 * 60000, overflowMs: 0 });
-    expect(atLate).toMatchObject({ estimateRemainingMs: 90 * 60000, remainingMs: 30 * 60000, overflowMs: 60 * 60000 });
+    expect(atTen).toMatchObject({ remainingMs: 120 * 60000, afterEnd: false });
+    expect(atLate).toMatchObject({ remainingMs: 30 * 60000, afterEnd: false });
   });
 
   it('clamps report stats to the selected range', () => {
@@ -148,14 +148,14 @@ describe('personal tasks', () => {
     const task = (id, order, dueAt) => ({ id, name: id, isCompleted: false, order, categoryId: null, planning: { plannedDurationMinutes: 0, dueAt }, createdAt: 0, completedAt: null });
     const state = {
       ...createEmptyState(),
-      preferences: { ...createEmptyState().preferences, sortDue: true },
+      preferences: { ...createEmptyState().preferences, taskOrder: 'due' },
       tasks: [task('a', 0, 3000), task('b', 1, 1000), task('c', 2, 2000)],
     };
 
     expect(selectActiveTasks(state).map((item) => item.id)).toEqual(['b', 'c', 'a']);
     const moved = moveTaskToIndexInState(state, 'a', 0);
 
-    expect(moved.preferences.sortDue).toBe(false);
+    expect(moved.preferences.taskOrder).toBe('top');
     expect(selectActiveTasks(moved).map((item) => item.id)).toEqual(['a', 'b', 'c']);
   });
 
@@ -213,7 +213,7 @@ describe('personal tasks', () => {
   it('ends the running pause and starts the new task on create-and-start', () => {
     const state = {
       ...createEmptyState(),
-      running: { type: 'interrupt', taskId: null, start: 4000, label: '割り込み中', preTaskId: null, draft: { label: '電話の件' } },
+      running: { type: 'interrupt', taskId: null, start: 4000, label: '割り込み中', draft: { label: '電話の件' } },
     };
     const result = createTaskAndStartInState(state, { name: 'すぐ切り替える', categoryId: 'cat-dev', plannedDurationMinutes: 10 }, 5000);
 

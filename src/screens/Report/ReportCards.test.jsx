@@ -63,7 +63,7 @@ describe('personal report cards', () => {
     const { container } = render(
       <>
         <BreakdownCard currentStats={{ focus: 0, interrupt: 0, break: 0 }} recordedTotal={0} total={1} locale="ja-JP" />
-        <HourlyInterruptsCard hasInterruptTrend={false} hourly={Array(12).fill(0)} maxHourly={1} peakHour={0} quietHour={0} locale="ja-JP" />
+        <HourlyInterruptsCard hasInterruptTrend={false} hourly={{ firstHour: 9, counts: Array(9).fill(0) }} maxHourly={1} peakHour={9} locale="ja-JP" />
         <WeekdayTrendCard locale="ja-JP" maxDay={1} dayStats={[{ day: '月', focus: 0, interrupt: 0 }]} />
       </>,
     );
@@ -82,11 +82,10 @@ describe('personal report cards', () => {
         <WorkdayCard locale="ja-JP" workday={{
           schedule: { start: '09:00', end: '17:00' },
           inside: { task: hour, interrupt: 30 * 60 * 1000 },
-          beforeStart: { task: 0, interrupt: 0 },
-          afterEnd: { task: 0, interrupt: 0 },
-          reactive: { total: 30 * 60 * 1000, direct: 10 * 60 * 1000, followup: 20 * 60 * 1000 },
+          overtime: { task: 0, interrupt: 0 },
+          holiday: { task: 0, interrupt: 0 },
         }} />
-        <HourlyInterruptsCard hasInterruptTrend hourly={[0, 30 * 60 * 1000]} maxHourly={30 * 60 * 1000} peakHour={1} quietHour={0} locale="ja-JP" />
+        <HourlyInterruptsCard hasInterruptTrend hourly={{ firstHour: 9, counts: [0, 3, 1] }} maxHourly={3} peakHour={10} locale="ja-JP" />
         <MicroInterruptionsCard locale="ja-JP" stats={{
           interruptCount: 3,
           totalMs: 50_000,
@@ -126,7 +125,9 @@ describe('personal report cards', () => {
 
     expect(screen.getByText('時間の内訳')).toBeTruthy();
     expect(screen.getByText('基本の作業時間')).toBeTruthy();
-    expect(screen.getByText('時間帯別の割り込み')).toBeTruthy();
+    expect(screen.getByText('時間帯別の割り込み回数')).toBeTruthy();
+    expect(screen.getByText('10時台')).toBeTruthy();
+    expect(screen.getByLabelText('10時台 3件')).toBeTruthy();
     expect(screen.getByText('短時間割り込み')).toBeTruthy();
     expect(screen.getByText('主な発信者')).toBeTruthy();
     expect(screen.getByText('完了タスク')).toBeTruthy();

@@ -20,9 +20,7 @@ describe('personal preferences', () => {
       subjectChips: [],
       preferences: {
         dark: false,
-        accent: createEmptyState().preferences.accent,
-        topAdd: true,
-        sortDue: false,
+        taskOrder: 'top',
         showTodayStrip: true,
         historyView: 'timeline',
       },

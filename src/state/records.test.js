@@ -214,7 +214,7 @@ describe('personal records and resolution', () => {
       ...createEmptyState(),
       tasks: [
         { id: 'task-a', name: '元のタスク', isCompleted: false, order: 0, categoryId: 'cat-dev', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
-        { id: 'task-b', name: '実際にした作業', isCompleted: false, order: 1, categoryId: 'cat-doc', interruptOriginId: 'origin-event', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
+        { id: 'task-b', name: '実際にした作業', isCompleted: false, order: 1, categoryId: 'cat-doc', planning: { plannedDurationMinutes: 0, dueAt: null }, createdAt: 0, completedAt: null },
       ],
       events: [{ id: 'work', type: 'task', taskId: 'task-a', label: '元のタスク', categoryId: 'cat-dev', start: at(11, 9), end: at(11, 10) }],
     };
@@ -231,7 +231,7 @@ describe('personal records and resolution', () => {
     expect(saved.errorCode).toBeNull();
     expect(saved.state.tasks.map((task) => task.name)).toEqual(['元のタスク', '実際にした作業']);
     expect(saved.state.events).toEqual([expect.objectContaining({
-      id: 'work', taskId: 'task-b', label: '実際にした作業', categoryId: 'cat-doc', interruptOriginId: 'origin-event', workDetail: '構成を検討',
+      id: 'work', taskId: 'task-b', label: '実際にした作業', categoryId: 'cat-doc', workDetail: '構成を検討',
     })]);
   });
 
@@ -283,7 +283,7 @@ describe('personal records and resolution', () => {
       id: saved.taskId, name: '請求書の確認', categoryId: 'cat-adm', isCompleted: true, completedAt: at(11, 14),
     })]);
     expect(saved.state.events).toEqual([expect.objectContaining({
-      type: 'task', taskId: saved.taskId, label: '請求書の確認', interruptOriginId: null, workDetail: '請求書を確認',
+      type: 'task', taskId: saved.taskId, label: '請求書の確認', workDetail: '請求書を確認',
     })]);
   });
 
@@ -359,7 +359,7 @@ describe('personal records and resolution', () => {
     const state = {
       ...createEmptyState(),
       events: [{ id: 'running-task', type: 'task', taskId: 't1', label: '進行中', start: 5000, end: null }],
-      running: { type: 'task', taskId: 't1', start: 5000, label: null, preTaskId: null },
+      running: { type: 'task', taskId: 't1', start: 5000, label: null },
     };
 
     const added = previewAddMissedEventInState(state, { type: 'interrupt', label: '差し込み', start: 5500, end: 6500 }, {}, 6000);
@@ -494,7 +494,7 @@ describe('personal records and resolution', () => {
     state = beginPauseInState(state, 'interrupt', 3000);
     state = beginPauseInState(state, 'break', 4000);
     state = saveBreakInState(state, { resume: true }, 5000);
-    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 5000, resumeStack: [] });
+    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 5000 });
 
     const closedEvents = state.events.filter((event) => event.end !== null).sort((a, b) => a.start - b.start);
     expect(closedEvents.map((event) => `${event.type}:${event.start}-${event.end}`)).toEqual([
@@ -512,7 +512,7 @@ describe('personal records and resolution', () => {
     state = beginPauseInState(state, 'interrupt', 3000);
     state = saveInterruptInState(state, { label: '二件目の電話', resume: true }, 4000);
 
-    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 4000, resumeStack: [] });
+    expect(state.running).toMatchObject({ type: 'task', taskId: started.taskId, start: 4000 });
     expect(state.events.filter((event) => event.end !== null).map((event) => `${event.type}:${event.start}-${event.end}`)).toEqual([
       'task:1000-2000',
       'interrupt:2000-3000',
@@ -545,7 +545,7 @@ describe('personal records and resolution', () => {
       type: 'break',
       categoryId: null,
       start: 3000,
-      preTaskId: started.taskId,
+      returnTaskId: started.taskId,
     });
   });
 
@@ -586,7 +586,7 @@ describe('personal records and resolution', () => {
     const paused = beginPauseInState(started.state, 'interrupt', 2000);
     const asBreak = setPauseKindInState(paused, 'break');
 
-    expect(asBreak.running).toMatchObject({ type: 'break', start: 2000, categoryId: null, preTaskId: started.taskId });
+    expect(asBreak.running).toMatchObject({ type: 'break', start: 2000, categoryId: null, returnTaskId: started.taskId });
     expect(asBreak.events).toHaveLength(1);
 
     const back = setPauseKindInState(asBreak, 'interrupt');

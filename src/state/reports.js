@@ -1,6 +1,7 @@
 import { cleanText, csvCell } from './utils';
 import { buildEventSequenceAnalysis } from './eventAnalysis';
 import { calculateRangeStats, createReportSnapshot } from './reportFacts';
+import { startOfDay } from '../lib/day';
 
 const REPORT_CSV_HEADER = [
   'reportDate',
@@ -15,8 +16,6 @@ const REPORT_CSV_HEADER = [
   'category',
   'categoryId',
   'taskId',
-  'sourceTaskId',
-  'interruptOriginId',
   'who',
   'memo',
   'durationMinutes',
@@ -136,11 +135,6 @@ export function buildWeeklyReview(state, now = Date.now(), snapshot = null) {
   };
 }
 
-function startOfDay(ts) {
-  const date = new Date(ts);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
 
 function prepareReportCsvData(state, range, now, snapshot) {
   const bounds = getRangeBounds(range, now);
@@ -177,8 +171,6 @@ function buildReportCsvRow(event, { context, range, reportDate, timezone }) {
     context.categoryName(event.categoryId),
     event.categoryId ?? '',
     event.taskId ?? '',
-    event.sourceTaskId ?? task?.sourceTaskId ?? '',
-    event.interruptOriginId ?? task?.interruptOriginId ?? '',
     event.who ?? '',
     event.memo ?? task?.memo ?? '',
     (event.durationMs / 60000).toFixed(1),
