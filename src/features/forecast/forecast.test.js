@@ -100,4 +100,23 @@ describe('deadline forecast', () => {
     expect(forecast.pace).toMatchObject({ corrected: true, ratio: 1.5, samples: 3 });
     expect(forecast.byTaskId.get('next')).toMatchObject({ remainingMs: 6 * H, finishAt: at(23, 15), late: false });
   });
+  it('reports a passed due date as missed and still spends the hours on it first', () => {
+    const state = baseState([task('missed', 2, at(23, 9)), task('next', 7, at(23, 18))]);
+    // Monday 10:00: 8h left today; the missed task takes 2h of them.
+    const forecast = buildForecast(state, at(23, 10));
+
+    expect(forecast.byTaskId.get('missed')).toMatchObject({ overdue: true, late: false, shortfallMs: 0 });
+    expect(forecast.byTaskId.get('next')).toMatchObject({ overdue: false, late: true, shortfallMs: H });
+    expect(forecast.firstLate.taskId).toBe('next');
+  });
+
+  it('claims no finish day for a task already past its estimate', () => {
+    const state = baseState(
+      [task('long', 1, at(23, 18))],
+      [{ id: 'spent', type: 'task', taskId: 'long', label: 'long', start: at(23, 9), end: at(23, 10, 30) }],
+    );
+    const forecast = buildForecast(state, at(23, 11));
+
+    expect(forecast.byTaskId.get('long')).toMatchObject({ overrun: true, finishAt: null, remainingMs: 0, late: false });
+  });
 });

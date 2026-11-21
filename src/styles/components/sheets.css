@@ -282,7 +282,9 @@
 }
 
 .il-forecast-row.late .target,
-.il-forecast-row.late .due strong {
+.il-forecast-row.late .due strong,
+.il-forecast-row.overrun .target,
+.il-forecast-row.overdue .due {
   color: var(--urg-high);
 }
 

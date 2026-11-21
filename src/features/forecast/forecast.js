@@ -34,17 +34,24 @@ export function buildForecast(state, now = Date.now()) {
   let cumulativeMs = 0;
   const items = estimated.map((task) => {
     const estimateMs = task.planning.plannedDurationMinutes * 60000 * pace.ratio;
-    const remainingMs = Math.max(0, estimateMs - (spentByTask.get(task.id) ?? 0));
+    const spentMs = spentByTask.get(task.id) ?? 0;
+    const remainingMs = Math.max(0, estimateMs - spentMs);
     cumulativeMs += remainingMs;
-    const finishAt = capacity.finishTimeFor(cumulativeMs);
     const dueAt = task.planning?.dueAt ?? null;
-    const shortfallMs = dueAt == null ? 0 : Math.max(0, cumulativeMs - capacity.availableUntil(dueAt));
+    // A due date already passed is missed, not short: it says nothing about
+    // the hours ahead. The task is still worked first and uses them up.
+    const overdue = dueAt != null && dueAt <= now;
+    const shortfallMs = dueAt == null || overdue ? 0 : Math.max(0, cumulativeMs - capacity.availableUntil(dueAt));
     return {
       taskId: task.id,
       remainingMs,
-      finishAt,
+      // Past its estimate and not done: how much is left is anyone's guess,
+      // so no finish day is claimed for it.
+      overrun: spentMs >= estimateMs,
+      finishAt: spentMs >= estimateMs ? null : capacity.finishTimeFor(cumulativeMs),
       dueAt,
-      late: dueAt != null && shortfallMs > 0,
+      overdue,
+      late: shortfallMs > 0,
       shortfallMs,
     };
   });

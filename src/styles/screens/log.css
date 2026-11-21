@@ -30,6 +30,8 @@
   font-weight: 700;
 }
 
+.il-workday-overflow:disabled { cursor: default; }
+
 .il-forgotten-timer {
   margin: 8px 16px 4px;
   padding: 12px;

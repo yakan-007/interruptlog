@@ -119,14 +119,16 @@ export default function TaskCard({
           {actualSummary}
         </div>
         {/* When it is due and when it should be done read as one line of their own. */}
-        {(hasDueAt || forecast?.finishAt != null) && (
+        {(hasDueAt || forecast?.finishAt != null || forecast?.overrun) && (
           <div className="il-meta il-meta-plan">
             {hasDueAt && (
               <span className={overdue || forecast?.late ? 'danger strong' : 'subtle'}>
                 {tx(locale, overdue ? 'log.overdue' : 'log.due', fmtDue(dueAt, locale, now))}
               </span>
             )}
-            {forecast?.finishAt != null && (
+            {forecast?.overrun ? (
+              <span className="danger">{t(locale, 'log.overrun')}</span>
+            ) : forecast?.finishAt != null && (
               <span className={forecast.late ? 'danger' : 'subtle'}>{tx(locale, 'log.target', fmtDay(forecast.finishAt, locale, now))}</span>
             )}
             {forecast?.late && (

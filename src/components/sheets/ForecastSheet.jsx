@@ -43,14 +43,16 @@ export default function ForecastSheet({ state, onClose }) {
 
           <div className="il-forecast-list">
             {forecast.items.map((item) => (
-              <div key={item.taskId} className={'il-forecast-row' + (item.late ? ' late' : '')}>
+              <div key={item.taskId} className={'il-forecast-row' + (item.late ? ' late' : '') + (item.overdue ? ' overdue' : '') + (item.overrun ? ' overrun' : '')}>
                 <div className="name">{tasksById.get(item.taskId)?.name}</div>
                 <div className="target">
-                  {item.finishAt == null ? t(locale, 'sheets.forecastBeyond') : tx(locale, 'log.target', fmtDay(item.finishAt, locale, now))}
+                  {item.overrun
+                    ? t(locale, 'log.overrun')
+                    : item.finishAt == null ? t(locale, 'sheets.forecastBeyond') : tx(locale, 'log.target', fmtDay(item.finishAt, locale, now))}
                 </div>
                 {item.dueAt != null && (
                   <div className="due">
-                    {tx(locale, 'log.due', fmtDue(item.dueAt, locale, now))}
+                    {tx(locale, item.overdue ? 'log.overdue' : 'log.due', fmtDue(item.dueAt, locale, now))}
                     {item.late && <strong> · {tx(locale, 'log.shortfall', duration(item.shortfallMs))}</strong>}
                   </div>
                 )}

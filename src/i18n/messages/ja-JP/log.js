@@ -30,6 +30,8 @@ log: {
         due: (when) => `期限 ${when}`,
         overdue: (when) => `期限切れ ${when}`,
         target: (day) => `目安 ${day}`,
+        overrun: '見込み超過',
+        overdueCount: (count) => `期限切れ ${count}件`,
         shortfall: (duration) => `${duration} 不足`,
         forecastLate: ({ day, duration }) => `${day}の期限まで ${duration} 足りません`,
         resumeWaiting: '再開待ち',

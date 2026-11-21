@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { t, tx } from '../../i18n';
-import { fmtDurationShort } from '../../lib/formatters';
+import { fmtDay, fmtDurationShort } from '../../lib/formatters';
 import { useTicker } from '../../lib/ticker';
 import { isWorkSchedule } from '../../lib/workday';
 import { buildForecast } from '../../features/forecast/forecast';
-import { fmtDay } from '../../lib/formatters';
 import { partitionCompletedTasks, selectForgottenTimer, selectWorkdayStatus } from '../../state';
 import QuickAddCard from './QuickAddCard';
 import { ActiveTaskList, CompletedTaskSections } from './TaskLists';
@@ -28,6 +27,8 @@ export default function LogScreen({ state, actions }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `state` changes every render; these are what the forecast reads.
     [state.tasks, state.events, state.preferences, state.workdaySchedules, minute]
   );
+  // Missed due dates are known without work hours, so they do not wait for the forecast.
+  const overdueCount = state.activeTasks.filter((task) => task.planning?.dueAt != null && task.planning.dueAt <= now).length;
   const forgottenTimer = selectForgottenTimer(state, now);
 
   return (
@@ -52,12 +53,14 @@ export default function LogScreen({ state, actions }) {
             <button type="button" onClick={() => actions.openSheet('stopAt')}>{t(locale, 'log.forgottenTimerAction')}</button>
           </div>
         )}
-        {forecast?.firstLate && (
-          <button type="button" className="il-workday-overflow" onClick={() => actions.openSheet('forecast')}>
-            {tx(locale, 'log.forecastLate', {
-              day: fmtDay(forecast.firstLate.dueAt, locale, now),
-              duration: fmtDurationShort(forecast.firstLate.shortfallMs, locale),
-            })}
+        {(forecast?.firstLate || overdueCount > 0) && (
+          <button type="button" className="il-workday-overflow" onClick={() => actions.openSheet('forecast')} disabled={!forecast}>
+            {forecast?.firstLate
+              ? tx(locale, 'log.forecastLate', {
+                day: fmtDay(forecast.firstLate.dueAt, locale, now),
+                duration: fmtDurationShort(forecast.firstLate.shortfallMs, locale),
+              })
+              : tx(locale, 'log.overdueCount', overdueCount)}
           </button>
         )}
         <div className="il-section-h">
