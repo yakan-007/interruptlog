@@ -84,6 +84,7 @@ describe('personal report cards', () => {
           inside: { task: hour, interrupt: 30 * 60 * 1000 },
           overtime: { task: 0, interrupt: 0 },
           holiday: { task: 0, interrupt: 0 },
+          workingDays: 1,
         }} />
         <HourlyInterruptsCard hasInterruptTrend hourly={{ firstHour: 9, counts: [0, 3, 1] }} maxHourly={3} peakHour={10} locale="ja-JP" />
         <MicroInterruptionsCard locale="ja-JP" stats={{
@@ -126,6 +127,8 @@ describe('personal report cards', () => {
     expect(screen.getByText('時間の内訳')).toBeTruthy();
     expect(screen.getByText('基本の作業時間')).toBeTruthy();
     expect(screen.getByText('時間帯別の割り込み回数')).toBeTruthy();
+    expect(screen.getByText('時間内')).toBeTruthy();
+    expect(screen.queryByText('休日出勤')).toBeNull();
     expect(screen.getByText('10時台')).toBeTruthy();
     expect(screen.getByLabelText('10時台 3件')).toBeTruthy();
     expect(screen.getByText('短時間割り込み')).toBeTruthy();

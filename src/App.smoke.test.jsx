@@ -365,6 +365,8 @@ describe('App smoke flow', () => {
         ...createEmptyState().preferences,
         onboardingDone: true,
         workSchedule: { start: '00:00', end: '23:59' },
+        // Every day a working day, so "tomorrow" exists whatever day the test runs.
+        workDays: [0, 1, 2, 3, 4, 5, 6],
       },
     }));
 
@@ -373,7 +375,6 @@ describe('App smoke flow', () => {
     await user.click(await screen.findByRole('button', { name: '詳細を開く' }));
 
     expect(await screen.findByText('明日中')).toBeTruthy();
-    expect(screen.getByText('今週末')).toBeTruthy();
     expect(screen.getByText('見積時間')).toBeTruthy();
   });
 

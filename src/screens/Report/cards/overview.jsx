@@ -47,10 +47,15 @@ export function WorkdayCard({ workday, locale = 'ja-JP' }) {
         <h3>{t(locale, 'report.workday')}</h3>
         <div className="il-card-copy">{workday.schedule.start} – {workday.schedule.end}</div>
       </div>
-      <WorkdayLine label={t(locale, 'report.withinWorkday')} task={workday.inside.task} interrupt={workday.inside.interrupt} locale={locale} />
-      <WorkdayLine label={t(locale, 'report.overtime')} task={workday.overtime.task} interrupt={workday.overtime.interrupt} locale={locale} emphatic={overtime > 0} />
-      {holiday > 0 && (
-        <WorkdayLine label={t(locale, 'report.holidayWork')} task={workday.holiday.task} interrupt={workday.holiday.interrupt} locale={locale} emphatic />
+      {/* A day off (or a range of them) has no hours to be inside or past. */}
+      {workday.workingDays > 0 && (
+        <>
+          <WorkdayLine label={t(locale, 'report.withinWorkday')} task={workday.inside.task} interrupt={workday.inside.interrupt} locale={locale} />
+          <WorkdayLine label={t(locale, 'report.overtime')} task={workday.overtime.task} interrupt={workday.overtime.interrupt} locale={locale} emphatic={overtime > 0} />
+        </>
+      )}
+      {(holiday > 0 || workday.workingDays === 0) && (
+        <WorkdayLine label={t(locale, 'report.holidayWork')} task={workday.holiday.task} interrupt={workday.holiday.interrupt} locale={locale} emphatic={holiday > 0} />
       )}
     </div>
   );

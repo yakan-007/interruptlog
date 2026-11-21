@@ -1,6 +1,6 @@
-import { getFridayAtClock, isWorkSchedule, timestampAtClock, timestampAtClockForOffset } from '../lib/workday';
+import { isWorkSchedule, timestampAtClock } from '../lib/workday';
 import { getLocaleConfig, normalizeLocale } from './localeConfig.js';
-import { daysBetween } from '../lib/day.js';
+import { addDays, daysBetween, startOfDay } from '../lib/day.js';
 
 export function formatDate(ts, locale = 'ja-JP', options = {}) {
   return new Intl.DateTimeFormat(normalizeLocale(locale), {
@@ -105,19 +105,52 @@ export function formatRelative(ts, locale = 'ja-JP', nowTs = Date.now()) {
   return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(diff < 0 ? -value : value, unit);
 }
 
-export function getDuePresets(base = new Date(), locale = 'ja-JP', workSchedule = null) {
+// Quick due dates, at the end of working days only: today (while it is a
+// working day and not over), the next working day, and the last working day
+// of this week — or of next week once this week has none left.
+export function getDuePresets(base = new Date(), locale = 'ja-JP', workSchedule = null, workDays = [1, 2, 3, 4, 5]) {
   const ja = locale === 'ja-JP';
   const none = { label: ja ? 'なし' : 'None', value: null };
-  if (!isWorkSchedule(workSchedule)) return [none];
+  if (!isWorkSchedule(workSchedule) || workDays.length === 0) return [none];
 
   const now = base.getTime();
-  const todayEnd = timestampAtClock(now, workSchedule.end);
-  const tomorrow = timestampAtClockForOffset(now, workSchedule.end, 1);
-  const weekend = getFridayAtClock(now, workSchedule.end);
-  return [
-    ...(now < todayEnd ? [{ label: ja ? '今日中' : 'Today', value: todayEnd }] : []),
-    { label: ja ? '明日中' : 'Tomorrow', value: tomorrow },
-    { label: ja ? '今週末' : 'This Friday', value: weekend },
-    none,
-  ];
+  const isWorkday = (timestamp) => workDays.includes(new Date(timestamp).getDay());
+  const endOn = (timestamp) => timestampAtClock(timestamp, workSchedule.end);
+  const nextWorkday = (from) => {
+    for (let offset = 1; offset <= 14; offset += 1) {
+      const day = addDays(from, offset);
+      if (isWorkday(day)) return day;
+    }
+    return null;
+  };
+  // Last working day of the Monday-to-Sunday week that contains `day`.
+  const lastWorkdayOfWeek = (day) => {
+    const sunday = addDays(startOfDay(day), (7 - new Date(day).getDay()) % 7);
+    for (let offset = 0; offset < 7; offset += 1) {
+      const candidate = addDays(sunday, -offset);
+      if (isWorkday(candidate)) return candidate;
+    }
+    return null;
+  };
+
+  const presets = [];
+  if (isWorkday(now) && now < endOn(now)) presets.push({ label: ja ? '今日中' : 'Today', value: endOn(now) });
+
+  const next = nextWorkday(startOfDay(now));
+  const weekday = new Intl.DateTimeFormat(normalizeLocale(locale), { weekday: 'short' }).format(new Date(next));
+  const nextLabel = daysBetween(now, next) === 1
+    ? (ja ? '明日中' : 'Tomorrow')
+    : (ja ? `${weekday}曜中` : `By ${weekday}`);
+  presets.push({ label: nextLabel, value: endOn(next) });
+
+  const thisWeekEnd = lastWorkdayOfWeek(now);
+  if (thisWeekEnd != null && daysBetween(next, thisWeekEnd) > 0) {
+    presets.push({ label: ja ? '今週末' : 'End of week', value: endOn(thisWeekEnd) });
+  } else {
+    const nextWeekEnd = lastWorkdayOfWeek(addDays(startOfDay(now), 7));
+    if (nextWeekEnd != null && daysBetween(next, nextWeekEnd) > 0) {
+      presets.push({ label: ja ? '来週末' : 'End of next week', value: endOn(nextWeekEnd) });
+    }
+  }
+  return [...presets, none];
 }

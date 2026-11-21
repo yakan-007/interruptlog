@@ -8,7 +8,7 @@ import SheetShell from './SheetShell';
 
 export default function AddTaskSheet({ state, actions, onClose, editing, draft, onDraftChange, onAfterSubmit }) {
   const locale = state.preferences.locale;
-  const duePresets = getTaskDuePresets(new Date(), locale, state.preferences.workSchedule);
+  const duePresets = getTaskDuePresets(new Date(), locale, state.preferences.workSchedule, state.preferences.workDays);
   const [name, setName] = useState(editing?.name ?? draft?.name ?? '');
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? draft?.categoryId ?? state.categories[0]?.id ?? null);
   const [plannedDurationMinutes, setPlannedDurationMinutes] = useState(editing?.planning?.plannedDurationMinutes ?? draft?.plannedDurationMinutes ?? 0);

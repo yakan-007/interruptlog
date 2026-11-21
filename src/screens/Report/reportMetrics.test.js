@@ -178,3 +178,19 @@ describe('overtime and holiday work', () => {
     expect(metrics.workday.holiday).toEqual({ task: 120 * 60000, interrupt: 30 * 60000 });
   });
 });
+
+describe('a day off in Review', () => {
+  it('counts no working days for a Saturday', () => {
+    const day = (date, hour) => new Date(2026, 10, date, hour).getTime();
+    const state = {
+      ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '18:00' }),
+      events: [{ id: 'sat', type: 'task', taskId: 't', label: '土曜', start: day(21, 13), end: day(21, 15) }],
+    };
+    const bounds = { since: day(21, 0), until: day(22, 0) };
+    const stats = calcStats(state.events, bounds.since, bounds.until, bounds.until);
+    const metrics = buildReportMetrics(state, stats, bounds, bounds.until);
+
+    expect(metrics.workday.workingDays).toBe(0);
+    expect(metrics.workday.holiday.task).toBe(2 * 3600000);
+  });
+});

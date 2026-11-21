@@ -14,11 +14,13 @@ export function buildWorkdayReport(state, events, bounds, now) {
     inside: { task: 0, interrupt: 0 },
     overtime: { task: 0, interrupt: 0 },
     holiday: { task: 0, interrupt: 0 },
+    workingDays: 0,
   };
   const worked = events.filter((event) => event.type === 'task' || event.type === 'interrupt');
   for (let dayStart = startOfDay(bounds.since); dayStart < bounds.until; dayStart = addDays(dayStart, 1)) {
     const dayEnd = Math.min(addDays(dayStart, 1), bounds.until);
     const workday = getWorkdayBounds(state, dayStart);
+    if (workday) result.workingDays += 1;
     for (const event of worked) {
       const start = Math.max(event.clippedStart, dayStart);
       const end = Math.min(event.clippedEnd ?? now, dayEnd);

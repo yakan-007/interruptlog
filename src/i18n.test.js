@@ -47,8 +47,19 @@ describe('i18n', () => {
     expect(formatDateHeader(base.getTime(), 'ja-JP', base.getTime())).toBe('今日');
     expect(formatDateHeader(base.getTime(), 'en-US', base.getTime())).toBe('Today');
     expect(jaPresets.map((item) => item.value)).toEqual(enPresets.map((item) => item.value));
-    expect(jaPresets.map((item) => item.label)).toEqual(['今日中', '明日中', '今週末', 'なし']);
-    expect(enPresets.map((item) => item.label)).toEqual(['Today', 'Tomorrow', 'This Friday', 'None']);
+    expect(jaPresets.map((item) => item.label)).toEqual(['今日中', '明日中', '来週末', 'なし']);
+    expect(enPresets.map((item) => item.label)).toEqual(['Today', 'Tomorrow', 'End of next week', 'None']);
+
+    // Saturday: no "today"; the next working day is Monday, and the coming
+    // Friday belongs to next week.
+    const saturday = new Date('2026-06-13T10:00:00+09:00');
+    const weekend = getDuePresets(saturday, 'ja-JP', schedule);
+    expect(weekend.map((item) => item.label)).toEqual(['月曜中', '来週末', 'なし']);
+    expect(new Date(weekend[0].value).getDay()).toBe(1);
+    expect(new Date(weekend[1].value).getDay()).toBe(5);
+    // Monday: today, tomorrow (Tue), this Friday.
+    const monday = getDuePresets(new Date('2026-06-08T10:00:00+09:00'), 'ja-JP', schedule);
+    expect(monday.map((item) => item.label)).toEqual(['今日中', '明日中', '今週末', 'なし']);
     expect(getDuePresets(base, 'ja-JP')).toEqual([{ label: 'なし', value: null }]);
   });
 

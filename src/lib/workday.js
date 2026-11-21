@@ -54,19 +54,3 @@ export function timestampAtClock(timestamp, clock) {
   date.setHours(hour, minute, 0, 0);
   return date.getTime();
 }
-
-export function timestampAtClockForOffset(timestamp, clock, dayOffset = 0) {
-  const at = timestampAtClock(timestamp, clock);
-  if (at == null) return null;
-  const date = new Date(at);
-  date.setDate(date.getDate() + dayOffset);
-  return date.getTime();
-}
-
-export function getFridayAtClock(timestamp, clock) {
-  const date = new Date(timestampAtClock(timestamp, clock));
-  let offset = (5 - date.getDay() + 7) % 7;
-  if (offset === 0 && timestamp >= date.getTime()) offset = 7;
-  date.setDate(date.getDate() + offset);
-  return date.getTime();
-}

@@ -34,6 +34,6 @@ export function fmtDateHeader(ts, locale = 'ja-JP', now = Date.now()) {
   return formatLocalizedDateHeader(ts, locale, now);
 }
 
-export function getTaskDuePresets(base = new Date(), locale = 'ja-JP', workSchedule = null) {
-  return getDuePresets(base, locale, workSchedule);
+export function getTaskDuePresets(base = new Date(), locale = 'ja-JP', workSchedule = null, workDays) {
+  return getDuePresets(base, locale, workSchedule, workDays);
 }
