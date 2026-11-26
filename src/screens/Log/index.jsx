@@ -53,14 +53,19 @@ export default function LogScreen({ state, actions }) {
             <button type="button" onClick={() => actions.openSheet('stopAt')}>{t(locale, 'log.forgottenTimerAction')}</button>
           </div>
         )}
-        {(forecast?.firstLate || overdueCount > 0) && (
-          <button type="button" className="il-workday-overflow" onClick={() => actions.openSheet('forecast')} disabled={!forecast}>
-            {forecast?.firstLate
-              ? tx(locale, 'log.forecastLate', {
-                day: fmtDay(forecast.firstLate.dueAt, locale, now),
-                duration: fmtDurationShort(forecast.firstLate.shortfallMs, locale),
-              })
-              : tx(locale, 'log.overdueCount', overdueCount)}
+        {overdueCount > 0 ? (
+          <div className="il-workday-overflow">
+            <span>{tx(locale, 'log.overdueCount', overdueCount)}</span>
+            {forecast && (
+              <button type="button" onClick={actions.pushOverdueDueDates}>{t(locale, 'log.pushOverdue')}</button>
+            )}
+          </div>
+        ) : forecast?.firstLate && (
+          <button type="button" className="il-workday-overflow" onClick={() => actions.openSheet('forecast')}>
+            {tx(locale, 'log.forecastLate', {
+              day: fmtDay(forecast.firstLate.dueAt, locale, now),
+              duration: fmtDurationShort(forecast.firstLate.shortfallMs, locale),
+            })}
           </button>
         )}
         <div className="il-section-h">

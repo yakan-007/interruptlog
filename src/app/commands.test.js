@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildBackup, createEmptyState } from '../state';
+import { buildBackup, createEmptyState, setWorkScheduleInState } from '../state';
 import { ERROR_CODES } from '../domain/errors';
 import { createAppActions } from './actions';
 
@@ -40,6 +40,16 @@ function createHarness(
 }
 
 describe('personal app commands', () => {
+  it('pushes overdue due dates out and says how many moved', () => {
+    const monday9 = new Date(2026, 10, 23, 9).getTime();
+    const overdue = { ...task(), planning: { plannedDurationMinutes: 120, dueAt: new Date(2026, 10, 20, 18).getTime() } };
+    const initial = { ...setWorkScheduleInState(createEmptyState(), { start: '09:00', end: '18:00' }), tasks: [overdue] };
+    const commands = createHarness(initial, null, { now: () => monday9 });
+
+    expect(commands.actions.pushOverdueDueDates()).toBe(1);
+    expect(commands.state().tasks[0].planning.dueAt).toBe(new Date(2026, 10, 23, 18).getTime());
+  });
+
   it('uses an injected clock for deterministic application operations', () => {
     const fixedNow = Date.parse('2026-07-14T09:30:00+09:00');
     const clock = { now: vi.fn(() => fixedNow) };

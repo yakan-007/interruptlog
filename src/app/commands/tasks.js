@@ -8,9 +8,11 @@ import {
   restoreTaskAndStartInState,
   restoreTaskInState,
   saveTaskInState,
+  setTaskDueDatesInState,
   startTaskInState,
   stopTaskInState,
 } from '../../state';
+import { planDuePush } from '../../features/forecast/forecast';
 
 export function createTaskCommands({ applyResult, createId, getState, mutate, mutateWith, now }) {
   const dependencies = { createId };
@@ -21,6 +23,12 @@ export function createTaskCommands({ applyResult, createId, getState, mutate, mu
     restoreTask: mutateWith(restoreTaskInState),
     deleteTask: (id) => mutate((state) => deleteTaskInState(state, id, now(), dependencies)),
     moveTaskToIndex: mutateWith(moveTaskToIndexInState),
+    // Returns how many due dates moved.
+    pushOverdueDueDates() {
+      const dues = planDuePush(getState(), now());
+      if (dues.size > 0) mutate((state) => setTaskDueDatesInState(state, dues));
+      return dues.size;
+    },
     endRunningAt(at) {
       return applyResult(endRunningAtInState(getState(), at, now(), dependencies));
     },

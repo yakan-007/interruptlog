@@ -108,6 +108,7 @@ export {
   restoreTaskAndStartInState,
   restoreTaskInState,
   saveTaskInState,
+  setTaskDueDatesInState,
   startTaskInState,
   stopTaskInState,
 } from './tasks';

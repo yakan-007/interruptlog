@@ -287,3 +287,14 @@ export function moveTaskToIndexInState(state, taskId, targetIndex) {
       : task),
   };
 }
+
+// Several due dates at once, from a Map of task id to timestamp.
+export function setTaskDueDatesInState(state, dues) {
+  if (dues.size === 0) return state;
+  return {
+    ...state,
+    tasks: state.tasks.map((task) => dues.has(task.id)
+      ? { ...task, planning: { ...task.planning, dueAt: dues.get(task.id) } }
+      : task),
+  };
+}

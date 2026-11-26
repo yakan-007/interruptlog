@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyState, setWorkScheduleInState } from '../../state';
-import { buildForecast } from './forecast';
+import { buildForecast, planDuePush } from './forecast';
 
 // November 2026: the 16th and 23rd are Mondays, the 21st/22nd a weekend.
 const at = (date, hour, minute = 0) => new Date(2026, 10, date, hour, minute).getTime();
@@ -118,5 +118,27 @@ describe('deadline forecast', () => {
     const forecast = buildForecast(state, at(23, 11));
 
     expect(forecast.byTaskId.get('long')).toMatchObject({ overrun: true, finishAt: null, remainingMs: 0, late: false });
+  });
+  it('pushes a missed due date to the day it should be done, and whatever that pushes late after it', () => {
+    const state = baseState([
+      task('missed', 6, at(20, 18)),
+      task('next', 4, at(23, 18)),
+      task('late', 30, at(24, 18)),
+      task('loose', 1, at(27, 18)),
+      task('noEstimate', 0, at(20, 12)),
+    ]);
+    // Monday 9:00. missed takes 9-15, next would end Tue 10:00 -> late only because of missed.
+    // late (30h) was already late before, so it is left alone.
+    const dues = planDuePush(state, at(23, 9));
+
+    expect(dues.get('missed')).toBe(at(23, 18));
+    expect(dues.get('next')).toBe(at(24, 18));
+    expect(dues.has('late')).toBe(false);
+    expect(dues.has('loose')).toBe(false);
+    expect(dues.get('noEstimate')).toBe(at(23, 18));
+  });
+
+  it('pushes nothing when nothing is overdue', () => {
+    expect(planDuePush(baseState([task('a', 2, at(24, 18))]), at(23, 9)).size).toBe(0);
   });
 });

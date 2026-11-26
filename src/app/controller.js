@@ -27,6 +27,10 @@ function createViewActions({ app, showToast, openSheet, closeSheet }) {
     closeSheet,
     showToast: toast,
     ...createPassthroughActions({ app, closeSheet }),
+    pushOverdueDueDates() {
+      const count = app.actions.pushOverdueDueDates();
+      if (count > 0) toast(tx(locale, 'toasts.duePushed', count));
+    },
     moveTaskToIndex(taskId, targetIndex) {
       const sortedByDue = app.state.preferences.taskOrder === 'due';
       const shown = selectActiveTasks(app.state).map((task) => task.id);

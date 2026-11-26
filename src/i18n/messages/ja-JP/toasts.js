@@ -5,6 +5,7 @@ toasts: {
         eventDeleted: '記録を削除しました',
         interruptSaved: '割り込みを記録しました',
         breakSaved: '休憩を記録しました',
+        duePushed: (count) => `${count}件の期限を組み直しました`,
         sortDueOff: '並べ替えたので、期限順を解除しました',
         repaired: '重なった記録を整理しました',
         jsonExported: 'JSONを書き出しました',

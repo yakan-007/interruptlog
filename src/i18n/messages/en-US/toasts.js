@@ -5,6 +5,7 @@ toasts: {
         eventDeleted: 'Record deleted',
         interruptSaved: 'Interruption recorded',
         breakSaved: 'Break recorded',
+        duePushed: (count) => `Rescheduled ${count} due dates`,
         sortDueOff: 'Sorting by due date was turned off because you reordered',
         repaired: 'Overlapping records repaired',
         jsonExported: 'JSON exported',

@@ -31,6 +31,7 @@ log: {
         overdue: (when) => `Overdue ${when}`,
         target: (day) => `Est. ${day}`,
         overrun: 'Over estimate',
+        pushOverdue: 'Reschedule',
         overdueCount: (count) => `${count} overdue`,
         shortfall: (duration) => `${duration} short`,
         forecastLate: ({ day, duration }) => `${duration} short for the ${day} due date`,

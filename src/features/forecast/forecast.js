@@ -1,4 +1,4 @@
-import { getWorkdayBounds } from '../../state';
+import { getWorkdayBounds, setTaskDueDatesInState } from '../../state';
 import { isWorkSchedule } from '../../lib/workday';
 import { startOfDay, addDays } from '../../lib/day';
 import { compareByDueDate, LIKELY_FORGOTTEN_MS } from '../../domain/records';
@@ -18,6 +18,7 @@ const MIN_PROFILE_DAYS = 5;
 const PACE_DAYS = 60;
 const MIN_PACE_TASKS = 3;
 const HORIZON_DAYS = 366;
+const MAX_PUSH_ROUNDS = 20;
 
 export function buildForecast(state, now = Date.now()) {
   if (!isWorkSchedule(state.preferences?.workSchedule)) return null;
@@ -37,6 +38,7 @@ export function buildForecast(state, now = Date.now()) {
     const spentMs = spentByTask.get(task.id) ?? 0;
     const remainingMs = Math.max(0, estimateMs - spentMs);
     cumulativeMs += remainingMs;
+    const expectedAt = capacity.finishTimeFor(cumulativeMs);
     const dueAt = task.planning?.dueAt ?? null;
     // A due date already passed is missed, not short: it says nothing about
     // the hours ahead. The task is still worked first and uses them up.
@@ -48,7 +50,9 @@ export function buildForecast(state, now = Date.now()) {
       // Past its estimate and not done: how much is left is anyone's guess,
       // so no finish day is claimed for it.
       overrun: spentMs >= estimateMs,
-      finishAt: spentMs >= estimateMs ? null : capacity.finishTimeFor(cumulativeMs),
+      finishAt: spentMs >= estimateMs ? null : expectedAt,
+      // Where the task sits in the plan even when no finish day is shown.
+      expectedAt,
       dueAt,
       overdue,
       late: shortfallMs > 0,
@@ -66,6 +70,47 @@ export function buildForecast(state, now = Date.now()) {
   };
 }
 
+// New due dates that push missed ones out: each overdue task gets the end of
+// the working day it should be done on, and a task made late by the time those
+// still take is pushed the same way, and so on down the line. A task that would
+// be late anyway is left for the user to decide.
+export function planDuePush(state, now = Date.now()) {
+  const dues = new Map();
+  const before = buildForecast(state, now);
+  if (!before) return dues;
+  let toPush = before.items.filter((item) => item.overdue);
+  // Late even if the missed tasks were not there: not their doing, so not pushed.
+  const missed = new Set(toPush.map((item) => item.taskId));
+  const withoutMissed = { ...state, tasks: state.tasks.filter((task) => !missed.has(task.id)) };
+  const lateOnTheirOwn = new Set(buildForecast(withoutMissed, now).items.filter((item) => item.late).map((item) => item.taskId));
+  // Overdue tasks without an estimate take no time in the plan: they move to
+  // the end of the next working hours.
+  const nextEnd = nextWorkdayEnd(state, now);
+  for (const task of state.tasks) {
+    const dueAt = task.planning?.dueAt;
+    if (task.isCompleted || dueAt == null || dueAt > now || before.byTaskId.has(task.id) || nextEnd == null) continue;
+    dues.set(task.id, nextEnd);
+  }
+
+  for (let round = 0; toPush.length > 0 && round < MAX_PUSH_ROUNDS; round += 1) {
+    for (const item of toPush) {
+      const dueAt = item.expectedAt == null ? null : getWorkdayBounds(state, item.expectedAt)?.end ?? null;
+      if (dueAt != null) dues.set(item.taskId, dueAt);
+    }
+    const pushed = setTaskDueDatesInState(state, dues);
+    toPush = buildForecast(pushed, now).items.filter((item) => item.late && !lateOnTheirOwn.has(item.taskId));
+  }
+  return dues;
+}
+
+function nextWorkdayEnd(state, now) {
+  let day = startOfDay(now);
+  for (let index = 0; index < HORIZON_DAYS; index += 1, day = addDays(day, 1)) {
+    const end = getWorkdayBounds(state, day)?.end;
+    if (end != null && end > now) return end;
+  }
+  return null;
+}
 
 // Usual share of work hours left for tasks, from the last two weeks of
 // working days that have records: work hours minus interruptions and breaks
@@ -174,7 +219,6 @@ function createCapacity(state, now, focusShare) {
     },
   };
 }
-
 
 
 function clamp(value, min, max) {

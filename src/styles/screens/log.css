@@ -30,7 +30,31 @@
   font-weight: 700;
 }
 
-.il-workday-overflow:disabled { cursor: default; }
+/* Missed due dates: the count, and the one thing to do about them. */
+div.il-workday-overflow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  cursor: default;
+}
+
+div.il-workday-overflow button {
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklch, var(--urg-high) 40%, transparent);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--urg-high);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+div.il-workday-overflow button:active { transform: scale(0.97); }
 
 .il-forgotten-timer {
   margin: 8px 16px 4px;
